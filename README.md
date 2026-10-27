@@ -167,7 +167,7 @@ Requires macOS 15 or later, on Apple silicon or Intel.
 
    Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/Copperlight.app`
 
-Every release is signed with the same certificate, so updates keep the permissions you gave it.
+Every release is signed with the same self-signed certificate, so updates keep the permissions you gave it.
 
 ### Build from source
 
