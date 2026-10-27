@@ -1,0 +1,11 @@
+# make test on every push and pull request, signed ad-hoc like any fresh clone.
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install xcodegen
+      - run: xcodebuild -version
+      - run: make test

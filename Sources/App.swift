@@ -1,0 +1,303 @@
+import AppKit
+import KeyboardShortcuts
+import ServiceManagement
+import SwiftUI
+
+// The launcher's shortcut comes from config.toml ([hotkeys]); see Config.Hotkeys for the default.
+extension KeyboardShortcuts.Name {
+    static let toggleLauncher = Self("toggleLauncher")
+}
+
+extension Hotkey {
+    var shortcut: KeyboardShortcuts.Shortcut { .init(.init(rawValue: keyCode), modifiers: modifiers) }
+}
+
+/// Launcher rows for Copperlight's own features.
+struct BuiltinProvider: ResultProvider {
+    let showNote: @MainActor @Sendable (String?) -> Void // nil: the note, else a named one
+    let showClipboard: @MainActor @Sendable () -> Void
+    var showWelcome: @MainActor @Sendable () -> Void = {}
+    var showSettings: @MainActor @Sendable () -> Void = {}
+    var notesFolder = notesDir
+
+    func results(for query: String) -> [LauncherResult] {
+        var rows: [LauncherResult] = []
+        if Feature.notes.isOn, let score = score(query, prefixOf: "note", title: "Note") {
+            rows.append(LauncherResult(id: "builtin:note", title: "Note", subtitle: "Floating note · Esc hides it",
+                                       icon: .symbol("note.text"), score: score, action: { [showNote] in showNote(nil) }))
+        }
+        if Feature.notes.isOn { rows += noteRows(query) }
+        // From 3 letters: "c" and "cl" belong to Chrome, Calendar, Claude…
+        if Feature.clipboard.isOn, let score = score(query, prefixOf: "clipboard", minLength: 3, title: "Clipboard History") {
+            rows.append(LauncherResult(id: "builtin:clipboard", title: "Clipboard History", subtitle: "Search past copies",
+                                       icon: .symbol("doc.on.clipboard"), score: score,
+                                       action: showClipboard))
+        }
+        if let score = score(query, prefixOf: "welcome", minLength: 3, title: "Welcome to Copperlight") {
+            rows.append(LauncherResult(id: "builtin:welcome", title: "Welcome to Copperlight",
+                                       subtitle: "The hotkey, permissions, Open at Login", icon: .symbol("hand.wave"),
+                                       score: score, action: showWelcome))
+        }
+        // "settings" alone is System Settings' too, so only a plain fuzzy match there; "copperlight" goes straight to it.
+        if let score = score(query, prefixOf: "copperlight settings", minLength: 3, title: "Copperlight Settings") {
+            rows.append(LauncherResult(id: "builtin:settings", title: "Copperlight Settings",
+                                       subtitle: "Hotkey, clipboard, files, browser, commands, snippets", icon: .symbol("gearshape"),
+                                       score: score, action: showSettings))
+        }
+        return rows
+    }
+
+    /// `note` lists the named notes too; `note wo` the ones starting with "wo", and a new "wo" unless there's one.
+    private func noteRows(_ query: String) -> [LauncherResult] {
+        let lower = query.lowercased()
+        guard lower == "note" || lower.hasPrefix("note ") else { return [] }
+        let typed = query.dropFirst(4).trimmingCharacters(in: .whitespaces)
+        let names = noteNames(in: notesFolder)
+        var rows = names.enumerated().compactMap { index, name -> LauncherResult? in
+            guard name.lowercased().hasPrefix(typed.lowercased()) else { return nil }
+            return LauncherResult(id: "note:\(name)", title: name, subtitle: "Note", icon: .symbol("note.text"),
+                                  score: 49 - Double(index) / 100, action: { [showNote] in showNote(name) })
+        }
+        // A name is a file name: no folders, no hidden files.
+        if !typed.isEmpty, !typed.contains("/"), !typed.hasPrefix("."), !names.contains(where: { $0.lowercased() == typed.lowercased() }) {
+            rows.append(LauncherResult(id: "note:new", title: typed, subtitle: "New note", icon: .symbol("square.and.pencil"),
+                                       score: 48, actionTitle: "Create", action: { [showNote] in showNote(typed) }))
+        }
+        return rows
+    }
+
+    /// A prefix of `keyword` (at least `minLength` long) ranks first: above apps, fuzzy commands and
+    /// math; only an exact command alias (100) beats it. Anything else is a plain fuzzy match on the title.
+    private func score(_ query: String, prefixOf keyword: String, minLength: Int = 1, title: String) -> Double? {
+        query.count >= minLength && keyword.hasPrefix(query.lowercased()) ? 50 : fuzzyScore(query, title) ?? otherNameScore(query, title)
+    }
+}
+
+@main
+struct CopperlightApp: App {
+    @NSApplicationDelegateAdaptor private var delegate: AppDelegate
+    @State private var launchAtLogin = false
+
+    var body: some Scene {
+        MenuBarExtra("Copperlight", image: "Mark") { // the icon's C
+            Button("Settings…") { delegate.showSettings() }.keyboardShortcut(",")
+            Button("Welcome to Copperlight") { delegate.showWelcome() }
+            Toggle("Launch at Login", isOn: Binding(get: { launchAtLogin }, set: { launchAtLogin = setLaunchAtLogin($0) }))
+                // The menu is built once, so ask again each time it opens: System Settings → Login Items may have
+                // changed it. onAppear covers the first open, before onReceive is listening.
+                .onAppear(perform: readLaunchAtLogin)
+                .onReceive(NotificationCenter.default.publisher(for: NSMenu.didBeginTrackingNotification)) { _ in readLaunchAtLogin() }
+            Divider()
+            Button("Quit Copperlight") { NSApp.terminate(nil) }.keyboardShortcut("q")
+        }
+    }
+
+    private func readLaunchAtLogin() { launchAtLogin = SMAppService.mainApp.status == .enabled }
+}
+
+/// Registers this copy of the app (wherever it is now) as a login item, or removes it.
+/// Returns whether it ends up enabled.
+@MainActor func setLaunchAtLogin(_ on: Bool) -> Bool {
+    let service = SMAppService.mainApp
+    do {
+        if on { try service.register() } else { try service.unregister() }
+    } catch {
+        notify("Couldn't change Launch at Login", error.localizedDescription)
+    }
+    if service.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+    return service.status == .enabled
+}
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private let apps = AppProvider()
+    private let currency = CurrencyProvider()
+    private let commands = CommandProvider()
+    private let web = WebProvider()
+    private let snippets = SnippetProvider()
+    private let pages = BrowserPagesProvider()
+    private let meetings = MeetingsProvider()
+    private let translate = TranslateProvider()
+    private let files = FileSearchProvider()
+    private let photoText = Feature.photoText.isOn ? try? PhotoTextStore(path: PhotoTextStore.file.path) : nil
+    private lazy var photoIndexer = photoText.map(PhotoIndexer.init)
+    private let pomodoro = Pomodoro()
+    private lazy var builtins = BuiltinProvider(showNote: { [unowned self] in showNote($0) },
+                                                showClipboard: { [unowned self] in showClipboard() },
+                                                showWelcome: { [unowned self] in showWelcome() },
+                                                showSettings: { [unowned self] in showSettings() })
+    private lazy var capture = CaptureProvider(addToNote: { [unowned self] in addToNote($0) })
+    private lazy var verbs = VerbProvider(verbs: Verb.launcher(files: files))
+    // Each provider with the feature it belongs to (none: always on); Features.swift says which are on.
+    private lazy var model = SearchModel(
+        providers: ([(commands, .commands), (ScriptProvider(), .scripts), (snippets, .snippets), (builtins, nil),
+                     (EmojiProvider(), .quickTools), (DefineProvider(), .quickTools),
+                     (translate, .quickTools), (meetings, nil), (TextToolProvider(), .quickTools), (capture, .notes), (apps, nil),
+                     (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
+                     (TimeZoneProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools), (files, nil),
+                     (FileContentProvider(files: files), .fileContent), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
+            .compactMap { $0.1?.isOn == false ? nil : $0.0 } + (photoText.map { [PhotoTextProvider(store: $0)] } ?? []),
+        exclusive: [FileSearchProvider.prefix: files, VerbProvider.prefix: verbs,
+                    ShellProvider.prefix: ShellProvider(state: .shared), "~": PathProvider(), "/": PathProvider()],
+        frecency: .shared)
+    private lazy var panel = LauncherPanel(model: model, placeholder: "Type anything")
+    private var history: ClipboardHistory? // nil if clipboard.sqlite can't be opened
+    private var historyError: String?
+    private lazy var clipboardProvider = history.map {
+        ClipboardProvider(store: $0.store, paste: { [unowned self] in paste($0) }, copy: { [unowned self] in history?.restore($0) })
+    }
+    private lazy var clipboardModel = SearchModel(
+        providers: clipboardProvider.map { [$0] } ?? [], searchesEmptyQuery: true,
+        exclusive: clipboardProvider.map { [VerbProvider.prefix: VerbProvider(verbs: $0.verbs)] } ?? [:])
+    private lazy var clipboardPanel = LauncherPanel(model: clipboardModel, placeholder: "Search clipboard history, : for commands…")
+    private var notes: [String: NotePanel] = [:] // by name; "" is the note
+    private var welcome: WelcomeWindow?
+    private var settings: SettingsWindow?
+    private var watcher: DirectoryWatcher?
+    private var configText: String? // last config.toml contents seen; nil = no file
+    private var configUpdate: Task<Void, Never>?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Hosted unit tests launch the app too: don't grab hotkeys, touch files or hit the network there.
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
+        try? FileManager.default.createDirectory(at: scriptsDir, withIntermediateDirectories: true) // and configDir
+        if !FileManager.default.fileExists(atPath: Config.file.path) {
+            try? Config.example.write(to: Config.file, atomically: true, encoding: .utf8)
+        }
+        apply(Config()) // the "last valid config" if the file is broken from the start
+        if Feature.clipboard.isOn {
+            do {
+                // After the defaults above, so retention only prunes with a config that actually loaded.
+                history = ClipboardHistory(store: try ClipboardStore(path: ClipboardStore.file.path))
+                try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: ClipboardStore.file.path)
+            } catch {
+                historyError = error.localizedDescription
+            }
+        }
+        reloadConfig()
+        if Feature.quickTools.isOn { pomodoro.restore() }
+        watcher = DirectoryWatcher(configDir) { [unowned self] in
+            reloadConfig()
+            notes[""]?.reloadIfChanged()
+        }
+        KeyboardShortcuts.onKeyDown(for: .toggleLauncher) { [unowned self] in
+            welcome?.model.triedHotkey = true
+            toggleLauncher()
+        }
+        refresh()
+        if StateStore.shared.get("welcomed", as: Bool.self) != true {
+            StateStore.shared.set("welcomed", true)
+            showWelcome()
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        notes.values.forEach { $0.saveNow() }
+        StateStore.shared.flush()
+    }
+
+    private func toggleLauncher() {
+        if panel.isVisible { return panel.orderOut(nil) }
+        refresh()
+        panel.show()
+    }
+
+    /// Brings the welcome screen forward, or builds it again if it was closed (so it plays its entrance again).
+    func showWelcome() {
+        if welcome?.isVisible != true {
+            welcome = WelcomeWindow { [unowned self] in
+                welcome?.close()
+                refresh()
+                panel.show()
+            }
+        }
+        welcome?.model.keycaps = KeyboardShortcuts.getShortcut(for: .toggleLauncher)?.keycaps ?? []
+        welcome?.show()
+    }
+
+    func showSettings() {
+        if settings?.isVisible != true { settings = SettingsWindow(showWelcome: { [unowned self] in showWelcome() }) }
+        settings?.show()
+    }
+
+    private func showClipboard() {
+        clipboardModel.notice = historyError.map { error in
+            LauncherResult(id: "clipboard-error", title: "Clipboard history is off: can't open clipboard.sqlite",
+                           subtitle: error, icon: .symbol("exclamationmark.triangle"), score: .infinity,
+                           actionTitle: "", action: {})
+        }
+        clipboardPanel.show()
+    }
+
+    /// Enter in the clipboard panel. Without Accessibility it can only copy, so it says how to fix that.
+    private func paste(_ content: ClipboardContent) {
+        history?.restore(content)
+        if AXIsProcessTrusted() { return sendPaste() }
+        clipboardModel.notice = LauncherResult(
+            id: "accessibility", title: "Copied. To paste it too, allow Copperlight in Accessibility",
+            subtitle: "Privacy & Security → Accessibility", icon: .symbol("lock.shield"), score: .infinity,
+            actionTitle: "Open System Settings", action: { requestAccessibility() })
+        clipboardPanel.show()
+    }
+
+    private func note(_ name: String?) -> NotePanel {
+        if let panel = notes[name ?? ""] { return panel }
+        let panel = NotePanel(name: name)
+        notes[name ?? ""] = panel
+        return panel
+    }
+
+    private func showNote(_ name: String?) { note(name).show() }
+
+    /// Through the panel, open or not, so text being typed in it isn't overwritten by the file.
+    private func addToNote(_ line: String) { note(nil).append(line) }
+
+    /// Re-reads config.toml if it changed. A broken file keeps the current config and pins an
+    /// error row to the launcher until it parses again.
+    private func reloadConfig() {
+        let text = try? String(contentsOf: Config.file, encoding: .utf8)
+        guard text != configText else { return }
+        configText = text
+        do {
+            apply(try text.map(Config.parse) ?? Config())
+            model.notice = nil
+        } catch {
+            model.notice = LauncherResult(
+                id: "config-error", title: "config.toml: \(Config.describe(error))",
+                subtitle: "Using the last valid config", icon: .symbol("exclamationmark.triangle"),
+                score: .infinity, actionTitle: "Open config.toml",
+                action: { NSWorkspace.shared.open(Config.file) })
+        }
+        settings?.model.reload() // an edit by hand shows in the settings window too
+    }
+
+    private func apply(_ config: Config) {
+        KeyboardShortcuts.setShortcut(config.hotkeys.launcher.shortcut, for: .toggleLauncher)
+        history?.settings = config.clipboard
+        pomodoro.defaultMinutes = config.pomodoro.defaultMinutes
+        pomodoro.breakMinutes = config.pomodoro.breakMinutes
+        // Chained so back-to-back reloads reach the providers in order.
+        configUpdate = Task { [previous = configUpdate, commands, currency, files, apps, web, snippets] in
+            await previous?.value
+            await commands.setCommands(config.commands, browser: config.browser)
+            await snippets.setSnippets(config.snippets)
+            await web.setBrowser(config.browser)
+            await pages.setBrowser(config.browser)
+            await meetings.setBrowser(config.browser)
+            await pages.refresh()
+            await currency.setDefaultTarget(config.currency.defaultTarget)
+            await files.setSettings(config.files)
+            await apps.setOnline(config.apps.online)
+        }
+    }
+
+    private func refresh() {
+        // Hours the first time, for a big library: on its own, and only one at a time (it says when it's busy).
+        Task.detached(priority: .utility) { [photoIndexer] in await photoIndexer?.update() }
+        Task { [apps, currency, pages] in
+            await apps.rescan()
+            if Feature.quickTools.isOn { await currency.refreshIfStale() }
+            await pages.refresh()
+        }
+    }
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="153 153 718 718">
+  <!-- The arcs of Resources/AppIcon.icon (Assets/1-arc-lit.svg, 2-arc-unlit.svg) in one color, the unlit one dimmed as
+       in the icon, cropped to them, 16 points square: a template for the menu bar, the note's title and the welcome screen. -->
+  <path d="M778.79 271.78 A359 359 0 1 0 778.79 752.22 L691.10 673.26 A241 241 0 1 1 691.10 350.74 Z" fill="#000"/>
+  <path d="M798.71 295.95 A359 359 0 0 1 798.71 728.05 L704.47 657.04 A241 241 0 0 0 704.47 366.96 Z" fill="#000" fill-opacity="0.4"/>
+</svg>

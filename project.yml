@@ -1,0 +1,59 @@
+name: Copperlight
+options:
+  bundleIdPrefix: app.copperlight
+  deploymentTarget:
+    macOS: "15.0"
+packages:
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    exactVersion: 3.1.0
+  Expression:
+    url: https://github.com/nicklockwood/Expression
+    exactVersion: 0.13.9
+  TOMLKit:
+    url: https://github.com/LebJe/TOMLKit
+    exactVersion: 0.6.0
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    exactVersion: 7.11.1
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    # Signing: ad-hoc here, so anyone can build; the Makefile signs with your certificate when TEAM is set.
+    # No entitlements file = no App Sandbox.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+targets:
+  Copperlight:
+    type: application
+    platform: macOS
+    sources: [Sources, Resources]
+    dependencies:
+      - package: KeyboardShortcuts
+      - package: Expression
+      - package: TOMLKit
+      - package: GRDB
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.copperlight
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon # Resources/AppIcon.icon, made in Icon Composer
+        INFOPLIST_KEY_NSRemindersFullAccessUsageDescription: "Copperlight adds the reminders you type (add todo …)."
+        INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription: "Copperlight adds the events you type (add event …)."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Copperlight reads the text in your photos, on this Mac, so typing “29.99” finds the photo of a price tag."
+        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Copperlight shows today's meetings when you type “meetings”, with Join for video calls."
+        OTHER_LDFLAGS: ["-weak_framework", "FoundationModels"] # macOS 26 only; the app runs on 15
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+    scheme:
+      testTargets: [CopperlightTests]
+  CopperlightTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [Tests]
+    dependencies:
+      - target: Copperlight
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES

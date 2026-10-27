@@ -1,0 +1,13 @@
+{
+  "browser": { "enabled_labs_experiments": [], "last_redirect_origin": "" },
+  "profile": {
+    "info_cache": {
+      "Default": { "active_time": 1760000000.1, "avatar_icon": "chrome://theme/IDR_PROFILE_AVATAR_26", "is_using_default_name": false, "name": "Personal", "user_name": "me@example.com" },
+      "Profile 1": { "active_time": 1760000001.2, "avatar_icon": "chrome://theme/IDR_PROFILE_AVATAR_12", "is_using_default_name": false, "name": "Work", "user_name": "me@work.example" },
+      "Profile 4": { "active_time": 1760000002.3, "avatar_icon": "chrome://theme/IDR_PROFILE_AVATAR_0", "is_using_default_name": true, "name": "Person 2", "user_name": "" }
+    },
+    "last_used": "Profile 1",
+    "profiles_order": ["Default", "Profile 1", "Profile 4"]
+  },
+  "variations_country": "pt"
+}
