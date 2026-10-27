@@ -4,8 +4,8 @@ One page with every feature: what you type, what you get, and what it needs. The
 [docs/guide.md](docs/guide.md) (how to use each one), [docs/configuration.md](docs/configuration.md) (config) and the reasons in [SPEC.md](SPEC.md). When a feature ships, it gets a
 line here.
 
-**Switched off for v1** in [Sources/Features.swift](Sources/Features.swift), with their code kept: the text inside
-files, the text in photos, and System Settings panes as rows. Everything else on this page is on.
+**Switched off for now** in [Sources/Features.swift](Sources/Features.swift), with their code kept: the text inside
+files and the text in photos. Everything else on this page is on.
 
 ## At a glance
 

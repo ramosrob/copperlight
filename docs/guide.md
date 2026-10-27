@@ -4,8 +4,8 @@ Everything you can type, in detail. [What you can type](../README.md#what-you-ca
 version; [FEATURES.md](../FEATURES.md) lists every feature on one page, and [configuration.md](configuration.md) covers
 config.toml.
 
-> **Switched off in v0.1**, with their code kept: System Settings pages, and the text inside files and photos.
-> They're described below but don't appear in the app yet.
+> **Switched off for now**, with their code kept: the text inside files and photos. They're described below but
+> don't appear in the app yet.
 
 | Key | Action |
 |---|---|

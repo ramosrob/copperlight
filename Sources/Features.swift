@@ -11,6 +11,6 @@ enum Feature: CaseIterable {
     case photoText      // the text in your photos (its own permission and index)
     case systemSettings // System Settings panes as rows
 
-    static let on: Set<Feature> = [.clipboard, .notes, .quickTools, .snippets, .scripts, .commands]
+    static let on: Set<Feature> = [.clipboard, .notes, .quickTools, .snippets, .scripts, .commands, .systemSettings]
     var isOn: Bool { Self.on.contains(self) }
 }

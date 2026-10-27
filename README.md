@@ -131,6 +131,7 @@ The answer appears as you type; Enter copies it.
 | `:quit saf`, `:hide others`, `:relaunch slack` | The apps that are running |
 | `:dark`, `:volume 30`, `:lock`, `:empty trash` | The Mac itself (the ones you can't undo ask first) |
 | `:shortcut name` | Your Shortcuts, Focus modes included |
+| `bluetooth`, `displays`, `dark mode` | That page of System Settings |
 
 ### Your day
 
@@ -252,6 +253,7 @@ Drop an executable into `~/.config/copperlight/scripts/` and it becomes a comman
 | [Everything it does](FEATURES.md) | Every feature on one page |
 | [Why it works this way](SPEC.md) | The principles behind it |
 | [Developing](DEVELOPMENT.md) | Building, testing, releasing, and the rules a change has to fit |
+| [Roadmap](ROADMAP.md) | What's next, what's later, and what's not planned |
 
 ## Support Copperlight
 

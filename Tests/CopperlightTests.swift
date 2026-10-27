@@ -1478,6 +1478,11 @@ private let macOS26 = ProcessInfo.processInfo.isOperatingSystemAtLeast(Operating
     for query in ["wifi", "blue", "disp", "sec", "notif", "keyb", "login"] { #expect(!settings.results(for: query).isEmpty, "\(query)") }
 }
 
+/// System Settings pages are rows in the launcher (turned on for v0.2).
+@Test func systemSettingsIsOn() {
+    #expect(Feature.systemSettings.isOn)
+}
+
 // MARK: Emoji
 
 @Test(.enabled(if: FileManager.default.fileExists(atPath: emojiNamesFile))) func emojiSearch() {
