@@ -17,6 +17,8 @@ struct Verb: Sendable {
 struct VerbProvider: ResultProvider {
     static let prefix = ":"
     let verbs: [Verb]
+    /// More rows for what's typed after `:` (the menus of the app in front), after the commands' own.
+    var more: @Sendable (String) async -> [LauncherResult] = { _ in [] }
 
     func results(for query: String) async -> [LauncherResult] {
         guard query.hasPrefix(Self.prefix) else { return [] }
@@ -31,7 +33,7 @@ struct VerbProvider: ResultProvider {
             let extensions = verbs.filter { $0.keyword.hasPrefix(verb.keyword + " ") }
             return rows(extensions, matching: text) + (await targets(text.dropFirst(name.count).trimmingCharacters(in: .whitespaces)))
         }
-        return rows(verbs, matching: text)
+        return rows(verbs, matching: text) + (text.isEmpty ? [] : await more(text))
     }
 
     private func rows(_ verbs: [Verb], matching text: String) -> [LauncherResult] {

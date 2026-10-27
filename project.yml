@@ -44,8 +44,8 @@ targets:
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Copperlight reads the text in your photos, on this Mac, so typing “29.99” finds the photo of a price tag."
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Copperlight shows today's meetings when you type “meetings”, with Join for video calls."
         OTHER_LDFLAGS: ["-weak_framework", "FoundationModels"] # macOS 26 only; the app runs on 15
-        MARKETING_VERSION: "0.1"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.2"
+        CURRENT_PROJECT_VERSION: "2"
     scheme:
       testTargets: [CopperlightTests]
   CopperlightTests:

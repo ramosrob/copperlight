@@ -33,6 +33,7 @@ time, fading over a few weeks. So `s` + Enter opens Safari once you use it, and 
 
 | Command | Does |
 |---|---|
+| `:export pdf`, `:new tab` | Choose a menu item of the app you were in (below) |
 | `:window term` | Switch to a window: every window of every app, front app first, by title or app name. Accessibility sees this Space's windows and minimized ones, not other Spaces' |
 | `:minimize`, `:fullscreen`, `:close` | Minimize the window in front, toggle its fullscreen, or close it |
 | `:maximize`, `:center`, `:left`, `:right`, `:top`, `:bottom` | Fill the screen, center it, or take a half |
@@ -58,6 +59,12 @@ Events (`:dark`), loginwindow (`:restart`, `:shut down`). One Allow each; change
 Window commands act on the window you were in when you opened the launcher (it never takes focus), and need
 Accessibility, like pasting (see Signing). Enter on a command that needs a target (`Quit Application`) fills in
 its keyword (`:quit `) so you can type the app.
+
+**Menus:** what you type after `:` also finds the menu items of the app you were in, from 3 letters, below the
+commands: `:export pdf` in Pages, `:new tab` in a browser, `:show sidebar` in Finder. Each row says where the item is
+(Pages › File › Export To) and shows its shortcut, so you learn it as you go; Enter chooses it, like clicking it. Only
+items you could click right now are listed, and not the Apple menu or Services. It reads the menus through
+Accessibility; without it, a row at the bottom offers to open the setting.
 
 **Paths:** anything starting with `~` or `/` is a path. A folder that exists (`~/code/copperlight`, `/Applications`)
 lists its contents, with the folder itself on top: Enter there opens it in Finder. Otherwise the last part
@@ -139,13 +146,12 @@ folder. Optional comment lines near the top, in any comment style (`#`, `//`, `-
 like `:!`; stopped after 30 seconds) or `copy` (stdout goes to the clipboard). A script named like a built-in
 replaces it, like a command. The folder is also on the `:!` shell's PATH. Remember `chmod +x`.
 
-Community script commands work as they are: drop one in the folder and its `@raycast.*` headers are read too.
-`@raycast.title` names the row, `@raycast.mode` `fullOutput` or `inline` shows the output (`silent` and `compact`
-run in the background), an `@raycast.icon` that's an SF Symbol name is its icon (an emoji or image isn't, so it
-gets the default), `@raycast.description` is the row's subtitle, and `@raycast.needsConfirmation true` asks before
-it runs. A script that declares its arguments (`@raycast.argument1`…) gets that many, the last one holding the rest
-of what you typed, so `ask will it ship` passes "will it ship" whole. Where a script sets both, `@title`, `@icon`
-and `@output` win.
+Community script commands work as they are: drop one in the folder and its own headers are read too. Its title
+names the row, a `fullOutput` or `inline` mode shows the output (`silent` and `compact` run in the background), an
+icon that's an SF Symbol name is its icon (an emoji or image isn't, so it gets the default), its description is the
+row's subtitle, and `needsConfirmation true` asks before it runs. A script that declares its arguments
+(`argument1`…) gets that many, the last one holding the rest of what you typed, so `ask will it ship` passes "will
+it ship" whole. Where a script sets both, `@title`, `@icon` and `@output` win.
 
 **Snippets:** `[[snippet]]` entries ([configuration.md](configuration.md)) are found by name like commands. Enter pastes the text into the app
 you were in, the same way the paste tools do (Accessibility; without it, Enter copies), and then puts your

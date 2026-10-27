@@ -4,22 +4,15 @@ What's planned for Copperlight, roughly in order. There are no dates: things shi
 [SPEC.md](SPEC.md) decides what fits: a small core, keyboard only, one hotkey, plain-text config, nothing about
 you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramosrob/copperlight/issues).
 
-## In the next release
-
-- **System Settings pages as rows:** `bluetooth`, `displays`, `dark mode` open that page.
-- **Community script headers:** existing community script commands work as they are, dropped in the scripts folder.
-
 ## Next
-
-- **Search the menus of the app in front.** Type "export pdf" and run that menu item, without reaching for the
-  mouse. Uses the Accessibility permission Copperlight already asks for.
-
-## Later
 
 - **Snippets that expand anywhere:** type a snippet's keyword in any app and it becomes the text. Needs the Input
   Monitoring permission, so it will be opt-in.
 - **Media and quick toggles:** play/pause, next, what's playing; Wi-Fi, Bluetooth, mute, keep awake; switch the
   audio output.
+
+## Later
+
 - **Timers:** `timer 10 min tea`, counting down in the menu bar like the pomodoro.
 - **Recent queries:** ↑ in an empty field brings back what you typed before.
 - **More window actions:** quarters, nudging a window, and saved multi-window layouts defined in config.toml.
@@ -33,6 +26,11 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Homebrew:** `brew install` through Copperlight's own tap.
 - **A privacy page:** every permission Copperlight can ask for, what each one turns on, and every server it ever
   contacts.
+
+## Done
+
+- **v0.2:** search the menus of the app you're in (`:export pdf`); System Settings pages as rows (`bluetooth`,
+  `dark mode`); community script commands work as they are.
 
 ## Not planned
 

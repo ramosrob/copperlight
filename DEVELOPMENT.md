@@ -138,6 +138,7 @@ Sources/
   App.swift                 entry point, menu bar item, hotkey, config loading, built-in rows (Note, Clipboard…)
   Launcher.swift            ResultProvider protocol, SearchModel (concurrent query + merge, frecency), panel + SwiftUI view
   Actions.swift             `:` commands: windows (Accessibility), running apps, files, the Mac
+  Menus.swift               `:export pdf`: the menus of the app in front (Accessibility), their shortcuts
   Config.swift              Config (TOML), hotkey parsing, example config, directory watcher
   StateStore.swift          state.json
   AppProvider.swift         fuzzy matcher, app scan
@@ -145,6 +146,7 @@ Sources/
   CurrencyProvider.swift    query parser, rate cache
   Shell.swift               `:!` shell lines: run with a timeout, output in place of the list
   Scripts.swift             ~/.config/copperlight/scripts/: executables as commands, their @title/@icon/@output header
+                            and community script commands' headers
   Snippets.swift            [[snippet]] rows, placeholders, paste
   Units.swift               unit names and conversions (Foundation Measurement)
   TimeZones.swift           places, `3pm lisbon in sf`

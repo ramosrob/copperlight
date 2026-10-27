@@ -28,15 +28,16 @@
 </p>
 
 Press <kbd>⌥ Space</kbd> anywhere, type, press <kbd>Enter</kbd>. Copperlight opens apps and files, does math and
-currency, converts units and time zones, keeps your clipboard history, moves windows, pastes snippets, and runs your
-own commands and scripts. One field does it all, and anything that isn't a search is a command typed after a colon
+currency, converts units and time zones, keeps your clipboard history, moves windows, pastes snippets, opens System
+Settings pages, chooses menu items in the app you're in, and runs your own commands and scripts. One field does it all, and anything that isn't a search is a command typed after a colon
 (`:left`, `:quit saf`), so there are no shortcuts to learn.
 
 ## Why Copperlight
 
 - **One field for everything.** No modes, no menus. The best match is already selected, and what you pick ranks
   higher next time.
-- **Keyboard first.** Every result and every action is a few keystrokes from <kbd>⌥ Space</kbd>. The mouse is optional.
+- **Keyboard first.** Every result and every action is a few keystrokes from <kbd>⌥ Space</kbd>, even the menus of
+  the app you're in (`:export pdf`). The mouse is optional.
 - **Yours.** Your settings live in one plain-text file you can read, edit and keep in git. Add your own commands,
   quicklinks, snippets and scripts.
 - **Private.** No account, no telemetry, no AI service. What it keeps stays on your Mac.
@@ -128,6 +129,7 @@ The answer appears as you type; Enter copies it.
 |---|---|
 | `:left`, `:left third`, `:maximize`, `:next display` | The window in front, moved there; `:restore` puts it back |
 | `:window term` | Any window of any app, found by its title |
+| `:export pdf`, `:new tab` | The menus of the app you're in, with their shortcuts |
 | `:quit saf`, `:hide others`, `:relaunch slack` | The apps that are running |
 | `:dark`, `:volume 30`, `:lock`, `:empty trash` | The Mac itself (the ones you can't undo ask first) |
 | `:shortcut name` | Your Shortcuts, Focus modes included |
@@ -149,7 +151,7 @@ The answer appears as you type; Enter copies it.
 | Type | You get |
 |---|---|
 | `gh copperlight` | Your quicklinks: a URL with what you typed filled in |
-| `deploy staging` | Your scripts in `~/.config/copperlight/scripts/`, run with the text as arguments |
+| `deploy staging` | Your scripts in `~/.config/copperlight/scripts/`, run with the text as arguments. Community script commands work as they are |
 | `sig`, `reply Ana` | Your snippets, placeholders filled in, pasted where you are |
 | `:!git status` | A shell line, its output right in the launcher |
 
@@ -200,7 +202,7 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 
 | Permission | Turns on |
 |---|---|
-| Accessibility | Pasting into the app you were in (clipboard history, snippets, emoji, paste as Markdown); moving and switching windows |
+| Accessibility | Pasting into the app you were in (clipboard history, snippets, emoji, paste as Markdown); moving and switching windows; searching menus |
 | Calendars | `meetings` (reads today's events) and `add event` (add-only access is enough for that) |
 | Reminders | `add todo` |
 | Notifications | The end of a pomodoro, shell lines that finish in the background, errors |
@@ -241,7 +243,8 @@ name = "reply"                                # "reply Ana"
 text = "Hi {query}, thanks for the note. I'll get back to you by {date}."
 ```
 
-Drop an executable into `~/.config/copperlight/scripts/` and it becomes a command too. Every setting is in
+Drop an executable into `~/.config/copperlight/scripts/` and it becomes a command too, community script commands
+included. Every setting is in
 [docs/configuration.md](docs/configuration.md).
 
 ## Documentation

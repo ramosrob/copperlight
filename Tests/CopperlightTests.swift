@@ -1270,6 +1270,64 @@ private struct Sized: ResultProvider {
     #expect(scriptArguments(["a", "b", "c"], declared: 2) == ["a", "b c"] && scriptArguments(["a", "b"], declared: nil) == ["a", "b"])
 }
 
+// MARK: Menus
+
+@Test func menuShortcuts() {
+    #expect(menuShortcut(char: "S", modifiers: 0) == "⌘S")
+    #expect(menuShortcut(char: "S", modifiers: 1) == "⇧⌘S")
+    #expect(menuShortcut(char: "P", modifiers: 3) == "⌥⇧⌘P")
+    #expect(menuShortcut(char: "A", modifiers: 12) == "⌃A") // 8: no ⌘
+    #expect(menuShortcut(char: nil, modifiers: 0) == "")
+    #expect(menuShortcut(char: "\u{8}", modifiers: 1) == "⇧⌘⌫") // keys that aren't characters, as the menu draws them
+    #expect(menuShortcut(char: "\u{9}", modifiers: 12) == "⌃⇥")
+    #expect(menuShortcut(char: "\u{F702}", modifiers: 0) == "⌘←")
+    #expect(menuShortcut(char: "\u{F704}", modifiers: 0) == "") // one it can't draw (F1): none rather than a box
+}
+
+/// `:export pdf` finds the front app's menu item after the built-in commands, with its menu and shortcut;
+/// `:` alone and a command that takes targets (`:quit saf`) don't list menus.
+@MainActor @Test func menuSearch() async {
+    let items = [
+        MenuCommand(path: ["File", "Export as PDF…"], shortcut: "", choose: {}),
+        MenuCommand(path: ["File", "Export", "PNG"], shortcut: "", choose: {}),
+        MenuCommand(path: ["File", "Export To", "PDF…"], shortcut: "", choose: {}),
+        MenuCommand(path: ["File", "New Tab"], shortcut: "⌘T", choose: {}),
+        MenuCommand(path: ["Window", "Minimize"], shortcut: "⌘M", choose: {}),
+        MenuCommand(path: ["Edit", "Copy"], shortcut: "⌘C", choose: {}),
+    ]
+    let rows = menuRows(items, matching: "export pdf", app: "Pages", icon: .symbol("doc"))
+    #expect(rows.map(\.title) == ["Export as PDF…", "PDF…"]) // close matches only: not P-N-G
+    #expect(rows.last?.subtitle == "Pages › File › Export To") // found with its submenu: Export To › PDF…
+    #expect(menuRows(items, matching: "file", app: "Pages", icon: .symbol("doc")).isEmpty) // not everything in File
+    #expect(rows.first?.subtitle == "Pages › File")
+    #expect(menuRows(items, matching: "png", app: "Pages", icon: .symbol("doc")).first?.subtitle == "Pages › File › Export")
+    #expect(menuRows(items, matching: "co", app: "Pages", icon: .symbol("doc")).isEmpty) // from 3 letters
+
+    let minimize = Verb(keyword: "minimize", title: "Minimize Window", icon: .symbol("minus"), run: {})
+    let quit = Verb(keyword: "quit", title: "Quit App", icon: .symbol("xmark"), targets: { _ in [] })
+    let verbs = VerbProvider(verbs: [minimize, quit], more: { menuRows(items, matching: $0, app: "Pages", icon: .symbol("doc")) })
+    let found = await verbs.results(for: ":minimize").sorted { $0.score > $1.score }
+    #expect(found.map(\.title) == ["Minimize Window", "Minimize"]) // the built-in command first
+    #expect(found.last?.accessory == "⌘M")
+    #expect(await verbs.results(for: ":").count == 2)
+    #expect(await verbs.results(for: ":quit copy").isEmpty)
+}
+
+/// Without Accessibility, `:export pdf` says what menu search needs instead of finding nothing, after everything else.
+@MainActor @Test(.enabled(if: !AXIsProcessTrusted())) func menuSearchAsksForAccessibility() {
+    let rows = frontMenuRows("export pdf")
+    #expect(rows.map(\.id) == ["menu:access"] && rows[0].score < -1)
+    #expect(frontMenuRows("ex").isEmpty) // from 3 letters, like the menus themselves
+}
+
+/// The menus of a real app, read through Accessibility: runs where the test host is allowed (Privacy & Security).
+@MainActor @Test(.enabled(if: AXIsProcessTrusted())) func finderMenus() async throws {
+    let finder = try #require(NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.finder").first)
+    let paths = readMenus(finder.processIdentifier).map(\.path)
+    #expect(paths.contains(["File", "New Finder Window"]))
+    #expect(!paths.contains { $0.first == "Apple" }) // not the Apple menu
+}
+
 // MARK: Other names
 
 @Test func otherNamesFindThings() async {

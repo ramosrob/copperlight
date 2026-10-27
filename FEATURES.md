@@ -27,9 +27,10 @@ files and the text in photos. Everything else on this page is on.
 | `define serendipity` | The dictionary entry | Opens it in Dictionary |
 | `translate bom dia`, `… to spanish` | The translation (on the Mac) | Copies it |
 | `gh copperlight`, `github` | Your `[[command]]` entries | Opens, launches or runs it |
-| `deploy staging` | Your scripts in `~/.config/copperlight/scripts/` | Runs it with the text as arguments |
+| `deploy staging` | Your scripts in `~/.config/copperlight/scripts/`, community script commands too | Runs it with the text as arguments |
 | `sig`, `reply John` | Your `[[snippet]]` entries | Pastes the text, placeholders filled in |
 | `:` | Commands for windows, apps, files, the Mac | Runs it |
+| `:export pdf`, `:new tab` | The menus of the app you were in | Chooses that menu item |
 | `:!git status` | A shell line | Runs it, shows the output; Enter again copies |
 | `json`, `uuid`, `upper hi`… | Text tools | Copies (or pastes) the result |
 | `paste plain`, `paste markdown` | The clipboard, cleaned or as Markdown | Pastes it |
@@ -175,6 +176,7 @@ The row shows its first line, and long ones show whole in the preview pane.
 
 | Group | Commands |
 |---|---|
+| Menus | `:export pdf`, `:new tab`: the enabled items of the menus of the app you were in, from 3 letters, after the commands, each with where it is and its shortcut; Enter chooses it |
 | Windows | `:window term` lists every window of every app (this Space and minimized ones) by title or app, front first; Enter brings it forward |
 | Window in front | `:minimize`, `:fullscreen`, `:close`, `:maximize`, `:center`, `:left`, `:right`, `:top`, `:bottom`, thirds (`:left third`…), two thirds, `:next display`, `:restore` (undo Copperlight's last move) |
 | Running apps | `:quit saf`, `:force quit saf` (asks first), `:hide saf`, `:hide others`, `:relaunch slack` |
@@ -262,7 +264,7 @@ Otherwise macOS asks when a feature first needs one:
 
 | macOS asks for | When | For |
 |---|---|---|
-| Accessibility | First paste or window command | Pasting (⌘V into your app), window commands, `:window`, `:lock` |
+| Accessibility | First paste or window command | Pasting (⌘V into your app), window commands, `:window`, `:lock`, menu search |
 | Automation | First `:empty trash`, `:dark`, `:restart`, `:shut down` | Asking Finder, System Events, loginwindow to do it |
 | Reminders | First `add todo` | Adding reminders (no add-only option exists) |
 | Calendars, add only | First `add event` | Adding events |

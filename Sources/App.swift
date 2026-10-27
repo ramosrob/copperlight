@@ -127,7 +127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                 showWelcome: { [unowned self] in showWelcome() },
                                                 showSettings: { [unowned self] in showSettings() })
     private lazy var capture = CaptureProvider(addToNote: { [unowned self] in addToNote($0) })
-    private lazy var verbs = VerbProvider(verbs: Verb.launcher(files: files))
+    private lazy var verbs = VerbProvider(verbs: Verb.launcher(files: files), more: { frontMenuRows($0) })
     // Each provider with the feature it belongs to (none: always on); Features.swift says which are on.
     private lazy var model = SearchModel(
         providers: ([(commands, .commands), (ScriptProvider(), .scripts), (snippets, .snippets), (builtins, nil),
