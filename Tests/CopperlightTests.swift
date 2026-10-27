@@ -1220,6 +1220,56 @@ private struct Sized: ResultProvider {
     #expect(model.results.map(\.id) == ["script:screenshot"]) // a script named like a built-in replaces it
 }
 
+/// Community script commands (`@raycast.*` headers) work as they are: title, mode, a symbol icon, confirmation,
+/// description, and the declared arguments, the last one taking the rest of what's typed.
+@MainActor @Test func communityScriptHeaders() async throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: "copperlight-community-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let files = [
+        "ask.sh": """
+            #!/bin/bash
+            # Required parameters:
+            # @raycast.schemaVersion 1
+            # @raycast.title Ask the Oracle
+            # @raycast.mode fullOutput
+            # Optional parameters:
+            # @raycast.icon 🔮
+            # @raycast.argument1 { "type": "text", "placeholder": "Question" }
+            # @raycast.description Prints the question back
+            echo "[$1]"
+            """,
+        "restart-dock.sh": """
+            #!/bin/bash
+            # @raycast.schemaVersion 1
+            # @raycast.title Restart Dock
+            # @raycast.mode silent
+            # @raycast.icon dock.rectangle
+            # @raycast.needsConfirmation true
+            true
+            """,
+        "both.sh": "#!/bin/sh\n# @raycast.title Theirs\n# @raycast.mode compact\n# @title Mine\n# @output show\ntrue\n",
+    ]
+    for (name, text) in files {
+        try text.write(to: folder.appending(path: name), atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: folder.appending(path: name).path)
+    }
+
+    let found = Dictionary(uniqueKeysWithValues: scripts(in: folder).map { ($0.name, $0) })
+    let ask = try #require(found["ask"]), dock = try #require(found["restart-dock"]), both = try #require(found["both"])
+    #expect(ask.title == "Ask the Oracle" && ask.output == .show && ask.icon == "terminal") // an emoji isn't a symbol: the default
+    #expect(ask.argumentCount == 1 && ask.subtitle == "Prints the question back")
+    #expect(dock.title == "Restart Dock" && dock.output == .silent && dock.icon == "dock.rectangle" && dock.needsConfirmation)
+    #expect(both.title == "Mine" && both.output == .show) // Copperlight's own headers win
+
+    let provider = ScriptProvider(folder: folder)
+    let row = try #require(provider.results(for: "ask will it ship").first)
+    #expect(row.subtitle == "Prints the question back")
+    #expect(await row.output?({ _ in }).preview == "[will it ship]") // one declared argument: the whole question
+    #expect(provider.results(for: "restart-dock").first?.confirm == "Run Restart Dock?")
+    #expect(scriptArguments(["a", "b", "c"], declared: 2) == ["a", "b c"] && scriptArguments(["a", "b"], declared: nil) == ["a", "b"])
+}
+
 // MARK: Other names
 
 @Test func otherNamesFindThings() async {

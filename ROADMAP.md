@@ -7,13 +7,12 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 ## In the next release
 
 - **System Settings pages as rows:** `bluetooth`, `displays`, `dark mode` open that page.
+- **Community script headers:** existing community script commands work as they are, dropped in the scripts folder.
 
 ## Next
 
 - **Search the menus of the app in front.** Type "export pdf" and run that menu item, without reaching for the
   mouse. Uses the Accessibility permission Copperlight already asks for.
-- **Community script headers.** Read the script-command header format that thousands of existing community
-  scripts use, alongside Copperlight's own `@title`, `@icon` and `@output`, so those scripts work unchanged.
 
 ## Later
 

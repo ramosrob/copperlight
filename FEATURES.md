@@ -153,6 +153,9 @@ so they see the PATH a terminal has. A comment near the top can set:
 | `# @output show` | Shows the output in place of the list, like `:!`; Enter copies it |
 | `# @output copy` | Copies what it prints (stdout) and confirms with a notification |
 
+Community script commands work unchanged: their title, mode, icon (an SF Symbol name), description, confirmation
+and declared arguments are read from their headers (docs/guide.md has the details).
+
 ## Your snippets
 
 `[[snippet]]` entries in config.toml: a `name` to type and a `text` to paste (multi-line with `"""`). Enter

@@ -139,6 +139,14 @@ folder. Optional comment lines near the top, in any comment style (`#`, `//`, `-
 like `:!`; stopped after 30 seconds) or `copy` (stdout goes to the clipboard). A script named like a built-in
 replaces it, like a command. The folder is also on the `:!` shell's PATH. Remember `chmod +x`.
 
+Community script commands work as they are: drop one in the folder and its `@raycast.*` headers are read too.
+`@raycast.title` names the row, `@raycast.mode` `fullOutput` or `inline` shows the output (`silent` and `compact`
+run in the background), an `@raycast.icon` that's an SF Symbol name is its icon (an emoji or image isn't, so it
+gets the default), `@raycast.description` is the row's subtitle, and `@raycast.needsConfirmation true` asks before
+it runs. A script that declares its arguments (`@raycast.argument1`…) gets that many, the last one holding the rest
+of what you typed, so `ask will it ship` passes "will it ship" whole. Where a script sets both, `@title`, `@icon`
+and `@output` win.
+
 **Snippets:** `[[snippet]]` entries ([configuration.md](configuration.md)) are found by name like commands. Enter pastes the text into the app
 you were in, the same way the paste tools do (Accessibility; without it, Enter copies), and then puts your
 clipboard back. Placeholders: `{date}` (`2026-10-13`), `{time}` (`16:55`), `{clipboard}`, and `{query}`, the text
