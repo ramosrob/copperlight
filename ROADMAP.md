@@ -8,7 +8,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 - **Snippets that expand anywhere:** type a snippet's keyword in any app and it becomes the text. Needs the Input
   Monitoring permission, so it will be opt-in.
-- **Timers:** `timer 10 min tea`, counting down in the menu bar like the pomodoro.
+- **Updates:** tell you when a new version is out, and install it.
 
 ## Later
 
@@ -20,13 +20,13 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Small lookups:** open browser tabs, recent files, end a process or free a port, your IP, battery and disk.
 - **Open the launcher on a selection:** with text selected, the hotkey opens Copperlight with it already typed,
   ready for the text tools or a search.
-- **Updates:** tell you when a new version is out, and install it.
 - **Homebrew:** `brew install` through Copperlight's own tap.
 - **A privacy page:** every permission Copperlight can ask for, what each one turns on, and every server it ever
   contacts.
 
 ## Done
 
+- **v0.4:** timers (`timer 10 min tea`), counting down in the menu bar beside the pomodoro.
 - **v0.3:** music and sound from the field (`:play`, `:next track`, `:mute`, `:output airpods`); `:wifi` and
   `:awake`, whose rows say what Enter does; `translate` alone translates what you copied; a name that takes text
   turns into a chip in the field, with Tab (`tra` ⇥ is the Translate chip). What's playing has no public macOS API for

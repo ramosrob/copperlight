@@ -81,22 +81,10 @@ func countdown(_ seconds: TimeInterval) -> String {
 
     private func show() {
         if item == nil, let running {
-            let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-            item.button?.image = NSImage(systemSymbolName: running.isBreak == true ? "cup.and.saucer" : "timer",
-                                         accessibilityDescription: running.title)
-            item.button?.imagePosition = .imageLeading
-            item.button?.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-            let menu = NSMenu()
-            menu.addItem(withTitle: "Stop \(running.title)", action: #selector(stopFromMenu), keyEquivalent: "").target = self
-            item.menu = menu
-            self.item = item
+            item = countdownItem(symbol: running.isBreak == true ? "cup.and.saucer" : "timer", name: running.title,
+                                 stop: "Stop \(running.title)", target: self, action: #selector(stopFromMenu))
         }
-        if timer == nil {
-            let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.tick() } }
-            timer.tolerance = 0.1
-            RunLoop.main.add(timer, forMode: .common) // keeps counting while a menu is open
-            self.timer = timer
-        }
+        if timer == nil { timer = everySecond { [weak self] in self?.tick() } }
         tick()
     }
 
@@ -116,6 +104,27 @@ func countdown(_ seconds: TimeInterval) -> String {
     }
 
     @objc private func stopFromMenu() { stop() }
+}
+
+/// A menu bar item for something counting down (the pomodoro, a timer): its symbol, the time left beside it once
+/// ticking, and a menu with one item that stops it.
+@MainActor func countdownItem(symbol: String, name: String, stop: String, target: AnyObject, action: Selector) -> NSStatusItem {
+    let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    item.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: name)
+    item.button?.imagePosition = .imageLeading
+    item.button?.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+    let menu = NSMenu()
+    menu.addItem(withTitle: stop, action: action, keyEquivalent: "").target = target
+    item.menu = menu
+    return item
+}
+
+/// Calls `tick` once a second, on the main thread, also while a menu is open.
+@MainActor func everySecond(_ tick: @escaping @MainActor () -> Void) -> Timer {
+    let timer = Timer(timeInterval: 1, repeats: true) { _ in MainActor.assumeIsolated { tick() } }
+    timer.tolerance = 0.1
+    RunLoop.main.add(timer, forMode: .common) // keeps counting while a menu is open
+    return timer
 }
 
 /// `pomo`, `pomo 50`, `pomo stop` in the launcher.

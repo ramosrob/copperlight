@@ -21,13 +21,13 @@ command you type after `:`. Everything else (note, clipboard history, pomodoroâ€
 
 Things to type: `saf`, `vsc`, `2^10 / 3`, `sqrt(2) * pi`, `20% of 150`, `255 in hex`, `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`,
 `25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), any command alias,
-`note`, `note work`, `clip` (opens clipboard history), `pomo`, `pomo 50`, `pomo break`, `pomo stop`, `bluetooth`,
+`note`, `note work`, `clip` (opens clipboard history), `pomo`, `pomo 50`, `pomo break`, `pomo stop`, `timer 10 min tea`, `bluetooth`,
 `dark mode`, `emoji party`, `define serendipity`, `translate bom dia`, `translate` (what you copied), `uuid`, `json`, `paste markdown`, `add`,
 `add note buy milk`, `screenshot`, any file
 name (`invoice`), text inside a file or a picture (`29.99`), an app by what it does (`draw`, `noise`), `f readme` (files only), `github.com/swiftlang` (opens it), anything at all (the last row
 searches Google), `~/code/copperlight` or `/Applications` (lists the folder), `:` (every command), `:min`, `:quit saf`, `:window term`, `:!git status`. The selected row says what Enter does.
 
-**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `pomo `, `add todo `, `add event `, `add note `,
+**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `add todo `, `add event `, `add note `,
 `:quit `, `:window `, `:output `, `:!`, `f `) turns into a copper chip at the start of the field when you press Tab:
 `tra` Tab is the Translate chip, and `stock aapl` Tab is the Stock chip with `aapl` after it. Typing never makes one,
 so `stock apple` still finds `stock_Apple.pdf`. The field then holds what follows, with a hint while it's empty, and
@@ -270,3 +270,10 @@ it runs, the menu bar shows the countdown; click it to stop. Nothing is shown wh
 is saved, so the timer keeps going through sleep and app restarts (if it ended while the app was closed, you
 get the notification on the next launch). When it ends: a notification with a sound. Starting a timer the first
 time asks to allow notifications. Starting one while another runs asks before replacing it.
+
+**Timer:** `timer 10 min tea` counts down 10 minutes for tea, beside the pomodoro and like it: an hourglass and the
+time left in the menu bar (click it to stop), kept through sleep and restarts, and a notification with a sound when
+it's done ("Timer done", tea Â· 10 minutes). The length comes first: `10` (minutes), `10 min`, `90s`, `1h30m`,
+`1 hour 30`, from one second to 24 hours; whatever follows is what it's for (`for` dropped: `timer 20m for the
+laundry`). One runs at a time; starting another asks before replacing it. `timer` alone offers to stop the one
+running, and so does `timer stop`. `tim` Tab is the Timer chip.

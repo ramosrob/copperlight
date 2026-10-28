@@ -54,6 +54,7 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Clipboard history**<br>`clip` | Everything you copy, text and images, searchable. Enter pastes it into the app you were in. Passwords are never recorded. |
 | **Floating notes**<br>`note`, `note work` | A glass note that floats above your windows and saves as you type. Give one a name and you have another. |
 | **Pomodoro**<br>`pomo`, `pomo 50` | A focus timer that counts down in the menu bar and tells you when it's done. |
+| **Timer**<br>`timer 10 min tea` | A countdown for anything else, with what it's for: in the menu bar, with a sound when it's done. |
 | **Quick capture**<br>`add todo`, `add event` | Reminders, calendar events and note lines, with the date read from what you type: `add todo call mom tomorrow 5pm`. |
 | **Snippets**<br>`sig`, `reply Ana` | The text you type over and over, with placeholders for the date, the clipboard or a name. |
 | **Meetings**<br>`meetings` | The rest of today's calendar. Enter joins the video call. |
@@ -164,6 +165,7 @@ The answer appears as you type; Enter copies it.
 | `add event fri 10am dentist` | An event in your calendar |
 | `note`, `note work`, `add note buy milk` | Floating notes, saved as you type |
 | `pomo`, `pomo 50`, `pomo break` | A pomodoro, counting down in the menu bar |
+| `timer 10 min tea`, `timer 90s`, `timer 1h 30m` | A timer, counting down in the menu bar, with a sound when it's done |
 | `screenshot`, `record` | The macOS screenshot toolbar |
 
 ### Yours
@@ -225,7 +227,7 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 | Accessibility | Pasting into the app you were in (clipboard history, snippets, emoji, paste as Markdown); moving and switching windows; searching menus; `:play`, `:next track` |
 | Calendars | `meetings` (reads today's events) and `add event` (add-only access is enough for that) |
 | Reminders | `add todo` |
-| Notifications | The end of a pomodoro, shell lines that finish in the background, errors |
+| Notifications | The end of a pomodoro or a timer, shell lines that finish in the background, errors |
 | Automation | `:empty trash`, `:dark`, `:restart`, `:shut down` (asking Finder, System Events or loginwindow) |
 | Full Disk Access, by hand | Safari's bookmarks and history only |
 

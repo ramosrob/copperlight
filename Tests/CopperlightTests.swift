@@ -1915,3 +1915,47 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(stockChart([3, 1, 2])?.size == CGSize(width: 330, height: 190))
     #expect(stockChart([3]) == nil) // one point is no line
 }
+
+// MARK: Timers
+
+@Test func timerCommands() {
+    #expect(parseTimer("10") == .start(seconds: 600, label: ""))
+    #expect(parseTimer("10 min tea") == .start(seconds: 600, label: "tea"))
+    #expect(parseTimer("10m for the laundry") == .start(seconds: 600, label: "the laundry"))
+    #expect(parseTimer("90s") == .start(seconds: 90, label: ""))
+    #expect(parseTimer("90 seconds eggs") == .start(seconds: 90, label: "eggs"))
+    #expect(parseTimer("1h30m") == .start(seconds: 5400, label: ""))
+    #expect(parseTimer("1 hour 30 call mom") == .start(seconds: 5400, label: "call mom")) // a bare number after hours: minutes
+    #expect(parseTimer("10 20") == .start(seconds: 600, label: "20"))
+    #expect(parseTimer("2,5 min") == .start(seconds: 150, label: ""))
+    #expect(parseTimer("24h") == .start(seconds: 86400, label: ""))
+    #expect(parseTimer("stop") == .stop)
+    #expect(parseTimer("s") == .stop)
+    for none in ["", "tea", "0", "0 min", "25h", "stopp", "-5"] { #expect(parseTimer(none) == nil, "\(none)") }
+}
+
+@MainActor @Test func timerRows() async throws {
+    let store = StateStore(file: try tempStateFile())
+    let timer = TimerProvider(clock: Countdown(store: store))
+    #expect(timer.modes.map(\.prefix) == ["timer "])
+    #expect(await timer.results(for: "tim").first?.completion == "timer ") // Tab: the Timer chip
+    let start = await timer.results(for: "timer 10 min tea").first
+    #expect(start?.title == "Start Timer" && start?.subtitle == "10 minutes · tea" && start?.confirm == nil && start?.score == 50)
+    #expect(await timer.results(for: "timer 1h30m").first?.subtitle == "1 hour, 30 minutes")
+    #expect(await timer.results(for: "timer tea").first?.title == "Type a length, like 10 min")
+    #expect(await timer.results(for: "timer stop").first?.title == "No timer running")
+    #expect(await timer.results(for: "timer ").isEmpty) // the chip's hint says what to type
+    #expect(await timer.results(for: "time in tokyo").isEmpty) // the time zones'
+    #expect(await PomodoroProvider(pomodoro: Pomodoro()).results(for: "timer").isEmpty) // "timer" is the timer's now
+
+    // One running, kept in state.json like the pomodoro: "timer" offers to stop it, a new one asks first.
+    store.set("timer", Countdown.Running(deadline: .now + 300, seconds: 600, label: "tea"))
+    let countdown = Countdown(store: store)
+    countdown.restore()
+    let running = TimerProvider(clock: countdown)
+    let stop = await running.results(for: "timer").max { $0.score < $1.score }
+    #expect(stop?.title == "Stop Timer" && stop?.subtitle.hasPrefix("tea · 0") == true) // "tea · 05:00 left"
+    #expect(await running.results(for: "timer 5").first?.confirm?.hasPrefix("Replace the running timer") == true)
+    countdown.stop()
+    #expect(store.get("timer", as: Countdown.Running.self) == nil)
+}

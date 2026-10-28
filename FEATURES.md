@@ -41,6 +41,7 @@ files and the text in photos. Everything else on this page is on.
 | `note`, `note work` | The floating note, or a named one | Shows it |
 | `clip` | Clipboard history | Shows it |
 | `pomo`, `pomo 50`, `pomo break`, `pomo stop` | The pomodoro timer | Starts or stops it |
+| `timer 10 min tea`, `timer 90s`, `timer stop` | A timer | Starts or stops it |
 
 ## The launcher
 
@@ -54,7 +55,7 @@ files and the text in photos. Everything else on this page is on.
 - **Some rows fill in instead of run,** and their key is Tab: Tab on `Translate` types `translate `, on `Quit
   Application` `:quit `, on a folder its path (Enter does the same). With a name typed whole (`translate`), Tab fills
   it in whatever row is selected.
-- **A name that takes text becomes a chip:** `translate `, `define `, `emoji `, `stock `, `pomo `, `add todo `, `:quit `, `:!`,
+- **A name that takes text becomes a chip:** `translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `add todo `, `:quit `, `:!`,
   `f `. Tab turns the name into a copper chip at the start of the field, keeping what you typed after it
   (`stock aapl` ⇥); the field shows what comes after it with a hint while empty, and only that feature answers (no
   "Search Google" row). Typing never makes a chip, so `stock apple` still finds `stock_Apple.pdf`. Delete in the empty
@@ -64,7 +65,7 @@ files and the text in photos. Everything else on this page is on.
 - **Other names work too:** Copperlight's own things and the Mac's apps answer to the words people also use for them,
   from 3 letters: `:turn off` finds Shut Down, `:reboot` Restart, `:kill slack` force quits Slack, `:sound 30` sets the
   volume, "task manager" Activity Monitor, "control panel" System Settings, "paste history" Clipboard History,
-  "timer" the pomodoro, "guid" a UUID. They rank just below a match on the real name. The list is hand-picked
+  "countdown" the timer, "guid" a UUID. They rank just below a match on the real name. The list is hand-picked
   (Sources/OtherNames.swift); NaturalLanguage's phrase similarity was tried and guessed wrong too often.
 - **Ranking:** an exact command alias first, then Copperlight's own features typed by name, then apps, commands, math
   and currency by how well they match, then files, and "Search Google" last.
@@ -261,6 +262,10 @@ The row shows the title and date Copperlight read before you press Enter; a noti
 - **Pomodoro** (`pomo`): a timer with a countdown in the menu bar (click it to stop) and a notification with a
   sound at the end. Survives sleep and restarts. `pomo break` starts a break (`[pomodoro] break_minutes`, 5 by
   default; `pomo break 15` for another length), with a cup in the menu bar instead of the timer.
+- **Timer** (`timer 10 min tea`): the same for anything else, beside the pomodoro: an hourglass and the countdown in
+  the menu bar, and "Timer done" with what it was for, and a sound. A length is `10`, `10 min`, `90s`, `1h30m` or
+  `1 hour 30` (a bare number is minutes), from a second to 24 hours; what follows is the label ("for" dropped). One at
+  a time: a new one asks before replacing it. `timer` alone offers to stop it; `timer stop` too.
 
 ## Settings
 
@@ -273,7 +278,7 @@ one it can't make cleanly is refused, and the file stays as it was. Edits made b
 
 ## Menu bar
 
-The C, with Settings… (⌘,), Welcome to Copperlight, Launch at Login and Quit. A running pomodoro adds its countdown next to it,
+The C, with Settings… (⌘,), Welcome to Copperlight, Launch at Login and Quit. A running pomodoro or timer adds its countdown next to it,
 and `:awake` a sun while it keeps the Mac awake (click either to stop it). Keeping awake ends when Copperlight quits.
 
 ## Permissions
@@ -289,7 +294,7 @@ Otherwise macOS asks when a feature first needs one:
 | Calendars, add only | First `add event` | Adding events |
 | Calendars, full access | `meetings`, from its Allow row | Reading today's events |
 | Full Disk Access (by hand) | Only for Safari | Reading Safari's bookmarks and history |
-| Notifications | First pomodoro or notification | Timer ends, shell results, errors |
+| Notifications | First pomodoro, timer or notification | Pomodoro and timer ends, shell results, errors |
 | Photos | From the welcome window | Reading the text in your photos, on the Mac |
 | Desktop, Documents, Downloads | First time a path lists one | Reading that folder |
 

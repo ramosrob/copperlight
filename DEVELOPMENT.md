@@ -168,7 +168,8 @@ Sources/
   FileSearchProvider.swift  Spotlight (NSMetadataQuery) file search, by name and by the text inside
   AppIndex.swift            apps by what they do: bundle facts, Homebrew, homepages, App Store, Apple's on-device model
   PhotoText.swift           the text in Photos (Vision), in photos.sqlite (FTS5)
-  Pomodoro.swift            timer, menu bar countdown, pomo rows
+  Pomodoro.swift            timer, menu bar countdown (shared with the timer), pomo rows
+  Timers.swift              `timer 10 min tea`: parsing the length, the countdown, timer rows
   NotePanel.swift           floating notes
   Welcome.swift             the welcome window: hotkey, permissions (live status), Open at Login; AppWindow
   Settings.swift            the Settings window: a pane per group, commands and snippets editors, About

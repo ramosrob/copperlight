@@ -122,6 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let photoText = Feature.photoText.isOn ? try? PhotoTextStore(path: PhotoTextStore.file.path) : nil
     private lazy var photoIndexer = photoText.map(PhotoIndexer.init)
     private let pomodoro = Pomodoro()
+    private let countdown = Countdown()
     private lazy var builtins = BuiltinProvider(showNote: { [unowned self] in showNote($0) },
                                                 showClipboard: { [unowned self] in showClipboard() },
                                                 showWelcome: { [unowned self] in showWelcome() },
@@ -134,7 +135,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                      (EmojiProvider(), .quickTools), (DefineProvider(), .quickTools),
                      (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (TextToolProvider(), .quickTools), (capture, .notes), (apps, nil),
                      (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
-                     (TimeZoneProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools), (files, nil),
+                     (TimeZoneProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools),
+                     (TimerProvider(clock: countdown), .quickTools), (files, nil),
                      (FileContentProvider(files: files), .fileContent), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
             .compactMap { $0.1?.isOn == false ? nil : $0.0 } + (photoText.map { [PhotoTextProvider(store: $0)] } ?? []),
         exclusive: [FileSearchProvider.prefix: files, VerbProvider.prefix: verbs,
@@ -177,6 +179,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         reloadConfig()
         if Feature.quickTools.isOn {
             pomodoro.restore()
+            countdown.restore()
             Task { _ = await TranslateProvider.languages() } // its language chips
         }
         watcher = DirectoryWatcher(configDir) { [unowned self] in
