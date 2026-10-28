@@ -41,6 +41,8 @@ commands and scripts. One field does it all, and anything that isn't a search is
 - **Keyboard first.** Every result and every action is a few keystrokes from <kbd>⌥ Space</kbd>, even the menus of
   the app you're in (`:export pdf`). Select text anywhere first and it's already typed; <kbd>↑</kbd> in the empty
   field brings back what you ran before. The mouse is optional.
+- **Already there.** Open it and what's next is waiting: the call about to start (Enter joins), and the pomodoro,
+  timer or stopwatch you have running, its time ticking. Nothing to type.
 - **Yours.** Your settings live in one plain-text file you can read, edit and keep in git. Add your own commands,
   quicklinks, snippets and scripts.
 - **Private.** No account, no telemetry, no AI service. What it keeps stays on your Mac.
@@ -55,10 +57,11 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Clipboard history**<br>`clip` | Everything you copy, text and images, searchable. Enter pastes it into the app you were in. Passwords are never recorded. |
 | **Floating notes**<br>`note`, `note milk` | Glass notes that float above your windows and save as you type, as many as you like, each titled by its first line. `note` lists them, last edited first; Markdown is styled as you type, and checkboxes tick with a click. |
 | **Pomodoro**<br>`pomo`, `pomo 50` | A focus timer that counts down in the menu bar and tells you when it's done. |
-| **Timer**<br>`timer 10 min tea` | A countdown for anything else, or until 15:30, with what it's for: in the menu bar, with a sound when it's done. Plus a `stopwatch`. Whatever's running is waiting when you open the launcher, ticking. |
+| **Timer**<br>`timer 10 min tea`, `timer until 15:30` | A countdown for anything else, with what it's for: in the menu bar, with a sound when it's done. |
+| **Stopwatch**<br>`stopwatch` | Counts up in the menu bar; stopping it tells you the time. |
 | **Quick capture**<br>`add todo`, `add event` | Reminders, calendar events and note lines, with the date read from what you type: `add todo call mom tomorrow 5pm`. |
 | **Snippets**<br>`sig`, `reply Ana` | The text you type over and over, with placeholders for the date, the clipboard or a name. |
-| **Meetings**<br>`meetings` | The rest of today's calendar. Enter joins the video call. |
+| **Meetings**<br>`meetings`, `agenda` | The rest of today's calendar, a copper badge on what starts within the hour, and Tab for the details. A few minutes before a call, it's already there when you open Copperlight: Enter joins. |
 | **Dictionary and translation**<br>`define`, `translate` | The Mac's dictionary and on-device translation, without opening an app. Copy something and type `translate`. |
 | **Music and sound**<br>`:play`, `:mute`, `:output` | Play, pause and skip whatever is playing, mute, set the volume, and switch between speakers and headphones. |
 | **Stocks**<br>`stock AAPL` | The price now, today's change and a 7-day chart, beside the results. Enter opens the stock on Yahoo Finance. |
@@ -75,6 +78,11 @@ you type after it goes there, with nothing else in the way. `translate hello wor
 into the chip. A space is still only a space, so a search for `stock_Apple.pdf` stays a search.
 
 <p align="center"><img src="docs/media/chips.png" width="600" alt="A Translate to German chip in the field, with hello world after it, translated to Hallo Welt"></p>
+
+**What's next, when you open it.** No need to type: the call about to start is already selected, Enter to join, and
+whatever you have running sits below it, the time ticking: a pomodoro, a timer, a stopwatch.
+
+<p align="center"><img src="docs/media/clocks.png" width="600" alt="The empty launcher with Design review in 6 minutes, and a pomodoro, a tea timer and a stopwatch, each with its time"></p>
 
 **Stocks.** `stock aapl` ⇥: the price, today's change and the last 7 days beside the results, from Yahoo Finance.
 Copperlight asks only when you use the chip.

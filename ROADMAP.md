@@ -50,7 +50,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
-- **Next release:** `timer until 15:30`; a stopwatch; what's running (the pomodoro, the timer, the stopwatch) waiting
+- **v0.8:** `timer until 15:30`; a stopwatch; what's running (the pomodoro, the timer, the stopwatch) waiting
   in the empty launcher, its time ticking.
 - **v0.7:** the preview opens with Tab in the general search, so the list keeps its width; the next meeting, waiting
   in the empty launcher from 10 minutes before it starts (Enter joins), or all of today's events with a setting;
