@@ -29,13 +29,13 @@ private func address(_ selector: AudioObjectPropertySelector, _ scope: AudioObje
 }
 
 /// A fixed-size property of an audio object (the system, a device). nil if it hasn't one.
-private func audioProperty<T>(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector,
+private func audioProperty<T: BitwiseCopyable>(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector,
                               scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal, _ empty: T) -> T? {
     var address = address(selector, scope), value = empty, size = UInt32(MemoryLayout<T>.size)
     return AudioObjectGetPropertyData(object, &address, 0, nil, &size, &value) == noErr ? value : nil
 }
 
-private func setAudioProperty<T>(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector,
+private func setAudioProperty<T: BitwiseCopyable>(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector,
                                  scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal, _ value: T) -> Bool {
     var address = address(selector, scope), value = value
     return AudioObjectSetPropertyData(object, &address, 0, nil, UInt32(MemoryLayout<T>.size), &value) == noErr

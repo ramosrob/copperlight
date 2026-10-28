@@ -1825,7 +1825,8 @@ private struct Speak: ResultProvider {
     let modes = TranslateProvider().modes
     #expect(modes.first { $0.prefix == "translate to german " }?.title == "Translate to German")
     #expect(Set(modes.map(\.prefix)).count == modes.count) // English and Chinese once each
-    #expect(modes.contains { $0.prefix == "translate to norwegian " }) // one word, as it's typed
+    // One word each, as it's typed after "to" (Norwegian Bokmål is "norwegian"), whichever languages this Mac has.
+    #expect(modes.dropFirst().allSatisfy { $0.prefix.wholeMatch(of: #/translate to \p{L}+ /#) != nil })
     let row = await TranslateProvider().results(for: "translate to german hello world").first // the language first
     #expect(row?.subtitle == "English → German" || row?.title == "Download English → German to translate here")
 }
@@ -1958,4 +1959,25 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(await running.results(for: "timer 5").first?.confirm?.hasPrefix("Replace the running timer") == true)
     countdown.stop()
     #expect(store.get("timer", as: Countdown.Running.self) == nil)
+}
+
+// MARK: Translate to
+
+@Test func translateTargetSetting() throws {
+    #expect(Config().translate.defaultTarget == nil) // automatic: the first of your Mac's languages the text isn't in
+    #expect(try Config.parse("[translate]\ndefault_target = \"german\"").translate.defaultTarget == "german")
+    #expect(try Config.parse(Config.example) == Config())
+}
+
+@Test(.enabled(if: macOS26)) func translateToTheChosenLanguage() async {
+    _ = await TranslateProvider.languages()
+    #expect(TranslateProvider.languageChoices.contains { $0.key == "german" && $0.name == "German" })
+    let translate = TranslateProvider(clipboard: { nil })
+    translate.setDefaultTarget("german")
+    let row = await translate.results(for: "translate good morning, how are you").first
+    #expect(row?.subtitle == "English → German" || row?.title == "Download English → German to translate here")
+    let already = await translate.results(for: "translate guten Morgen, wie geht es dir").first // already German: automatic
+    #expect(already.map { !$0.subtitle.hasSuffix("→ German") && !$0.title.hasSuffix("→ German to translate here") } == true)
+    translate.setDefaultTarget("klingon") // not one the Mac translates: automatic
+    #expect(await translate.results(for: "translate good morning, how are you").first?.subtitle != "English → Klingon")
 }

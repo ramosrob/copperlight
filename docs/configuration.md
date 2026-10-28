@@ -33,6 +33,11 @@ exclude = ["node_modules", ".git", ".venv", "__pycache__", "DerivedData", "build
 default_minutes = 25           # default, 1–240
 break_minutes = 5              # default, 1–240
 
+[translate]
+default_target = "german"      # optional: "translate bom dia" without "to …" goes here (an English name or a code,
+                               # "de"). Unset: the first of your Mac's languages the text isn't in, which is also
+                               # used when the text is already in this one. Settings › General › Translate to.
+
 [browser]                      # where web links open: typed URLs, the Google row, url commands without their own
 name = "Google Chrome"         # optional: name or bundle id; the default browser if missing
 profile = "Personal"           # optional; unset, the browser picks the profile

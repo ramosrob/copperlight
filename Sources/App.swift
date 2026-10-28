@@ -283,7 +283,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pomodoro.defaultMinutes = config.pomodoro.defaultMinutes
         pomodoro.breakMinutes = config.pomodoro.breakMinutes
         // Chained so back-to-back reloads reach the providers in order.
-        configUpdate = Task { [previous = configUpdate, commands, currency, files, apps, web, snippets] in
+        configUpdate = Task { [previous = configUpdate, commands, currency, translate, files, apps, web, snippets] in
             await previous?.value
             await commands.setCommands(config.commands, browser: config.browser)
             await snippets.setSnippets(config.snippets)
@@ -292,6 +292,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await meetings.setBrowser(config.browser)
             await pages.refresh()
             await currency.setDefaultTarget(config.currency.defaultTarget)
+            translate.setDefaultTarget(config.translate.defaultTarget)
             await files.setSettings(config.files)
             await apps.setOnline(config.apps.online)
         }

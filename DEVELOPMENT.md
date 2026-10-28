@@ -85,7 +85,9 @@ it they ask for it instead. Everything else works without it (the hotkey is a Ca
 2. Turn on Copperlight. The permission is checked on every Enter, so the next one should paste without a restart.
 
 Why the signing identity must stay stable: the grant is tied to the app's code signature, not its path or
-name. With the same certificate and bundle ID (`app.copperlight`) every rebuild keeps the grant. An
+name. With the same certificate and bundle ID (`app.copperlight`) every rebuild keeps the grant. Debug builds (`make
+run`, `make test`) are `app.copperlight.debug`, "Copperlight Dev" in System Settings, with a switch of their own:
+sharing the release's bundle ID with another signature, each run took the release's switch away. An
 ad-hoc build (no `TEAM`) runs fine, but macOS sees every rebuild as a new app: the
 switch in System Settings still looks on, yet pasting stops working. Then turn it off and on again, or
 `tccutil reset Accessibility app.copperlight` and grant it again.

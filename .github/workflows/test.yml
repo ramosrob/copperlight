@@ -9,3 +9,9 @@ jobs:
       - run: brew install xcodegen
       - run: xcodebuild -version
       - run: make test
+      # The quiet log names the failing tests only; this prints each failed check, with its values.
+      - name: Failed checks
+        if: failure()
+        run: >
+          xcrun xcresulttool get test-results tests --path "$(ls -td build/Logs/Test/*.xcresult | head -1)" |
+          python3 -c 'import json, sys; f = lambda n: ([n["name"]] if n.get("nodeType") == "Failure Message" else []) + [m for c in n.get("children", []) for m in f(c)]; print("\n".join(m for t in json.load(sys.stdin)["testNodes"] for m in f(t)))'

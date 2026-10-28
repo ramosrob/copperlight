@@ -26,6 +26,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
+- **v0.5:** Settings › General › Translate to; text in a language that isn't one of your Mac's is read right.
 - **v0.4:** timers (`timer 10 min tea`), counting down in the menu bar beside the pomodoro.
 - **v0.3:** music and sound from the field (`:play`, `:next track`, `:mute`, `:output airpods`); `:wifi` and
   `:awake`, whose rows say what Enter does; `translate` alone translates what you copied; a name that takes text

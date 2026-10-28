@@ -141,7 +141,8 @@ files and the text in photos. Everything else on this page is on.
   preview pane. Enter opens it in Dictionary.
 - **Translate** (`translate bom dia`, `translate good morning to spanish`): Apple's on-device translation. The
   text's language is detected; it goes to the language you name (`to`, `in`, `into` + a name or a code), or else
-  to your first language in System Settings that isn't the text's. With no text (`translate`, `translate to
+  to `[translate] default_target` (Settings › General › Translate to), or else your first language in System Settings
+  that isn't the text's. With no text (`translate`, `translate to
   spanish`) it translates what's on the clipboard. The language can be a chip, Translate to German: press Tab with
   it first (`to ger` ⇥) or at the end of the text (`hello world to ger` ⇥), and the field keeps only the text. Enter copies it. A language pair that isn't
   downloaded yet gets a row that opens Language & Region, where Translation Languages downloads it. Needs macOS 26.
@@ -270,7 +271,7 @@ The row shows the title and date Copperlight read before you press Enter; a noti
 ## Settings
 
 **Settings…** in the menu bar, or `copperlight settings` in the launcher. A pane per group: General (hotkey, Open at
-Login, currency, pomodoro), Clipboard (how much to keep, apps not recorded), Files (folders searched, names hidden,
+Login, currency, translate to, pomodoro), Clipboard (how much to keep, apps not recorded), Files (folders searched, names hidden,
 app descriptions online or not),
 Browser (where links open, which profile), Commands and Snippets (add, edit, delete), and About (version, license,
 and the open source it's built with). Every change goes straight into config.toml, editing only its own lines, comments kept;

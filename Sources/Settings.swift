@@ -235,6 +235,16 @@ private struct GeneralPane: View {
         } header: { Text("Currency") } footer: {
             Note("For an amount without a target, like “25 usd”.")
         }
+        if !TranslateProvider.languageChoices.isEmpty { // macOS 26, once the Mac has said which languages it translates
+            Section {
+                Picker("Translate to", selection: model.text(\.translate.defaultTarget, "translate", "default_target")) {
+                    Text("Automatic").tag(String?.none)
+                    ForEach(TranslateProvider.languageChoices, id: \.key) { Text($0.name).tag(Optional($0.key)) }
+                }
+            } header: { Text("Translate") } footer: {
+                Note("For text without “to …”, like “translate bom dia”. Automatic: the first of your Mac’s languages the text isn’t in, which is also used when the text is already in this one.")
+            }
+        }
         Section("Pomodoro") {
             Minutes(title: "Focus", value: model.binding(\.pomodoro.defaultMinutes, "pomodoro", "default_minutes") { .int($0) })
             Minutes(title: "Break", value: model.binding(\.pomodoro.breakMinutes, "pomodoro", "break_minutes") { .int($0) })

@@ -186,7 +186,8 @@ opens it in Dictionary.
 
 **Translate:** `translate bom dia`, `translate good morning to spanish` (`to`, `in` or `into`, then a language's
 English name or code). Apple's on-device translation (macOS 26): the source language is detected, and without a
-target it goes to your first language in System Settings that isn't the text's. With no text, `translate` (or
+target it goes to the language in Settings › General › Translate to (`[translate] default_target`), or, set to
+Automatic or when the text is already in it, to your first language in System Settings that isn't the text's. With no text, `translate` (or
 `translate to spanish`) translates what's on the clipboard: copy, ⌥Space, `translate`, Enter. The language joins the
 chip (Translate to German) when you press Tab with it first (`to ger` ⇥) or at the end of the text
 (`hello world to ger` ⇥); the field then holds only the text, and Delete takes the language back out. Enter copies it. Language pairs

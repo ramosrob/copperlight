@@ -13,6 +13,7 @@ struct Config: Decodable, Equatable {
     var files = Files()
     var apps = Apps()
     var pomodoro = Pomodoro()
+    var translate = Translate()
     var browser = Browser()
     var commands: [Command] = []
     var snippets: [Snippet] = []
@@ -41,6 +42,19 @@ struct Config: Decodable, Equatable {
                 throw DecodingError.dataCorruptedError(
                     forKey: .defaultTarget, in: c, debugDescription: "expected a 3-letter currency code like \"EUR\"")
             }
+        }
+        private enum CodingKeys: String, CodingKey { case defaultTarget = "default_target" }
+    }
+
+    /// Where `translate bom dia` goes without "to …": a language's English name or code ("german", "de"). nil: the first
+    /// of your Mac's languages the text isn't in. One the Mac can't translate is ignored.
+    struct Translate: Decodable, Equatable {
+        var defaultTarget: String?
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            defaultTarget = try c.decodeIfPresent(String.self, forKey: .defaultTarget)
         }
         private enum CodingKeys: String, CodingKey { case defaultTarget = "default_target" }
     }
@@ -162,11 +176,12 @@ struct Config: Decodable, Equatable {
         files = try c.decodeIfPresent(Files.self, forKey: .files) ?? files
         apps = try c.decodeIfPresent(Apps.self, forKey: .apps) ?? apps
         pomodoro = try c.decodeIfPresent(Pomodoro.self, forKey: .pomodoro) ?? pomodoro
+        translate = try c.decodeIfPresent(Translate.self, forKey: .translate) ?? translate
         browser = try c.decodeIfPresent(Browser.self, forKey: .browser) ?? browser
         commands = try c.decodeIfPresent([Command].self, forKey: .commands) ?? []
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? []
     }
-    private enum CodingKeys: String, CodingKey { case hotkeys, currency, clipboard, files, apps, pomodoro, browser, commands = "command", snippets = "snippet" }
+    private enum CodingKeys: String, CodingKey { case hotkeys, currency, clipboard, files, apps, pomodoro, translate, browser, commands = "command", snippets = "snippet" }
 
     static func parse(_ text: String) throws -> Config {
         try TOMLDecoder().decode(Config.self, from: text)
@@ -225,6 +240,9 @@ struct Config: Decodable, Equatable {
         [pomodoro]
         default_minutes = 25           # "pomo" in the launcher; "pomo 50" for another length
         break_minutes = 5              # "pomo break"; "pomo break 15" for another length
+
+        [translate]
+        # default_target = "german"    # for "translate bom dia" without "to …"; unset: your Mac's languages
 
         [browser]
         # Where web links open: typed URLs ("gmail.com"), the Google search row, and url commands without their

@@ -58,20 +58,33 @@ struct DefineProvider: ResultProvider {
 // MARK: Translate
 
 /// `translate bom dia`, `translate good morning to spanish`: Apple's on-device translation (macOS 26), from the
-/// language it detects to the one named, or else your first language in System Settings that isn't the text's.
+/// language it detects to the one named, or else `[translate] default_target`, or else your first language in System
+/// Settings that isn't the text's (the default target too, when the text is already in it).
 /// With no text (`translate`, `translate to spanish`) it's what's on the clipboard, like the text tools. The language
 /// can come first too (`translate to german hello`): that's its chip, Translate to German.
 /// Enter copies it. A language pair that isn't downloaded yet gets a row that opens where to download it.
-struct TranslateProvider: ResultProvider {
+final class TranslateProvider: ResultProvider {
     private static let supported = Mutex<[Locale.Language]?>(nil) // asked once
     private static let english = Locale(identifier: "en")
-    var clipboard: @Sendable () async -> String? = { await Clip.current(withHTML: false).text }
+    private let clipboard: @Sendable () async -> String?
+    private let defaultTarget = Mutex<String?>(nil) // [translate] default_target: a language's name or code
     var modes: [Mode] {
         let icon = LauncherResult.Icon.symbol("character.bubble")
-        let names = Set((Self.supported.withLock { $0 } ?? []).map(Self.shortName)) // English and Chinese come twice
-        return [Mode(prefix: "translate ", title: "Translate", icon: icon, hint: "Text, or nothing for what's copied · to spanish")]
-            + names.sorted().map { Mode(prefix: "translate to \($0.lowercased()) ", title: "Translate to \($0)", icon: icon,
-                                        hint: "Text, or nothing for what's copied") }
+        return [Mode(prefix: "translate ", title: "Translate", icon: icon, hint: "Text, or nothing for what you copied")]
+            + Self.languageChoices.map { Mode(prefix: "translate to \($0.key) ", title: "Translate to \($0.name)", icon: icon,
+                                              hint: "Text, or nothing for what you copied") }
+    }
+
+    init(clipboard: @escaping @Sendable () async -> String? = { @MainActor in Clip.current(withHTML: false).text }) {
+        self.clipboard = clipboard
+    }
+
+    func setDefaultTarget(_ language: String?) { defaultTarget.withLock { $0 = language } }
+
+    /// The languages to choose from, A–Z, once `languages()` has run: what's typed after "to" ("german", one word) and
+    /// its name. English and Chinese come twice from the Mac, once here.
+    static var languageChoices: [(key: String, name: String)] {
+        Set((supported.withLock { $0 } ?? []).map(shortName)).sorted().map { ($0.lowercased(), $0) }
     }
 
     /// The languages the Mac can translate, asked once (at launch, so their chips are ready). None before macOS 26.
@@ -100,9 +113,11 @@ struct TranslateProvider: ResultProvider {
         }
         let fromClipboard = text.isEmpty
         if fromClipboard { text = await clipboard()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" }
-        guard !text.isEmpty, let source = detectLanguage(text) else { return start }
+        guard !text.isEmpty, let source = detectLanguage(text, among: supported) else { return start }
         let preferred = Locale.preferredLanguages.map(Locale.Language.init(identifier:))
-        guard let target = target ?? (preferred + [Locale.Language(identifier: "en")]).first(where: { $0.languageCode != source.languageCode })
+        let chosen = defaultTarget.withLock { $0 }.flatMap { language($0, among: supported) }
+        guard let target = target ?? ([chosen].compactMap(\.self) + preferred + [Locale.Language(identifier: "en")])
+            .first(where: { $0.languageCode != source.languageCode })
         else { return [] }
         let pair = "\(Self.name(source)) → \(Self.name(target))"
         let row = { (title: String, subtitle: String, actionTitle: String, preview: String?, action: @escaping @MainActor @Sendable () -> Void) in
@@ -146,11 +161,13 @@ struct TranslateProvider: ResultProvider {
     }
 
     /// The text's language, leaning to the ones in System Settings (short texts are ambiguous).
-    private func detectLanguage(_ text: String) -> Locale.Language? {
+    /// Every language it can translate gets a little weight and yours more: hints with only yours read German as
+    /// Portuguese, since the recognizer picks among the hinted languages alone.
+    private func detectLanguage(_ text: String, among supported: [Locale.Language]) -> Locale.Language? {
+        let code = { (language: Locale.Language) in NLLanguage(rawValue: language.languageCode?.identifier ?? language.minimalIdentifier) }
         let recognizer = NLLanguageRecognizer()
-        recognizer.languageHints = Dictionary(Locale.preferredLanguages.map {
-            (NLLanguage(rawValue: Locale.Language(identifier: $0).languageCode?.identifier ?? $0), 0.6)
-        }, uniquingKeysWith: max)
+        recognizer.languageHints = Dictionary(supported.map { (code($0), 0.1) }, uniquingKeysWith: max)
+            .merging(Locale.preferredLanguages.map { (code(Locale.Language(identifier: $0)), 0.6) }, uniquingKeysWith: max)
         recognizer.processString(text)
         return recognizer.dominantLanguage.map { Locale.Language(identifier: $0.rawValue) }
     }
