@@ -139,8 +139,11 @@ that provider alone. A `:` command is a `Verb` (`Sources/Actions.swift`). Every 
 ```
 Sources/
   App.swift                 entry point, menu bar item, hotkey, config loading, built-in rows (Note, Clipboard…)
-  Launcher.swift            ResultProvider protocol, SearchModel (concurrent query + merge, frecency), panel + SwiftUI view
-  Actions.swift             `:` commands: windows (Accessibility), running apps, files, the Mac
+  Launcher.swift            ResultProvider protocol, SearchModel (concurrent query + merge, frecency, recent queries for ↑),
+                            panel + SwiftUI view, opening with the selected text
+  Actions.swift             `:` commands: windows (Accessibility), running apps, files, the Mac; the selected text
+  Layouts.swift             `:layout save work`, `:layout work`: the windows on screen, kept in state.json and put back
+  Lookups.swift             `ip`, `battery`, `disk`, `port 3000`: getifaddrs, IOKit power sources, volumes, lsof
   Controls.swift            `:play`, `:mute`, `:output`, `:wifi`, `:awake`: media keys, CoreAudio, CoreWLAN, power
   Stocks.swift              `stock AAPL`: Yahoo Finance's chart data, the price row and the 7-day chart
   Menus.swift               `:export pdf`: the menus of the app in front (Accessibility), their shortcuts
@@ -165,7 +168,7 @@ Sources/
   PathProvider.swift        `~/…` and `/…`: list a folder, go into it, open what's in it
   Capture.swift             add note/todo/event (EventKit, date reading), screenshot and record
   TextTools.swift           text tools (json, b64, case…), paste as plain text or Markdown (HTML → Markdown)
-  CommandProvider.swift     [[command]] entries, quicklinks, browsers and profiles, URL/Google fallbacks, detached processes, notifications
+  CommandProvider.swift     [[command]] entries, quicklinks, browsers and profiles, URL and web search fallbacks, search engines, detached processes, notifications
   Clipboard.swift           pasteboard polling (text, images), SQLite store, clipboard rows, ⌘V
   FileSearchProvider.swift  Spotlight (NSMetadataQuery) file search, by name and by the text inside
   AppIndex.swift            apps by what they do: bundle facts, Homebrew, homepages, App Store, Apple's on-device model

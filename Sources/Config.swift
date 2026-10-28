@@ -116,11 +116,12 @@ struct Config: Decodable, Equatable {
         private enum CodingKeys: String, CodingKey { case defaultMinutes = "default_minutes", breakMinutes = "break_minutes" }
     }
 
-    /// Where web links open when nothing more specific says: typed URLs, the Google search row, url commands
+    /// Where web links open when nothing more specific says: typed URLs, the search row, url commands
     /// without their own `browser` or `profile`. Unset, the default browser opens them as it likes.
     struct Browser: Decodable, Equatable, Sendable {
         var name: String? // app name or bundle id; nil: the default browser
         var profile: String?
+        var search: SearchEngine? // the search row's engine; nil: Google
     }
 
     /// Apps are found by what they do too (AppIndex). `online`: descriptions from Homebrew's public app list and,
@@ -245,10 +246,12 @@ struct Config: Decodable, Equatable {
         # default_target = "german"    # for "translate bom dia" without "to …"; unset: your Mac's languages
 
         [browser]
-        # Where web links open: typed URLs ("gmail.com"), the Google search row, and url commands without their
+        # Where web links open: typed URLs ("gmail.com"), the search row, and url commands without their
         # own browser or profile. Unset: the default browser, in whatever profile it picks.
         # name = "Google Chrome"       # optional: another browser than the default (name or bundle id)
         # profile = "Work"             # optional: a profile of it (Chrome, Brave, Edge, Vivaldi, Firefox)
+        # search = "duckduckgo"        # optional: the search row's engine: google (default), duckduckgo, bing,
+        #                              #   brave, ecosia, kagi
 
         # Custom commands: type the alias in the launcher. Types: url, app, file, shell.
         #

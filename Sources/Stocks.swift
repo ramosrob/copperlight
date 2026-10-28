@@ -101,7 +101,7 @@ struct StockProvider: ResultProvider {
         }
         let typed = query.dropFirst(6).trimmingCharacters(in: .whitespaces)
         guard query.lowercased().hasPrefix("stock "), let symbol = stockSymbol(typed) else { return [] }
-        // Under the files and apps it may also be, over Search Google; Tab (or Enter) makes it the chip, which asks.
+        // Under the files and apps it may also be, over the search row; Tab (or Enter) makes it the chip, which asks.
         return [LauncherResult(id: "stock:offer", title: "Stock Price of \(symbol)", subtitle: "From Yahoo Finance",
                                icon: .symbol(Self.icon), score: -5, actionTitle: "Look Up", action: {}, completion: "stock " + typed)]
     }

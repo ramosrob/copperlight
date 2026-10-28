@@ -9,9 +9,9 @@ config.toml.
 
 | Key | Action |
 |---|---|
-| ⌥Space | Show / hide the launcher |
-| ↑ ↓ | Move selection |
-| Enter | Run: open app or file, copy a calculator, currency or text tool result, run command, open URL, search Google. Clipboard: paste the item |
+| ⌥Space | Show / hide the launcher. With text selected in the app you're in, it opens with that text typed and selected |
+| ↑ ↓ | Move selection. ↑ in the empty field: the last query you ran (↑ again for the one before) |
+| Enter | Run: open app or file, copy a calculator, currency or text tool result, run command, open URL, search the web. Clipboard: paste the item |
 | Tab | Fill in: on a row that says Tab (Translate, Quit Application, a folder), or with a name typed whole (`translate`), it types the name, which becomes a chip |
 | `:` (typed first) | Commands: the window in front, running apps, files, the Mac. Clipboard history has its own |
 | Esc, or click elsewhere | Hide (or back out of a confirmation) |
@@ -25,13 +25,13 @@ Things to type: `saf`, `vsc`, `2^10 / 3`, `sqrt(2) * pi`, `20% of 150`, `255 in 
 `dark mode`, `emoji party`, `define serendipity`, `translate bom dia`, `translate` (what you copied), `uuid`, `json`, `paste markdown`, `add`,
 `add note buy milk`, `screenshot`, any file
 name (`invoice`), text inside a file or a picture (`29.99`), an app by what it does (`draw`, `noise`), `f readme` (files only), `github.com/swiftlang` (opens it), anything at all (the last row
-searches Google), `~/code/copperlight` or `/Applications` (lists the folder), `:` (every command), `:min`, `:quit saf`, `:window term`, `:!git status`. The selected row says what Enter does.
+searches the web), `~/code/copperlight` or `/Applications` (lists the folder), `:` (every command), `:min`, `:quit saf`, `:window term`, `:!git status`. The selected row says what Enter does.
 
-**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `add todo `, `add event `, `add note `,
+**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `port `, `add todo `, `add event `, `add note `,
 `:quit `, `:window `, `:output `, `:!`, `f `) turns into a copper chip at the start of the field when you press Tab:
 `tra` Tab is the Translate chip, and `stock aapl` Tab is the Stock chip with `aapl` after it. Typing never makes one,
 so `stock apple` still finds `stock_Apple.pdf`. The field then holds what follows, with a hint while it's empty, and
-only that feature answers, so there's no "Search Google" row in the way. Delete in the empty field turns the chip back
+only that feature answers, so there's no search row in the way. Delete in the empty field turns the chip back
 into text.
 
 What you pick rises: every row you press Enter on (an app, a command, a file, a `:` command) ranks higher next
@@ -45,7 +45,10 @@ time, fading over a few weeks. So `s` + Enter opens Safari once you use it, and 
 | `:window term` | Switch to a window: every window of every app, front app first, by title or app name. Accessibility sees this Space's windows and minimized ones, not other Spaces' |
 | `:minimize`, `:fullscreen`, `:close` | Minimize the window in front, toggle its fullscreen, or close it |
 | `:maximize`, `:center`, `:left`, `:right`, `:top`, `:bottom` | Fill the screen, center it, or take a half |
+| `:top left`, `:top right`, `:bottom left`, `:bottom right` | Quarters |
 | `:left third`, `:center third`, `:right third`, `:left two thirds`, `:right two thirds` | Thirds |
+| `:nudge left`, `:nudge right`, `:nudge up`, `:nudge down` | Move it a step (5% of the screen), staying on screen. The panel stays open: Enter again for another step |
+| `:layout save work`, `:layout work`, `:layout delete work` | Save every window on screen under a name, put them all back, or forget it. `:layout` lists them (below) |
 | `:next display` | Move it to the next screen, same place and share of the screen |
 | `:restore` | Put it back where it was before Copperlight moved it (several moves in a row count as one) |
 | `:quit saf`, `:force quit saf`, `:hide saf` | Quit, force quit (asks first) or hide a running app. Alone, they list every running app |
@@ -71,6 +74,12 @@ Events (`:dark`), loginwindow (`:restart`, `:shut down`). One Allow each; change
 Window commands act on the window you were in when you opened the launcher (it never takes focus), and need
 Accessibility, like pasting (see Signing). Enter on a command that needs a target (`Quit Application`) fills in
 its keyword (`:quit `) so you can type the app.
+
+**Layouts:** `:layout save work` keeps the windows on screen now, app by app: those of hidden apps, minimized and
+full-screen ones stay out. `:layout work` puts each back, matching an app's windows by title first, then in order,
+and unminimizing them. A screen that's gone since gets its windows on the main screen, at the same share. Apps that
+aren't open are named in a notification: open them and run it again. Layouts live in `state.json`, not config.toml,
+because their frames belong to this Mac's screens.
 
 **Menus:** what you type after `:` also finds the menu items of the app you were in, from 3 letters, below the
 commands: `:export pdf` in Pages, `:new tab` in a browser, `:show sidebar` in Finder. Each row says where the item is
@@ -232,7 +241,8 @@ all on this Mac.
 **Web:** text that looks like a URL (`github.com/x`, `https://…`, `localhost:3000`) gets an "Open" row.
 A bare `name.tld` counts only for common TLDs (com, org, net, io, dev, app, co…), so file
 names like `readme.md` don't. The last row is always "Search Google for …", so Enter on a query that matches
-nothing searches the web.
+nothing searches the web. Settings › Browser › Search engine picks another: DuckDuckGo, Bing, Brave Search,
+Ecosia or Kagi.
 
 **Units:** `10 km in mi`, `10km mi`, `100 f to c`, `2,5 kg`, `1 gb in mb`, `90 min in h`. Length, weight,
 temperature, volume, speed, data (`kb`… decimal, `kib`… binary), time and area, by symbol or name (`km`, `miles`,
@@ -247,9 +257,16 @@ and the difference in hours. Enter copies the time.
 **Stocks:** `stock AAPL`, `stock MGLU3.SA`, `stock ^BVSP`, `stock BTC-USD` (`sto` ⇥ for the Stock chip; tickers as
 Yahoo Finance writes them). The row shows the price and today's change; beside it, the last 7 days drawn hourly, the
 change over them, the previous close, the exchange and when it last traded. Enter opens the stock on Yahoo Finance.
-It's the one lookup that says what you asked for, so it waits for you: only in the Stock chip, and only once you
+It says what you asked for, so it waits for you: only in the Stock chip, and only once you
 pause typing, does the ticker go to Yahoo; the answer is kept for a minute. Typed without the chip, `stock aapl` asks
 nothing: below the files, a row offers it (Stock Price of AAPL), and Tab or Enter on it makes the chip.
+
+**Lookups:** `ip` lists each interface's IPv4 address (Wi-Fi, Ethernet; Enter copies it) and a Public IP row that
+asks api.ipify.org only when you press Enter on it. `battery` (from `batt`) shows the charge and what it's doing
+("87%, charging, 1:05 to full"), its health and cycle count; Enter opens Battery settings. `disk` shows free space on
+each disk mounted, as Finder counts it; Enter opens Storage settings. `port` (`por` ⇥ for the Port chip) lists your
+processes listening on TCP ports, `port 3000` (or `port 30`, `port node`) narrows them, and Enter ends one, after
+asking. Another user's processes aren't listed.
 
 **Bookmarks and history:** from 2 letters, pages from your browser where each word you typed starts a word of
 the title or the address (`copperlight git`; `30c` doesn't match inside "HP30138C"): up to 4 bookmarks, then the 4 most

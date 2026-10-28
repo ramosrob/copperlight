@@ -28,6 +28,10 @@ let otherNames: [String: [String]] = [
     "Eject Disk": ["unmount", "usb", "drive"],
     "Toggle Hidden Files": ["show hidden", "dotfiles", "invisible files"],
     "Toggle Fullscreen": ["full screen"],
+    // Lookups
+    "IP Address": ["my ip", "public ip", "local ip", "ip address", "what is my ip"],
+    "Disk Space": ["storage", "free space", "disk usage", "hard drive"],
+    "Port": ["listening ports", "open ports", "free a port"],
     "Maximize Window": ["fill screen", "zoom window"],
     "Switch to Window": ["alt tab", "windows"],
     "Move to Next Display": ["next screen", "next monitor", "other screen", "other monitor"],

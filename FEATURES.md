@@ -15,7 +15,7 @@ files and the text in photos. Everything else on this page is on.
 | `invoice`, `f invoice` | Files and folders (Spotlight) | Opens it |
 | `~/code/copperlight`, `/Applications` | That folder's contents | Goes into a folder, opens a file |
 | `gmail.com`, `localhost:3000` | An "Open" row | Opens it in `[browser]` |
-| anything | "Search Google for …", always last | Searches |
+| anything | "Search Google for …", always last | Searches (Settings › Browser picks the engine) |
 | `2^10 / 3`, `20% of 150`, `255 in hex` | The result | Copies it |
 | `25 usd to eur`, `25 usd` | The conversion | Copies it |
 | `10 km in mi`, `30c` | Units converted | Copies it |
@@ -42,23 +42,31 @@ files and the text in photos. Everything else on this page is on.
 | `clip` | Clipboard history | Shows it |
 | `pomo`, `pomo 50`, `pomo break`, `pomo stop` | The pomodoro timer | Starts or stops it |
 | `timer 10 min tea`, `timer 90s`, `timer stop` | A timer | Starts or stops it |
+| `ip`, `battery`, `disk` | Your IP addresses (and the public one, asked on Enter), the battery, free space per disk | Copies the IP, opens Battery or Storage settings |
+| `port`, `port 3000` | Your processes listening on TCP ports | Ends that process (asks first) |
+| `:layout save work`, `:layout work` | Every window on screen, saved by name | Saves them, or puts them back |
 
 ## The launcher
 
 - **One hotkey** opens and hides it (`[hotkeys] launcher`, ⌥Space by default). It's the only global hotkey:
   everything else is found by typing.
+- **Opens on what you selected:** with text selected in the app you're in, the hotkey opens with it typed and
+  selected (on one line, up to 500 characters): `tra` ⇥ translates it, Enter searches it, typing replaces it. Read
+  through Accessibility, never from a password field; apps that don't share their selection open empty.
 - **Keys:** ↑ ↓ move, Enter runs, Tab fills in, Esc hides (or backs out of a question or an output). No other
   modifiers: anything else is a `:` command.
+- **↑ in the empty field brings back what you ran,** the last 50 queries, newest first; ↑ again (on the top row)
+  goes further back. Each comes back as it was run: in its chip, or typed. Kept in `state.json`.
 - **It never takes focus** from the app you were in, so window commands and pastes act on that app.
 - **The selected row says what Enter does** ("Open ↵", "Paste as Markdown ↵").
 - **Some rows ask first** (`:restart`, `:empty trash`, `:clear`): Enter shows the question, Enter again does it.
 - **Some rows fill in instead of run,** and their key is Tab: Tab on `Translate` types `translate `, on `Quit
   Application` `:quit `, on a folder its path (Enter does the same). With a name typed whole (`translate`), Tab fills
   it in whatever row is selected.
-- **A name that takes text becomes a chip:** `translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `add todo `, `:quit `, `:!`,
+- **A name that takes text becomes a chip:** `translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `port `, `add todo `, `:quit `, `:!`,
   `f `. Tab turns the name into a copper chip at the start of the field, keeping what you typed after it
   (`stock aapl` ⇥); the field shows what comes after it with a hint while empty, and only that feature answers (no
-  "Search Google" row). Typing never makes a chip, so `stock apple` still finds `stock_Apple.pdf`. Delete in the empty
+  search row). Typing never makes a chip, so `stock apple` still finds `stock_Apple.pdf`. Delete in the empty
   field turns the chip back into the text.
 - **What you pick rises (frecency):** every Enter makes that row rank higher next time, fading over a few weeks.
   No aliases or numbers to set up.
@@ -68,7 +76,7 @@ files and the text in photos. Everything else on this page is on.
   "countdown" the timer, "guid" a UUID. They rank just below a match on the real name. The list is hand-picked
   (Sources/OtherNames.swift); NaturalLanguage's phrase similarity was tried and guessed wrong too often.
 - **Ranking:** an exact command alias first, then Copperlight's own features typed by name, then apps, commands, math
-  and currency by how well they match, then files, and "Search Google" last.
+  and currency by how well they match, then files, and the search row last.
 - **The look:** two floating glass pieces, a pill search field and a results card
   under it, in the icon's copper. Long lists fade at the edges instead of being cut. Follows light and dark mode.
 
@@ -92,8 +100,9 @@ files and the text in photos. Everything else on this page is on.
 - **Paths:** anything starting with `~` or `/`. A folder lists its contents, with itself on top (Enter opens it
   in Finder). Otherwise the last part narrows the folder above it (`~/code/he`). Hidden files once the name
   starts with `.`.
-- **Web:** URL-shaped text gets an "Open" row; the last row searches Google. Both open where `[browser]` says:
-  a browser and a profile ("Google Chrome: Work"), or the default browser.
+- **Web:** URL-shaped text gets an "Open" row; the last row searches Google, or the engine Settings › Browser
+  picks (DuckDuckGo, Bing, Brave Search, Ecosia, Kagi), with its logo. Both open where `[browser]` says: a
+  browser and a profile ("Google Chrome: Work"), or the default browser.
 - **System Settings pages** (from 3 letters): by name (`bluetooth`, `displays`, `privacy`) or by something on
   them (`dark mode` → Appearance, `night shift` → Displays, `dock`, `default browser`). Ranked like apps.
 - **Emoji:** `emoji party` lists the emoji whose names have words starting with what you typed (🎉 Party
@@ -122,6 +131,18 @@ files and the text in photos. Everything else on this page is on.
 - **Time zones:** `now in tokyo`, `time in tokyo`, `3pm in sf` (3pm here), `15:30 lisbon in new york`, `noon utc
   to sf`. Places are cities (any time zone city), common aliases (`sf`, `nyc`, `la`, `india`) or abbreviations
   (`pst`, `utc`, `cet`). The row says the day there and how many hours ahead or behind.
+
+## The Mac's numbers
+
+- **`ip`:** each interface's IPv4 address, by the name System Settings gives it (Wi-Fi, Ethernet); Enter copies it.
+  The Public IP row asks api.ipify.org only when you press Enter on it, then shows the address; Enter copies it.
+- **`battery`** (from `batt`): the charge, what it's doing and the time left or to full ("87%, 3:12 left"), its health
+  and cycle count. Enter opens Battery settings. A Mac without one says so.
+- **`disk`:** free space of the startup disk and every other one mounted, as Finder counts it ("245 GB free of 994
+  GB", "75% used"). Enter opens Storage settings, or the disk in Finder.
+- **`port`** (a chip, with Tab): your processes listening on TCP ports, from `lsof`; `port 3000` or `port 30` those
+  on a port starting with it, `port node` by name. Enter ends the process (asks first). Other users' processes
+  aren't listed: you couldn't end them anyway.
 
 ## Your browser
 
@@ -197,7 +218,8 @@ The row shows its first line, and long ones show whole in the preview pane.
 |---|---|
 | Menus | `:export pdf`, `:new tab`: the enabled items of the menus of the app you were in, from 3 letters, after the commands, each with where it is and its shortcut; Enter chooses it |
 | Windows | `:window term` lists every window of every app (this Space and minimized ones) by title or app, front first; Enter brings it forward |
-| Window in front | `:minimize`, `:fullscreen`, `:close`, `:maximize`, `:center`, `:left`, `:right`, `:top`, `:bottom`, thirds (`:left third`…), two thirds, `:next display`, `:restore` (undo Copperlight's last move) |
+| Window in front | `:minimize`, `:fullscreen`, `:close`, `:maximize`, `:center`, `:left`, `:right`, `:top`, `:bottom`, quarters (`:top left`…), thirds (`:left third`…), two thirds, `:next display`, `:nudge left` (right, up, down: a step of 5% of the screen; the panel stays open, so Enter again moves it again), `:restore` (undo Copperlight's last moves) |
+| Layouts | `:layout save work` keeps every window on screen (this Space: not hidden, minimized or full screen) by app and title; `:layout work` puts them back, matching each app's windows by title, then in order, on the same screen or the same share of the main one if it's gone; apps that aren't open are named in a notification. `:layout` lists them, `:layout delete work` forgets one. Kept in `state.json`, since the frames belong to this Mac's screens |
 | Running apps | `:quit saf`, `:force quit saf` (asks first), `:hide saf`, `:hide others`, `:relaunch slack` |
 | Files | `:reveal readme`, `:copy path readme` (file search, or a path: `:copy path ~/code/copperlight/`) |
 | The Mac | `:lock`, `:sleep`, `:sleep displays`, `:restart`, `:shut down`, `:empty trash` (these three ask first), `:dark`, `:wifi`, `:awake`, `:hidden files`, `:eject`, `:shortcut name` (your Shortcuts, also the way to Focus modes). `:dark`, `:wifi` and `:awake` say what Enter does now (Turn Wi-Fi Off) |
@@ -289,7 +311,7 @@ Otherwise macOS asks when a feature first needs one:
 
 | macOS asks for | When | For |
 |---|---|---|
-| Accessibility | First paste or window command | Pasting (⌘V into your app), window commands, `:window`, `:lock`, menu search, `:play` and the track keys |
+| Accessibility | First paste or window command | Pasting (⌘V into your app), window commands and layouts, `:window`, `:lock`, menu search, `:play` and the track keys, opening on the selected text |
 | Automation | First `:empty trash`, `:dark`, `:restart`, `:shut down` | Asking Finder, System Events, loginwindow to do it |
 | Reminders | First `add todo` | Adding reminders (no add-only option exists) |
 | Calendars, add only | First `add event` | Adding events |
@@ -299,10 +321,13 @@ Otherwise macOS asks when a feature first needs one:
 | Photos | From the welcome window | Reading the text in your photos, on the Mac |
 | Desktop, Documents, Downloads | First time a path lists one | Reading that folder |
 
+Without Accessibility, a paste copies instead, and the row says Copy. System Settings opens at Accessibility the
+first time per launch; after that, a notification says where it is.
+
 ## Where things live
 
 All in `~/.config/copperlight/`: `config.toml` (your settings, hot reloaded; a mistake shows as an error row),
-`note.txt`, `notes/` (named notes), `state.json` (frecency, window positions, the timer, the current repo), `clipboard.sqlite` (history, readable only
+`note.txt`, `notes/` (named notes), `state.json` (frecency, recent queries, saved layouts, the timer), `clipboard.sqlite` (history, readable only
 by you), `rates.json` (currency rates), `apps.json` (what each app does) and `homebrew-apps.json` (Homebrew's list,
 trimmed), `photos.sqlite` (the text in your photos), `scripts/` (on the shell's PATH).
 

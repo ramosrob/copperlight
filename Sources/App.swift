@@ -136,7 +136,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                      (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (TextToolProvider(), .quickTools), (capture, .notes), (apps, nil),
                      (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
                      (TimeZoneProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools),
-                     (TimerProvider(clock: countdown), .quickTools), (files, nil),
+                     (TimerProvider(clock: countdown), .quickTools), (LookupProvider(), .quickTools), (files, nil),
                      (FileContentProvider(files: files), .fileContent), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
             .compactMap { $0.1?.isOn == false ? nil : $0.0 } + (photoText.map { [PhotoTextProvider(store: $0)] } ?? []),
         exclusive: [FileSearchProvider.prefix: files, VerbProvider.prefix: verbs,
@@ -204,8 +204,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func toggleLauncher() {
         if panel.isVisible { return panel.orderOut(nil) }
+        let selection = frontSelection() // before the panel takes the keys, so it's still the app's
         refresh()
-        panel.show()
+        panel.show(typing: selection)
+        // A browser asked to share its text just now answers a moment later: in time, unless you've typed already.
+        guard selection == nil else { return }
+        Task { [panel] in
+            try? await Task.sleep(for: .milliseconds(250))
+            if panel.isVisible, panel.model.query.isEmpty, let late = frontSelection() { panel.begin(with: late) }
+        }
     }
 
     /// Brings the welcome screen forward, or builds it again if it was closed (so it plays its entrance again).

@@ -2,9 +2,9 @@
 
 A minimal macOS launcher, and it stays small: no plugin store, no AI service, no sync, no accounts, no credentials.
 Its only requests are public and say nothing about you: currency rates, and for app search Homebrew's app list, app
-homepages and App Store descriptions, which `[apps] online = false` turns off. The one exception says what you asked
+homepages and App Store descriptions, which `[apps] online = false` turns off. The exceptions say what you asked
 for, and only when you ask: `stock AAPL` sends that ticker to Yahoo Finance, in the Stock chip only (Tab) and once
-typing pauses, kept a minute (decided 2026-10-28). On-device models are fine: Apple
+typing pauses, kept a minute; Enter on the Public IP row (`ip`) asks api.ipify.org (decided 2026-10-28). On-device models are fine: Apple
 Intelligence writes app search words, Vision reads the text in photos (decided 2026-10-15). Projects and the developer
 tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: they belong in another app.
 
@@ -15,7 +15,10 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
   replaces one (`screenshot` → CleanShot, `add todo` → Things), so there are no plugins (decided 2026-10-13).
 - **Keyboard-only.** Every action is reachable without the mouse.
 - **One hotkey.** Only the launcher has a global hotkey; every other feature is found by typing in it.
-  More hotkeys may come later as one polished feature, not one at a time (decided 2026-10-12).
+  More hotkeys may come later as one polished feature, not one at a time (decided 2026-10-12). Nothing watches
+  what you type in other apps: snippets are pasted from the launcher, and macOS's Text Replacements expand text
+  anywhere (decided 2026-10-28). The hotkey reads what's selected when it's pressed, and only then: the launcher
+  opens with that text typed and selected, so typing replaces it (decided 2026-10-28).
   No modifier keys in the panel either: any action besides Enter is a command typed after `:`, vim style. Tab only
   fills in: a name that takes text, which becomes a chip in the field (decided 2026-10-27). Typing never makes a chip,
   a space being only a space: `stock apple` may be the start of a file's name (decided 2026-10-28).
@@ -38,7 +41,9 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
   row says what Enter does. Its own look, not Spotlight's (decided 2026-10-13).
 - **Instant.** No network on the keystroke path. Anything remote is cached and read from the cache. The Stock chip
   alone waits for a pause in typing and then asks Yahoo Finance (decided 2026-10-28).
-- **Plain files.** Config, state and the note are human-readable files in `~/.config/copperlight/`.
+- **Plain files.** Config, state and the note are human-readable files in `~/.config/copperlight/`. What belongs
+  to this Mac (recent queries, saved window layouts, whose frames fit its screens) lives in `state.json`, not
+  config.toml, so a config kept in git works on any Mac (decided 2026-10-28).
 - **Never crash on user input.** Malformed math, currency or config shows nothing (or an error row); it never crashes.
 
 ## Stack

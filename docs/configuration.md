@@ -38,9 +38,11 @@ default_target = "german"      # optional: "translate bom dia" without "to …" 
                                # "de"). Unset: the first of your Mac's languages the text isn't in, which is also
                                # used when the text is already in this one. Settings › General › Translate to.
 
-[browser]                      # where web links open: typed URLs, the Google row, url commands without their own
+[browser]                      # where web links open: typed URLs, the search row, url commands without their own
 name = "Google Chrome"         # optional: name or bundle id; the default browser if missing
 profile = "Personal"           # optional; unset, the browser picks the profile
+search = "duckduckgo"          # optional: the search row's engine: google (default), duckduckgo, bing, brave,
+                               # ecosia, kagi. Settings › Browser › Search engine.
 
 [[command]]
 alias = "github"
@@ -114,7 +116,7 @@ names, not patterns). Like `ignore_apps`, it replaces the default list, so keep 
   manager for one it doesn't know. Safari and Arc can't be opened in a profile from outside, so that's an
   error row too.
 - `[browser]` sets where web links go when nothing more specific does: what you type (`gmail.com`), the
-  "Search Google" row, and `http(s)` commands without their own `browser` or `profile`. Its rows say where
+  search row, and `http(s)` commands without their own `browser` or `profile`. Its rows say where
   ("Google Chrome: Personal"). If its profile can't be used, the default browser opens the link and the row
   says why.
 - `-l` makes zsh a login shell: it reads `~/.zprofile` (where Homebrew's PATH usually goes), but not

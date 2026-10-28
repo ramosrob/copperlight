@@ -360,7 +360,29 @@ private struct BrowserPane: View {
             }
             .disabled(profiles.isEmpty && profile.wrappedValue == nil)
         } footer: {
-            Note("Typed addresses, the Google search row, and link commands without their own browser. Profiles work in Chrome, Brave, Edge, Vivaldi and Firefox.")
+            Note("Typed addresses, the search row, and link commands without their own browser. Profiles work in Chrome, Brave, Edge, Vivaldi and Firefox.")
+        }
+        Section {
+            Picker("Search engine", selection: Binding(get: { model.config.browser.search ?? .google }, set: { new in
+                let search = new == .google ? nil : new // the default: no line for it
+                model.save({ $0.browser.search = search }, { $0.set("search", in: "browser", to: search.map { .string($0.rawValue) }) })
+            })) {
+                ForEach(SearchEngine.allCases, id: \.self) { EngineName(engine: $0).tag($0) }
+            }
+        } footer: {
+            Note("The last row of every search, so Enter on something nothing else matches searches the web.")
+        }
+    }
+}
+
+private struct EngineName: View {
+    let engine: SearchEngine
+
+    var body: some View {
+        Label {
+            Text(engine.name)
+        } icon: {
+            Image(engine.logo).resizable().scaledToFit().clipShape(.rect(cornerRadius: 4)).frame(width: 18, height: 18)
         }
     }
 }

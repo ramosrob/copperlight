@@ -53,8 +53,34 @@ func percentEncoded(_ text: String) -> String {
     text.addingPercentEncoding(withAllowedCharacters: CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"))!
 }
 
-func googleSearchURL(_ query: String) -> URL {
-    URL(string: "https://www.google.com/search?q=" + percentEncoded(query))!
+/// The search row's engine, `[browser] search` in config.toml. Each has its logo in Assets ("search-google").
+enum SearchEngine: String, CaseIterable, Decodable, Sendable {
+    case google, duckduckgo, bing, brave, ecosia, kagi
+
+    var name: String {
+        switch self {
+        case .google: "Google"
+        case .duckduckgo: "DuckDuckGo"
+        case .bing: "Bing"
+        case .brave: "Brave Search"
+        case .ecosia: "Ecosia"
+        case .kagi: "Kagi"
+        }
+    }
+
+    var logo: String { "search-\(rawValue)" }
+
+    func url(for query: String) -> URL {
+        let base = switch self {
+        case .google: "https://www.google.com/search?q="
+        case .duckduckgo: "https://duckduckgo.com/?q="
+        case .bing: "https://www.bing.com/search?q="
+        case .brave: "https://search.brave.com/search?q="
+        case .ecosia: "https://www.ecosia.org/search?q="
+        case .kagi: "https://kagi.com/search?q="
+        }
+        return URL(string: base + percentEncoded(query))!
+    }
 }
 
 /// The text after a command's alias ("gh copperlight" → "copperlight") when its URL takes `{query}`; nil otherwise.
@@ -115,18 +141,19 @@ let chromiumFolders = [
     "com.microsoft.edgemac": "Microsoft Edge", "com.vivaldi.Vivaldi": "Vivaldi", "org.chromium.Chromium": "Chromium",
 ]
 
-/// Fallback rows: "Open …" when the query looks like a URL, and "Search Google for …" always, last,
-/// so it's what Enter does when nothing else matches. Both open where `[browser]` says.
+/// Fallback rows: "Open …" when the query looks like a URL, and "Search Google for …" (or the engine `[browser]`
+/// picks) always, last, so it's what Enter does when nothing else matches. Both open where `[browser]` says.
 actor WebProvider: ResultProvider {
     private var browser = Config.Browser()
 
     func setBrowser(_ browser: Config.Browser) { self.browser = browser }
 
     func results(for query: String) -> [LauncherResult] {
-        let search = opener(googleSearchURL(query))
+        let engine = browser.search ?? .google
+        let search = opener(engine.url(for: query))
         var rows = [LauncherResult(
-            id: "web:google", title: "Search Google for “\(query)”", subtitle: search.via,
-            icon: .symbol("magnifyingglass"), score: -10, actionTitle: "Search", action: search.open)]
+            id: "web:search", title: "Search \(engine.name) for “\(query)”", subtitle: search.via,
+            icon: .asset(engine.logo), score: -10, actionTitle: "Search", action: search.open)]
         if let url = webURL(query) {
             let site = opener(url)
             rows.append(LauncherResult(

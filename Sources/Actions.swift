@@ -11,6 +11,7 @@ struct Verb: Sendable {
     let icon: LauncherResult.Icon
     var confirm: String? = nil // ask first (`:shut down`)
     var showing: (@Sendable () -> String)? = nil // a toggle's row says what Enter does now ("Turn Wi-Fi Off")
+    var repeats = false // Enter keeps the panel open, for the next press (`:nudge left`)
     var run: (@MainActor @Sendable () -> Void)? = nil
     var targets: (@Sendable (String) async -> [LauncherResult])? = nil
 }
@@ -53,16 +54,19 @@ struct VerbProvider: ResultProvider {
             return LauncherResult(
                 id: "verb:\(verb.keyword)", title: verb.showing?() ?? verb.title, subtitle: ":" + verb.keyword, icon: verb.icon,
                 score: score, actionTitle: verb.run != nil ? "Run" : "Choose", action: verb.run ?? {},
-                completion: verb.targets != nil ? ":\(verb.keyword) " : nil, confirm: verb.confirm)
+                completion: verb.targets != nil ? ":\(verb.keyword) " : nil, repeats: verb.repeats, confirm: verb.confirm)
         }
     }
 }
 
 extension Verb {
     /// The launcher's commands: the window in front, running apps, files, the Mac, Copperlight.
-    static func launcher(files: FileSearchProvider) -> [Verb] {
+    @MainActor static func launcher(files: FileSearchProvider) -> [Verb] {
         let place = { (keyword: String, title: String, symbol: String, layout: WindowLayout) in
             Verb(keyword: keyword, title: title, icon: .symbol(symbol), run: { arrangeFrontWindow(layout) })
+        }
+        let nudge = { (direction: NudgeDirection, title: String, symbol: String) in
+            Verb(keyword: "nudge \(direction)", title: "Nudge \(title)", icon: .symbol(symbol), repeats: true, run: { nudgeFrontWindow(direction) })
         }
         return [
             // The window in front
@@ -75,15 +79,24 @@ extension Verb {
             place("right", "Right Half", "rectangle.righthalf.filled", .rightHalf),
             place("top", "Top Half", "rectangle.tophalf.filled", .topHalf),
             place("bottom", "Bottom Half", "rectangle.bottomhalf.filled", .bottomHalf),
+            place("top left", "Top Left Quarter", "rectangle.inset.topleft.filled", .topLeft),
+            place("top right", "Top Right Quarter", "rectangle.inset.topright.filled", .topRight),
+            place("bottom left", "Bottom Left Quarter", "rectangle.inset.bottomleft.filled", .bottomLeft),
+            place("bottom right", "Bottom Right Quarter", "rectangle.inset.bottomright.filled", .bottomRight),
             place("left third", "Left Third", "rectangle.leadingthird.inset.filled", .leftThird),
             place("center third", "Center Third", "rectangle.split.3x1", .centerThird),
             place("right third", "Right Third", "rectangle.trailingthird.inset.filled", .rightThird),
             place("left two thirds", "Left Two Thirds", "rectangle.lefthalf.inset.filled", .leftTwoThirds),
             place("right two thirds", "Right Two Thirds", "rectangle.righthalf.inset.filled", .rightTwoThirds),
+            nudge(.left, "Left", "arrow.left"),
+            nudge(.right, "Right", "arrow.right"),
+            nudge(.up, "Up", "arrow.up"),
+            nudge(.down, "Down", "arrow.down"),
             Verb(keyword: "next display", title: "Move to Next Display", icon: .symbol("display.2"), run: { moveFrontWindowToNextDisplay() }),
             Verb(keyword: "restore", title: "Restore Window", icon: .symbol("arrow.uturn.backward"), run: { restoreFrontWindow() }),
             Verb(keyword: "close", title: "Close Window", icon: .symbol("xmark.square"), run: { closeFrontWindow() }),
             Verb(keyword: "window", title: "Switch to Window", icon: .symbol("macwindow.on.rectangle"), targets: { windowRows($0) }),
+        ] + layouts() + [
             // Running apps
             Verb(keyword: "quit", title: "Quit Application", icon: .symbol("xmark"),
                  targets: { runningAppRows($0, verb: "Quit") { $0.terminate() } }),
@@ -277,6 +290,7 @@ private func shortcutNames() -> [String] {
 
 enum WindowLayout {
     case maximize, center, leftHalf, rightHalf, topHalf, bottomHalf
+    case topLeft, topRight, bottomLeft, bottomRight
     case leftThird, centerThird, rightThird, leftTwoThirds, rightTwoThirds
 }
 
@@ -293,6 +307,10 @@ func layoutFrame(_ layout: WindowLayout, size: CGSize, visible: CGRect) -> CGRec
     case .rightHalf: (1 / 2, 0, 1 / 2, 1)
     case .topHalf: (0, 1 / 2, 1, 1 / 2)
     case .bottomHalf: (0, 0, 1, 1 / 2)
+    case .topLeft: (0, 1 / 2, 1 / 2, 1 / 2)
+    case .topRight: (1 / 2, 1 / 2, 1 / 2, 1 / 2)
+    case .bottomLeft: (0, 0, 1 / 2, 1 / 2)
+    case .bottomRight: (1 / 2, 0, 1 / 2, 1 / 2)
     case .leftThird: (0, 0, 1 / 3, 1)
     case .centerThird: (1 / 3, 0, 1 / 3, 1)
     case .rightThird: (2 / 3, 0, 1 / 3, 1)
@@ -303,6 +321,22 @@ func layoutFrame(_ layout: WindowLayout, size: CGSize, visible: CGRect) -> CGRec
                   width: width * visible.width, height: height * visible.height)
 }
 
+enum NudgeDirection { case left, right, up, down }
+
+/// `frame` moved a step, 5% of the screen, toward `direction`, without leaving the screen's usable area.
+func nudgedFrame(_ frame: CGRect, _ direction: NudgeDirection, visible: CGRect) -> CGRect {
+    let (dx, dy): (CGFloat, CGFloat) = switch direction {
+    case .left: (-visible.width / 20, 0)
+    case .right: (visible.width / 20, 0)
+    case .up: (0, visible.height / 20)
+    case .down: (0, -visible.height / 20)
+    }
+    var moved = frame.offsetBy(dx: dx, dy: dy)
+    moved.origin.x = min(max(moved.minX, visible.minX), max(visible.minX, visible.maxX - moved.width))
+    moved.origin.y = min(max(moved.minY, visible.minY), max(visible.minY, visible.maxY - moved.height))
+    return moved
+}
+
 /// The same place on another screen: a left half stays a left half, a small window keeps its share.
 func movedFrame(_ frame: CGRect, from old: CGRect, to new: CGRect) -> CGRect {
     let (sx, sy) = (new.width / old.width, new.height / old.height)
@@ -310,12 +344,56 @@ func movedFrame(_ frame: CGRect, from old: CGRect, to new: CGRect) -> CGRect {
                   width: frame.width * sx, height: frame.height * sy)
 }
 
+/// Selected text as the launcher's query: on one line, trimmed, and at most 500 characters (longer text translates
+/// better from the clipboard: copy it, then `translate`). nil for none.
+func launcherText(fromSelection text: String?) -> String? {
+    guard let words = text?.split(whereSeparator: \.isWhitespace), !words.isEmpty else { return nil }
+    return String(words.joined(separator: " ").prefix(500))
+}
+
+/// Chromium browsers and Electron apps build their accessibility tree, the text in it included, only once an app
+/// asks (AXManualAccessibility); everything else always has it.
+func sharesTextWhenAsked(bundleID: String?, bundleURL: URL?) -> Bool {
+    let chromium: Set<String> = ["com.google.Chrome", "com.google.Chrome.beta", "com.google.Chrome.canary", "com.brave.Browser",
+                                 "com.microsoft.edgemac", "com.vivaldi.Vivaldi", "org.chromium.Chromium", "company.thebrowser.Browser",
+                                 "com.operasoftware.Opera"]
+    if let bundleID, chromium.contains(bundleID) { return true }
+    guard let bundleURL else { return false }
+    return FileManager.default.fileExists(atPath: bundleURL.appending(path: "Contents/Frameworks/Electron Framework.framework").path)
+}
+
+/// Apps asked to build their accessibility tree, once each (by pid: a relaunched app starts without it).
+@MainActor private var askedForText: Set<pid_t> = []
+
+/// What's selected in the app in front, for the launcher to open with. Asked of that app directly, briefly (a hung
+/// app can't hold the hotkey up), and never of a password field. nil without Accessibility, or when the app doesn't
+/// say. A Chromium or Electron app is asked to share its text the first time; it answers a moment later.
+@MainActor func frontSelection() -> String? {
+    guard AXIsProcessTrusted(), let app = NSWorkspace.shared.frontmostApplication, app.processIdentifier != getpid() else { return nil }
+    let element = AXUIElementCreateApplication(app.processIdentifier)
+    AXUIElementSetMessagingTimeout(element, 0.1)
+    if sharesTextWhenAsked(bundleID: app.bundleIdentifier, bundleURL: app.bundleURL), askedForText.insert(app.processIdentifier).inserted {
+        AXUIElementSetAttributeValue(element, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+    }
+    guard let focused = axElement(element, kAXFocusedUIElementAttribute),
+          axString(focused, kAXSubroleAttribute) != kAXSecureTextFieldSubrole
+    else { return nil }
+    AXUIElementSetMessagingTimeout(focused, 0.1)
+    return launcherText(fromSelection: axString(focused, kAXSelectedTextAttribute))
+}
+
 @MainActor func hasAccessibility(_ why: String) -> Bool {
     if AXIsProcessTrusted() { return true }
     notify("Allow Copperlight in Accessibility to \(why)", "Privacy & Security → Accessibility")
-    requestAccessibility()
+    // System Settings opens once per launch: someone who said no doesn't want it back on every Enter.
+    if !askedForAccessibility {
+        askedForAccessibility = true
+        requestAccessibility()
+    }
     return false
 }
+
+@MainActor private var askedForAccessibility = false
 
 /// The focused window of the app in front. The launcher never takes focus, so that's the app you
 /// were in. Moving other apps' windows needs Accessibility, which pasting already asks for.
@@ -345,6 +423,10 @@ func movedFrame(_ frame: CGRect, from old: CGRect, to new: CGRect) -> CGRect {
 
 @MainActor func arrangeFrontWindow(_ layout: WindowLayout) {
     placeFrontWindow { current, screen in layoutFrame(layout, size: current.size, visible: screen.visibleFrame) }
+}
+
+@MainActor func nudgeFrontWindow(_ direction: NudgeDirection) {
+    placeFrontWindow { current, screen in nudgedFrame(current, direction, visible: screen.visibleFrame) }
 }
 
 @MainActor func moveFrontWindowToNextDisplay() {
@@ -422,13 +504,13 @@ func windowRows(_ filter: String) -> [LauncherResult] {
     return rows
 }
 
-private func axString(_ element: AXUIElement, _ attribute: String) -> String? {
+func axString(_ element: AXUIElement, _ attribute: String) -> String? {
     var ref: CFTypeRef?
     AXUIElementCopyAttributeValue(element, attribute as CFString, &ref)
     return ref as? String
 }
 
-private func axBool(_ element: AXUIElement, _ attribute: String) -> Bool {
+func axBool(_ element: AXUIElement, _ attribute: String) -> Bool {
     var ref: CFTypeRef?
     AXUIElementCopyAttributeValue(element, attribute as CFString, &ref)
     return ref as? Bool ?? false
@@ -436,7 +518,7 @@ private func axBool(_ element: AXUIElement, _ attribute: String) -> Bool {
 
 /// A window's frame in AppKit coordinates. Accessibility measures from the top left of the primary
 /// screen, AppKit from its bottom left.
-@MainActor private func windowFrame(_ window: AXUIElement) -> CGRect? {
+@MainActor func windowFrame(_ window: AXUIElement) -> CGRect? {
     guard let position: CGPoint = axValue(window, kAXPositionAttribute, .cgPoint, .zero),
           let size: CGSize = axValue(window, kAXSizeAttribute, .cgSize, .zero),
           let primary = NSScreen.screens.first?.frame
@@ -444,7 +526,7 @@ private func axBool(_ element: AXUIElement, _ attribute: String) -> Bool {
     return CGRect(x: position.x, y: primary.maxY - position.y - size.height, width: size.width, height: size.height)
 }
 
-@MainActor private func setFrame(_ window: AXUIElement, _ frame: CGRect) {
+@MainActor func setFrame(_ window: AXUIElement, _ frame: CGRect) {
     guard let primary = NSScreen.screens.first?.frame else { return }
     var (position, size) = (CGPoint(x: frame.minX, y: primary.maxY - frame.maxY), frame.size)
     // Size, move, size again: an app may refuse a size that doesn't fit where the window still is.
@@ -454,7 +536,7 @@ private func axBool(_ element: AXUIElement, _ attribute: String) -> Bool {
     }
 }
 
-private func axElement(_ element: AXUIElement, _ attribute: String) -> AXUIElement? {
+func axElement(_ element: AXUIElement, _ attribute: String) -> AXUIElement? {
     var ref: CFTypeRef?
     guard AXUIElementCopyAttributeValue(element, attribute as CFString, &ref) == .success, let ref,
           CFGetTypeID(ref) == AXUIElementGetTypeID()

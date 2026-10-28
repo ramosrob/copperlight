@@ -44,8 +44,8 @@ targets:
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Copperlight reads the text in your photos, on this Mac, so typing “29.99” finds the photo of a price tag."
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Copperlight shows today's meetings when you type “meetings”, with Join for video calls."
         OTHER_LDFLAGS: ["-weak_framework", "FoundationModels"] # macOS 26 only; the app runs on 15
-        MARKETING_VERSION: "0.5"
-        CURRENT_PROJECT_VERSION: "5"
+        MARKETING_VERSION: "0.6"
+        CURRENT_PROJECT_VERSION: "6"
       configs:
         # The copy `make test` and `make run` build is its own app to macOS, with its own Accessibility switch: one app
         # ID with two signatures (yours, the release's) shares one switch, and the last copy to run took it.

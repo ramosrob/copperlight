@@ -34,7 +34,7 @@ enum PreviewStyle: Sendable { case code, prose }
 struct LauncherResult: Identifiable, Sendable {
     /// A file's Finder icon (apps), an SF Symbol in a ring, or a picture
     /// loaded off the main thread (clipboard images; the string keys its cache).
-    enum Icon: Sendable { case file(String), symbol(String), image(String, @Sendable () -> CGImage?) }
+    enum Icon: Sendable { case file(String), symbol(String), asset(String), image(String, @Sendable () -> CGImage?) }
 
     let id: String
     let title: String
@@ -54,6 +54,8 @@ struct LauncherResult: Identifiable, Sendable {
     var key: String { completion != nil ? "tab" : "↵" }
     /// Enter runs it, drops the row and keeps the panel open, so several can go in a row (`:delete`).
     var staysOpen = false
+    /// Enter runs it and leaves the panel as it is, for the next press (`:nudge left`).
+    var repeats = false
     /// Ask first: Enter shows a row with this question, and Enter on that row runs `action`.
     var confirm: String? = nil
     /// Rows get a header where this changes (clipboard: Today, Yesterday, Earlier).
@@ -119,6 +121,14 @@ struct Frecency: Codable, Sendable {
     }
 }
 
+/// A query run with Enter, as it was: in its chip, or typed. The launcher keeps the last 50 for ↑.
+struct RecentQuery: Codable, Equatable, Sendable {
+    static let stateSection = "recent"
+    static let limit = 50
+    var query: String
+    var chip: Bool
+}
+
 @MainActor @Observable
 final class SearchModel {
     var query = "" {
@@ -148,6 +158,9 @@ final class SearchModel {
     @ObservationIgnored var run: Task<Void, Never>?
     @ObservationIgnored private let state: StateStore?
     @ObservationIgnored private var frecency: Frecency.Table
+    @ObservationIgnored private var recent: [RecentQuery]
+    /// The query ↑ brought back, and where it is in `recent`: ↑ again goes on from there.
+    @ObservationIgnored private var recalled: (index: Int, query: String)?
 
     /// `searchesEmptyQuery`: ask providers about "" too (the clipboard lists everything), instead of showing nothing.
     /// `exclusive`: a query starting with one of these prefixes ("f ") goes to that provider alone.
@@ -160,6 +173,28 @@ final class SearchModel {
         modeProviders = providers + exclusive.values
         self.state = state
         frecency = state?.get(Frecency.stateSection, as: Frecency.Table.self) ?? [:]
+        recent = state?.get(RecentQuery.stateSection, as: [RecentQuery].self) ?? []
+    }
+
+    /// Enter ran a row: keep its query for ↑, newest first, once. Only the launcher's (clipboard history has no store).
+    func remember() {
+        guard let state, !query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        recent = Array(([RecentQuery(query: query, chip: mode != nil)] + recent.filter { $0.query != query }).prefix(RecentQuery.limit))
+        state.set(RecentQuery.stateSection, recent)
+    }
+
+    /// ↑. In the empty field: the last query run. On one ↑ brought back, its top row selected: the one before it (at
+    /// the oldest, nothing). false: ↑ moves in the list instead.
+    func recallOlder() -> Bool {
+        let next: Int
+        if query.isEmpty { next = 0 }
+        else if let recalled, recalled.query == query, selection == 0 { next = recalled.index + 1 }
+        else { return false }
+        guard recent.indices.contains(next) else { return !query.isEmpty }
+        let entry = recent[next]
+        if entry.chip { fill(entry.query) } else { modeMatch = nil; query = entry.query }
+        recalled = (next, query)
+        return true
     }
 
     /// Enter on a row: count it, so it ranks higher next time.
@@ -337,8 +372,9 @@ final class LauncherPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
-    func show() {
-        model.query = ""
+    /// `text`: the selection in the app you were in, typed and selected, so typing replaces it.
+    func show(typing text: String? = nil) {
+        begin(with: text)
         let mouse = NSEvent.mouseLocation
         if let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) ?? NSScreen.main {
             // Top edge where a full-height panel centered on the screen would have it.
@@ -346,6 +382,23 @@ final class LauncherPanel: NSPanel {
             setFrameTopLeftPoint(NSPoint(x: area.midX - frame.width / 2, y: area.midY + Self.maxHeight / 2 + Self.margin))
         }
         makeKeyAndOrderFront(nil)
+    }
+
+    /// A new search: an empty field, or `text` in it, selected.
+    func begin(with text: String?) {
+        model.query = text ?? ""
+        guard text != nil else { return }
+        // The field shows the query a turn or two later (LauncherView keeps its own copy), and on the first show only
+        // once it has focus: select it then.
+        // ponytail: polls every 10 ms, for up to half a second; a callback from the field if that ever falls short.
+        Task { [weak self] in
+            for _ in 0..<50 {
+                if let self, let editor = firstResponder as? NSTextView, editor.string == model.typed, !editor.string.isEmpty {
+                    return editor.selectAll(nil)
+                }
+                try? await Task.sleep(for: .milliseconds(10))
+            }
+        }
     }
 
     // Focus loss hides the panel.
@@ -368,7 +421,7 @@ final class LauncherPanel: NSPanel {
             }
             model.complete()
         case 125: model.move(1) // ↓
-        case 126: model.move(-1) // ↑
+        case 126: if !model.recallOlder() { model.move(-1) } // ↑: in the empty field, what you ran before
         case 36, 76: // Return, keypad Enter. Every action has its own row, so modifiers change nothing.
             // Typed and pressed Enter before the rows were in: wait for them (at most SearchModel.wait), so Enter
             // runs what this query finds, not the previous query's top row.
@@ -376,6 +429,7 @@ final class LauncherPanel: NSPanel {
                 return DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) { [weak self] in self?.sendEvent(event) }
             }
             guard let result = model.selected else { return }
+            if result.completion == nil { model.remember() } // for ↑ next time
             if result.confirm == nil { model.picked(result.id) } // a question counts once answered
             if let completion = result.completion { return model.fill(completion) }
             if let question = result.confirm {
@@ -400,6 +454,7 @@ final class LauncherPanel: NSPanel {
                 }
                 return
             }
+            if result.repeats { return result.action() }
             if result.staysOpen {
                 result.action()
                 return model.remove(result.id)
@@ -750,6 +805,10 @@ private struct IconView: View {
         case .symbol(let name):
             Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
                 .overlay { Image(systemName: name).font(.system(size: size * 0.5, weight: .medium)).foregroundStyle(.secondary) }
+                .frame(width: size, height: size)
+        case .asset(let name): // a logo from Assets, in the same ring as the glyphs
+            Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+                .overlay { Image(name).resizable().scaledToFit().clipShape(.rect(cornerRadius: size * 0.12)).frame(width: size * 0.56) }
                 .frame(width: size, height: size)
         case .image(let key, let load):
             Thumbnail(key: key, load: load).frame(width: size, height: size)

@@ -39,7 +39,8 @@ commands and scripts. One field does it all, and anything that isn't a search is
   ranks higher next time. Type a tool's name and press Tab (`tra` ⇥) and it turns into a chip, so you always see
   where your words are going.
 - **Keyboard first.** Every result and every action is a few keystrokes from <kbd>⌥ Space</kbd>, even the menus of
-  the app you're in (`:export pdf`). The mouse is optional.
+  the app you're in (`:export pdf`). Select text anywhere first and it's already typed; <kbd>↑</kbd> in the empty
+  field brings back what you ran before. The mouse is optional.
 - **Yours.** Your settings live in one plain-text file you can read, edit and keep in git. Add your own commands,
   quicklinks, snippets and scripts.
 - **Private.** No account, no telemetry, no AI service. What it keeps stays on your Mac.
@@ -61,6 +62,7 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Dictionary and translation**<br>`define`, `translate` | The Mac's dictionary and on-device translation, without opening an app. Copy something and type `translate`. |
 | **Music and sound**<br>`:play`, `:mute`, `:output` | Play, pause and skip whatever is playing, mute, set the volume, and switch between speakers and headphones. |
 | **Stocks**<br>`stock AAPL` | The price now, today's change and a 7-day chart, beside the results. Enter opens the stock on Yahoo Finance. |
+| **Lookups**<br>`ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery and its health, free space on each disk, and what's listening on a port, with Enter to end it. |
 | **Keep awake**<br>`:awake` | Keeps your Mac and its displays awake until you say so, with a sun in the menu bar while it's on. |
 | **Text tools**<br>`json`, `uuid`, `b64`, `hex` | Format JSON, make a UUID or a password, encode text, convert colors and timestamps. |
 | **Emoji**<br>`emoji party` | Every emoji by name, pasted where you are. |
@@ -108,7 +110,7 @@ A taste of what the field understands. Enter does the obvious thing: opens, copi
 | `~/Downloads`, `/Applications` | That folder's contents, to go into or open |
 | `copperlight git` | Bookmarks and recent pages from your browser, opened in their profile |
 | `gmail.com`, `localhost:3000` | Opens it in your browser |
-| anything | "Search Google for …", always last |
+| anything | "Search Google for …" (or DuckDuckGo, Bing, Brave Search, Ecosia, Kagi), always last |
 
 ### Calculate and convert
 
@@ -147,7 +149,9 @@ The answer appears as you type; Enter copies it.
 
 | Type | You get |
 |---|---|
-| `:left`, `:left third`, `:maximize`, `:next display` | The window in front, moved there; `:restore` puts it back |
+| `:left`, `:top left`, `:left third`, `:maximize`, `:next display` | The window in front, moved there; `:restore` puts it back |
+| `:nudge left` | The window in front, a step over; Enter again for another |
+| `:layout save work`, `:layout work` | Every window on screen, saved by name, and put back where it was |
 | `:window term` | Any window of any app, found by its title |
 | `:export pdf`, `:new tab` | The menus of the app you're in, with their shortcuts |
 | `:quit saf`, `:hide others`, `:relaunch slack` | The apps that are running |
@@ -155,6 +159,7 @@ The answer appears as you type; Enter copies it.
 | `:play`, `:next track`, `:mute`, `:volume 30`, `:output airpods` | What's playing, in any app, and where the sound goes |
 | `:shortcut name` | Your Shortcuts, Focus modes included |
 | `bluetooth`, `displays`, `dark mode` | That page of System Settings |
+| `ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery, free space, and what's listening on a port (Enter ends it) |
 
 ### Your day
 
@@ -239,8 +244,8 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
   you have), each listed app's homepage once, and the App Store's description of apps you got there.
   `[apps] online = false` turns those off. Links and searches open in your browser.
 - **Stock prices only when you ask:** in the Stock chip (`stock aapl`, then Tab), the ticker goes to Yahoo Finance
-  once you pause typing, and nothing else. It's the one request that says what you looked up, so typing alone never
-  sends it.
+  once you pause typing, and nothing else. Typing alone never sends it. Likewise your public IP: the `ip` row asks
+  api.ipify.org only when you press Enter on Public IP.
 - **What it keeps stays on your Mac**, in `~/.config/copperlight/`: your config, notes, state and clipboard history
   (SQLite, readable only by you; deleted items are overwritten). Copies marked as passwords, and copies made in
   password managers, are never recorded.
@@ -292,3 +297,4 @@ Found a bug or have an idea? [Open an issue](https://github.com/ramosrob/copperl
 ## License
 
 Copperlight is free and open source under the [GNU GPL v3](LICENSE). © 2026 Robson Ramos.
+The search engines' logos are their owners' trademarks, shown only to name the engine a search goes to.

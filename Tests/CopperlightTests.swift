@@ -509,6 +509,7 @@ func configRejectsInvalidFiles(_ toml: String, _ messageContains: String) {
         ("pomodoro", "default_minutes", .int(50), { $0.pomodoro.defaultMinutes = 50 }),
         ("browser", "name", .string("Firefox"), { $0.browser.name = "Firefox" }),
         ("browser", "profile", .string("Work"), { $0.browser.profile = "Work" }),
+        ("browser", "search", .string("brave"), { $0.browser.search = .brave }),
     ]
     for (table, key, value, change) in edits {
         file.set(key, in: table, to: value)
@@ -711,7 +712,7 @@ private func testPNG(width: Int, height: Int, red: CGFloat = 1) -> Data {
     #expect(items.count == 2 && items.first?.length == blue.count) // only the newest image is kept; text untouched
 }
 
-@Test func colonCommands() async {
+@MainActor @Test func colonCommands() async {
     let verbs = VerbProvider(verbs: [
         Verb(keyword: "minimize", title: "Minimize Window", icon: .symbol("minus"), run: {}),
         Verb(keyword: "quit", title: "Quit Application", icon: .symbol("xmark"), targets: { filter in
@@ -730,7 +731,7 @@ private func testPNG(width: Int, height: Int, red: CGFloat = 1) -> Data {
     #expect(await verbs.results(for: ":quit al").map(\.title) == ["Quit All", "target:al"]) // extends `quit`: offered first
 
     let launcher = VerbProvider(verbs: Verb.launcher(files: FileSearchProvider()))
-    #expect(await launcher.results(for: ":fq").first?.title == "Force Quit Application")
+    #expect(await launcher.results(for: ":fq").max { $0.score < $1.score }?.title == "Force Quit Application") // the launcher sorts by score
     #expect(await launcher.results(for: ":force quit zzzzzzzz").isEmpty) // no running app matches
     #expect(await launcher.results(for: ":hide oth").first?.title == "Hide Others")
     #expect(await launcher.results(for: ":left").first?.subtitle == ":left")
@@ -785,9 +786,24 @@ private func testPNG(width: Int, height: Int, red: CGFloat = 1) -> Data {
     for text in ["readme.md", "logo.ai", "libfoo.so", "1.5", "safari", "me@example.com", "two words.com", "file:///tmp", ""] {
         #expect(webURL(text) == nil, "\(text)")
     }
-    #expect(googleSearchURL("c++ & café").absoluteString == "https://www.google.com/search?q=c%2B%2B%20%26%20caf%C3%A9")
-    #expect(await WebProvider().results(for: "github.com").map(\.id).sorted() == ["web:google", "web:open"])
+    #expect(await WebProvider().results(for: "github.com").map(\.id).sorted() == ["web:open", "web:search"])
     #expect(await WebProvider().results(for: "zzz").map(\.score) == [-10]) // below everything, files included
+}
+
+/// The last row searches the engine Settings › Browser picks, Google unless it says, with the engine's logo.
+@Test func searchEngines() async throws {
+    #expect(SearchEngine.google.url(for: "c++ & café").absoluteString == "https://www.google.com/search?q=c%2B%2B%20%26%20caf%C3%A9")
+    #expect(SearchEngine.duckduckgo.url(for: "a b").absoluteString == "https://duckduckgo.com/?q=a%20b")
+    #expect(SearchEngine.allCases.allSatisfy { NSImage(named: $0.logo) != nil })
+    let web = WebProvider()
+    #expect(try #require(await web.results(for: "hello").first).title == "Search Google for “hello”")
+    await web.setBrowser(.init(search: .duckduckgo))
+    let row = try #require(await web.results(for: "hello").first)
+    #expect(row.title == "Search DuckDuckGo for “hello”")
+    guard case .asset(let logo) = row.icon else { Issue.record("no logo"); return }
+    #expect(logo == SearchEngine.duckduckgo.logo)
+    #expect(try Config.parse("[browser]\nsearch = \"kagi\"").browser.search == .kagi)
+    #expect(throws: (any Error).self) { try Config.parse("[browser]\nsearch = \"altavista\"") }
 }
 
 @Test func defaultBrowserAndProfile() async {
@@ -1132,7 +1148,7 @@ private func testPNG(width: Int, height: Int, red: CGFloat = 1) -> Data {
     #expect(pathQuery("~/.", isFolder: { _ in true }) == PathQuery(folder: "~/", filter: "."))
 }
 
-@Test func pathRows() async throws {
+@MainActor @Test func pathRows() async throws {
     let root = FileManager.default.temporaryDirectory.appending(path: "copperlight-paths-\(UUID().uuidString)")
     for folder in ["alpha", "Tool.app"] { try FileManager.default.createDirectory(at: root.appending(path: folder), withIntermediateDirectories: true) }
     for file in ["Beta.txt", ".hidden"] { try "x".write(to: root.appending(path: file), atomically: true, encoding: .utf8) }
@@ -1330,7 +1346,7 @@ private struct Sized: ResultProvider {
 
 // MARK: Other names
 
-@Test func otherNamesFindThings() async {
+@MainActor @Test func otherNamesFindThings() async {
     let verbs = VerbProvider(verbs: Verb.launcher(files: FileSearchProvider()))
     #expect(await verbs.results(for: ":turn off").first?.title == "Shut Down")
     #expect(await verbs.results(for: ":reboo").first?.title == "Restart")
@@ -1683,7 +1699,7 @@ private let macOS26 = ProcessInfo.processInfo.isOperatingSystemAtLeast(Operating
     #expect(await verbs.results(for: ":toggle wi").map(\.title) == ["Turn Wi-Fi Off"]) // still found by its title
 }
 
-@Test func mediaAndToggleCommands() async {
+@MainActor @Test func mediaAndToggleCommands() async {
     let launcher = VerbProvider(verbs: Verb.launcher(files: FileSearchProvider()))
     let first = { (query: String) async in await launcher.results(for: query).max { $0.score < $1.score } } // as the list shows them
     #expect(await first(":play")?.title == "Play or Pause")
@@ -1857,6 +1873,233 @@ private struct Speak: ResultProvider {
     #expect(model.mode?.title == "Say" && field.string == "hi") // the name left the field for its chip
     try await type(" there")
     #expect(model.query == "say hi there" && field.string == "hi there")
+}
+
+// MARK: Opening on the selection
+
+@Test func selectionAsQuery() {
+    #expect(launcherText(fromSelection: nil) == nil)
+    #expect(launcherText(fromSelection: " \n\t ") == nil)
+    #expect(launcherText(fromSelection: "  bom dia,\n  tudo bem?\t") == "bom dia, tudo bem?") // one line, as the field shows it
+    #expect(launcherText(fromSelection: String(repeating: "a", count: 900))?.count == 500)
+}
+
+/// Chromium browsers and Electron apps share their text once asked; other apps aren't asked.
+@Test func appsThatShareTextWhenAsked() throws {
+    #expect(sharesTextWhenAsked(bundleID: "com.google.Chrome", bundleURL: nil))
+    #expect(sharesTextWhenAsked(bundleID: "company.thebrowser.Browser", bundleURL: nil)) // Arc
+    #expect(!sharesTextWhenAsked(bundleID: "com.apple.TextEdit", bundleURL: URL(filePath: "/System/Applications/TextEdit.app")))
+    let electron = FileManager.default.temporaryDirectory.appending(path: "Slack-\(UUID().uuidString).app")
+    try FileManager.default.createDirectory(at: electron.appending(path: "Contents/Frameworks/Electron Framework.framework"),
+                                            withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: electron) }
+    #expect(sharesTextWhenAsked(bundleID: "com.tinyspeck.slackmacgap", bundleURL: electron))
+}
+
+@Test func selfAssignedAddressesStayOut() {
+    #expect(isUsefulAddress("192.168.1.152") && isUsefulAddress("10.0.0.4"))
+    #expect(!isUsefulAddress("169.254.202.116")) // a cable link with nothing to hand out addresses: noise
+}
+
+/// Opened on a selection, the field holds it selected: typing replaces it, Enter or Tab use it.
+@MainActor @Test func theLauncherOpensOnTheSelection() async throws {
+    let model = SearchModel(providers: [Say()])
+    let panel = LauncherPanel(model: model, placeholder: "…")
+    panel.orderFrontRegardless() // never key: keys pressed meanwhile on this Mac stay where they were going
+    defer { panel.orderOut(nil) }
+    try await Task.sleep(for: .milliseconds(300))
+    func textField(in view: NSView) -> NSTextField? {
+        view as? NSTextField ?? view.subviews.lazy.compactMap { textField(in: $0) }.first
+    }
+    let input = try #require(panel.contentView.flatMap { textField(in: $0) })
+    panel.makeFirstResponder(input)
+    let field = try #require(panel.firstResponder as? NSTextView)
+    panel.begin(with: "bom dia")
+    try await Task.sleep(for: .milliseconds(300))
+    #expect(model.query == "bom dia" && field.string == "bom dia")
+    #expect(field.selectedRange() == NSRange(location: 0, length: 7))
+    field.insertText("x", replacementRange: field.selectedRange())
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(field.string == "x" && model.query == "x")
+    panel.begin(with: nil)
+    try await Task.sleep(for: .milliseconds(200))
+    #expect(model.query == "" && field.string == "")
+}
+
+// MARK: Recent queries
+
+/// ↑ in the empty field brings back what was run, newest first; ↑ again, at the top of its rows, the one before. Each
+/// comes back as it was run: in its chip, or typed (`stock apple` may have been a file search).
+@MainActor @Test func recentQueries() async throws {
+    let state = StateStore(file: try tempStateFile())
+    let model = SearchModel(providers: [Say()], frecency: state)
+    #expect(!model.recallOlder()) // nothing run yet
+    for (text, chip) in [("say hi", true), ("safari", false), ("say hi", true)] { // again: back to the front, once
+        if chip { model.fill(text) } else { model.query = text }
+        model.remember()
+    }
+    model.query = ""
+    model.query = "say there"
+    model.remember() // "say there" typed, not in the chip
+    model.query = ""
+    #expect(model.recallOlder() && model.query == "say there" && model.mode == nil)
+    #expect(model.recallOlder() && model.query == "say hi" && model.mode?.title == "Say")
+    #expect(model.recallOlder() && model.query == "safari")
+    #expect(model.recallOlder() && model.query == "safari") // the oldest: ↑ does nothing more
+    model.query = "saf"
+    #expect(!model.recallOlder()) // typed: ↑ moves in the list again
+    let next = SearchModel(providers: [], frecency: state) // kept for the next launch
+    #expect(next.recallOlder() && next.query == "say there")
+    #expect(!SearchModel(providers: []).recallOlder()) // clipboard history keeps no queries
+}
+
+@MainActor @Test func enterRemembersAndUpRecalls() async throws {
+    let model = SearchModel(providers: [Fixed(rows: [("row", 1)])], frecency: StateStore(file: try tempStateFile()))
+    let panel = LauncherPanel(model: model, placeholder: "…")
+    model.query = "row"
+    try await Task.sleep(for: .milliseconds(100))
+    panel.sendEvent(keyDown(36, "\r"))
+    model.query = ""
+    panel.sendEvent(keyDown(126, ""))
+    #expect(model.query == "row")
+}
+
+// MARK: Lookups
+
+@Test func listeningPorts() {
+    let lsof = "p812\ncnode\nn*:3000\nn[::1]:3000\nn*:9229\np90\ncpostgres\nn127.0.0.1:5432\n"
+    #expect(parseListeners(lsof) == [Listener(pid: 812, command: "node", ports: [3000, 9229]),
+                                     Listener(pid: 90, command: "postgres", ports: [5432])])
+    #expect(parseListeners("") == [])
+}
+
+@Test func portRows() async {
+    let lookups = LookupProvider(listeners: { [Listener(pid: 812, command: "node", ports: [3000, 9229]),
+                                              Listener(pid: 90, command: "postgres", ports: [5432])] })
+    #expect(await lookups.results(for: "port").map(\.title) == ["node", "postgres"])
+    let node = await lookups.results(for: "port 3000")
+    #expect(node.map(\.title) == ["node"] && node[0].subtitle == "Listening on 3000, 9229 · pid 812")
+    #expect(node[0].confirm == "End node (pid 812)? It’s listening on port 3000." && node[0].actionTitle == "End Process")
+    #expect(await lookups.results(for: "port 30").map(\.title) == ["node"]) // narrows as you type
+    #expect(await lookups.results(for: "port post").map(\.title) == ["postgres"]) // or by name
+    #expect(await lookups.results(for: "port 8080").map(\.title) == ["Nothing is listening on port 8080"])
+    #expect(await lookups.results(for: "por").first?.completion == "port ") // Tab: the Port chip
+    #expect(await lookups.results(for: "portal").isEmpty)
+}
+
+@Test func batteryTitles() {
+    #expect(batteryTitle(BatteryStatus(percent: 87, charging: true, onPower: true, minutes: 65)) == "87%, charging, 1:05 to full")
+    #expect(batteryTitle(BatteryStatus(percent: 87, charging: false, onPower: false, minutes: 192)) == "87%, 3:12 left")
+    #expect(batteryTitle(BatteryStatus(percent: 100, charging: false, onPower: true)) == "100%, charged")
+    #expect(batteryTitle(BatteryStatus(percent: 80, charging: false, onPower: true)) == "80%, on power, not charging")
+    #expect(batteryTitle(BatteryStatus(percent: 40, charging: true, onPower: true)) == "40%, charging") // still estimating
+}
+
+@Test func lookupRows() async {
+    let lookups = LookupProvider(
+        battery: { BatteryStatus(percent: 87, charging: false, onPower: false, minutes: 192, health: "Good", cycles: 312) },
+        volumes: { [VolumeSpace(name: "Macintosh HD", path: "/", free: 245_000_000_000, total: 994_000_000_000)] },
+        addresses: { [(address: "192.168.1.23", interface: "Wi-Fi")] })
+    let battery = await lookups.results(for: "battery")
+    #expect(battery.map(\.title) == ["87%, 3:12 left"] && battery[0].subtitle == "Battery · health Good · 312 cycles")
+    #expect(battery[0].score == 50) // its name, whole: above the Battery settings page
+    let disk = await lookups.results(for: "disk")
+    #expect(disk.map(\.title) == ["245 GB free of 994 GB"] && disk[0].subtitle == "Macintosh HD · 75% used")
+    #expect(await lookups.results(for: "dis").allSatisfy { $0.score < 1 }) // under Discord: "disk usage" is only another name
+    let ip = await lookups.results(for: "ip")
+    #expect(ip.map(\.title) == ["192.168.1.23", "Public IP"] && ip[0].subtitle == "Local IP · Wi-Fi" && ip[0].actionTitle == "Copy")
+    #expect(ip[1].output != nil) // asks only on Enter
+    #expect(await lookups.results(for: "my ip").count == 2) // other names
+    #expect(await LookupProvider(battery: { nil }).results(for: "battery").map(\.title) == ["This Mac has no battery"])
+}
+
+// MARK: Quarters, nudging, saved layouts
+
+@Test func quarters() {
+    let screen = CGRect(x: 0, y: 0, width: 1000, height: 800), size = CGSize(width: 300, height: 200)
+    #expect(layoutFrame(.topLeft, size: size, visible: screen) == CGRect(x: 0, y: 400, width: 500, height: 400))
+    #expect(layoutFrame(.topRight, size: size, visible: screen) == CGRect(x: 500, y: 400, width: 500, height: 400))
+    #expect(layoutFrame(.bottomLeft, size: size, visible: screen) == CGRect(x: 0, y: 0, width: 500, height: 400))
+    #expect(layoutFrame(.bottomRight, size: size, visible: screen) == CGRect(x: 500, y: 0, width: 500, height: 400))
+}
+
+@Test func nudging() {
+    let screen = CGRect(x: 0, y: 0, width: 1000, height: 800), window = CGRect(x: 100, y: 100, width: 400, height: 300)
+    #expect(nudgedFrame(window, .left, visible: screen) == CGRect(x: 50, y: 100, width: 400, height: 300)) // 5% of the screen
+    #expect(nudgedFrame(window, .right, visible: screen).minX == 150)
+    #expect(nudgedFrame(window, .up, visible: screen).minY == 140) // AppKit: y grows up
+    #expect(nudgedFrame(window, .down, visible: screen).minY == 60)
+    #expect(nudgedFrame(CGRect(x: 20, y: 0, width: 400, height: 300), .left, visible: screen).minX == 0) // stops at the edge
+    #expect(nudgedFrame(CGRect(x: 580, y: 0, width: 400, height: 300), .right, visible: screen).minX == 600)
+}
+
+@MainActor @Test func windowCommandGroups() async {
+    let verbs = VerbProvider(verbs: Verb.launcher(files: FileSearchProvider()))
+    #expect(Set(await verbs.results(for: ":top").map(\.title)) == ["Top Half", "Top Left Quarter", "Top Right Quarter"])
+    #expect(Set(await verbs.results(for: ":nudge").map(\.title)) == ["Nudge Left", "Nudge Right", "Nudge Up", "Nudge Down"])
+    #expect(await verbs.results(for: ":nudge left").first?.repeats == true)
+}
+
+@MainActor private final class Counter { var count = 0 }
+
+/// A row that repeats (`:nudge left`): Enter runs it and the panel stays as it is, for the next press.
+@MainActor @Test func repeatingRowsStay() async throws {
+    let counter = Counter()
+    struct Nudge: ResultProvider {
+        let counter: Counter
+        func results(for query: String) async -> [LauncherResult] {
+            [LauncherResult(id: "nudge", title: "Nudge", icon: .symbol("arrow.left"), score: 1, action: { [counter] in counter.count += 1 },
+                            repeats: true)]
+        }
+    }
+    let model = SearchModel(providers: [Nudge(counter: counter)])
+    let panel = LauncherPanel(model: model, placeholder: "…")
+    model.query = "nudge"
+    try await Task.sleep(for: .milliseconds(100))
+    panel.sendEvent(keyDown(36, "\r"))
+    panel.sendEvent(keyDown(36, "\r"))
+    #expect(counter.count == 2 && model.rows.map(\.id) == ["nudge"])
+}
+
+@Test func layoutWindowsMatch() {
+    #expect(matchWindows(saved: ["Inbox", "Draft", "Draft"], current: ["Draft", "Notes", "Inbox"]) == [0: 2, 1: 0, 2: 1])
+    #expect(matchWindows(saved: ["A", "B"], current: ["X"]) == [0: 0]) // fewer windows now: the first go back
+}
+
+@Test func layoutScreens() {
+    let laptop = CGRect(x: 0, y: 0, width: 1500, height: 900), monitor = CGRect(x: 1500, y: 0, width: 2500, height: 1400)
+    let frame = CGRect(x: 1500, y: 0, width: 1250, height: 1400) // the monitor's left half
+    #expect(restoredFrame(frame, screen: monitor, screens: [laptop, monitor]) == frame)
+    let unplugged = restoredFrame(frame, screen: monitor, screens: [laptop]) // the same share of what's left
+    #expect(unplugged.origin == .zero && abs(unplugged.width - 750) < 0.01 && abs(unplugged.height - 900) < 0.01)
+}
+
+@MainActor private final class Applied { var names: [String] = [] }
+
+@MainActor @Test func layoutCommands() async throws {
+    let store = StateStore(file: try tempStateFile())
+    let window = SavedWindow(app: "com.apple.Safari", title: "Docs", frame: CGRect(x: 0, y: 0, width: 500, height: 500),
+                             screen: CGRect(x: 0, y: 0, width: 1000, height: 800))
+    let applied = Applied()
+    let verbs = VerbProvider(verbs: Verb.layouts(store: store, capture: { [window, window] }, apply: { [applied] in applied.names.append($0.name) }))
+    #expect(await verbs.results(for: ":layout").map(\.title).contains("No layouts yet: :layout save work"))
+    #expect(await verbs.results(for: ":layout save").map(\.title) == ["Type a name: :layout save work"])
+    #expect(await verbs.results(for: ":layout save delete").first?.actionTitle == "") // a word the commands use
+    let save = try #require(await verbs.results(for: ":layout save Work").first)
+    #expect(save.title == "Save Layout “Work”" && save.confirm == nil)
+    let saved = try #require(await save.output?({ _ in }))
+    #expect(saved.title == "Saved “Work”" && saved.subtitle == "2 windows in 1 app · :layout work puts them back")
+    let restore = try #require(await verbs.results(for: ":layout wo").first { $0.id == "layout:work" })
+    #expect(restore.title == "Work" && restore.subtitle == "Layout · 2 windows in 1 app")
+    restore.action()
+    #expect(applied.names == ["Work"])
+    #expect(await verbs.results(for: ":layout save work").first?.confirm == "Replace the layout “Work”?") // any case
+    let delete = try #require(await verbs.results(for: ":layout delete").first { $0.id == "layout-delete:work" })
+    #expect(delete.staysOpen && delete.title == "Delete Layout “Work”")
+    delete.action()
+    #expect(await verbs.results(for: ":layout").allSatisfy { $0.id != "layout:work" })
+    let none = VerbProvider(verbs: Verb.layouts(store: store, capture: { nil }, apply: { _ in }))
+    #expect(await none.results(for: ":layout save x").first?.output?({ _ in }).title == "Allow Copperlight in Accessibility to save layouts")
 }
 
 // MARK: Stocks

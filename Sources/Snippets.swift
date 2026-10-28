@@ -37,7 +37,7 @@ actor SnippetProvider: ResultProvider {
             let text = expandSnippet(snippet.text, query: typed, clipboard: clipboard)
             let firstLine = text.split(separator: "\n", omittingEmptySubsequences: true).first.map(String.init) ?? ""
             return LauncherResult(id: "snippet:\(snippet.name)", title: typed.isEmpty ? snippet.name : "\(snippet.name) \(typed)",
-                                  subtitle: firstLine, icon: .symbol("text.quote"), score: score, actionTitle: "Paste", action: {
+                                  subtitle: firstLine, icon: .symbol("text.quote"), score: score, actionTitle: AXIsProcessTrusted() ? "Paste" : "Copy", action: {
                 if hasAccessibility("paste snippets") { Task { await pasteKeepingClipboard(text) } } else { copyToClipboard(text) }
             }, preview: text.contains(where: \.isNewline) || text.count > 80 ? text : nil, previewStyle: .prose)
         }
