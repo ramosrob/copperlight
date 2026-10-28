@@ -1547,7 +1547,8 @@ private struct Sized: ResultProvider {
     let provider = SnippetProvider()
     await provider.setSnippets(config.snippets)
     let sig = await provider.results(for: "sig")
-    #expect(sig.map(\.title) == ["sig"] && sig[0].subtitle == "Best," && sig[0].preview == "Best,\nAlex" && sig[0].actionTitle == "Paste")
+    #expect(sig.map(\.title) == ["sig"] && sig[0].subtitle == "Best," && sig[0].preview == "Best,\nAlex"
+            && sig[0].actionTitle == (AXIsProcessTrusted() ? "Paste" : "Copy")) // CI has no Accessibility
     let reply = await provider.results(for: "reply John")
     #expect(reply.first?.title == "reply John" && reply.first?.subtitle == "Hi John, thanks." && reply.first?.score == 100)
     #expect(await provider.results(for: "sig more").isEmpty) // no {query}: text after the name doesn't belong to it
