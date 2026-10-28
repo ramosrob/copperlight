@@ -12,7 +12,7 @@ config.toml.
 | ⌥Space | Show / hide the launcher. With text selected in the app you're in, it opens with that text typed and selected |
 | ↑ ↓ | Move selection. ↑ in the empty field: the last query you ran (↑ again for the one before) |
 | Enter | Run: open app or file, copy a calculator, currency or text tool result, run command, open URL, search the web. Clipboard: paste the item |
-| Tab | Fill in: on a row that says Tab (Translate, Quit Application, a folder), or with a name typed whole (`translate`), it types the name, which becomes a chip |
+| Tab | Fill in: on a row that says Tab (Translate, Quit Application, a folder), or with a name typed whole (`translate`), it types the name, which becomes a chip. On a row with something to show (a note, a file's text, a snippet), it opens its preview beside the list, and Tab again closes it. In clipboard history and in chips the preview is open already |
 | `:` (typed first) | Commands: the window in front, running apps, files, the Mac. Clipboard history has its own |
 | Esc, or click elsewhere | Hide (or back out of a confirmation) |
 
@@ -21,13 +21,13 @@ command you type after `:`. Everything else (note, clipboard history, pomodoro�
 
 Things to type: `saf`, `vsc`, `2^10 / 3`, `sqrt(2) * pi`, `20% of 150`, `255 in hex`, `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`,
 `25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), any command alias,
-`note`, `note work`, `clip` (opens clipboard history), `pomo`, `pomo 50`, `pomo break`, `pomo stop`, `timer 10 min tea`, `bluetooth`,
+`note`, `note milk`, `clip` (opens clipboard history), `pomo`, `pomo 50`, `pomo break`, `pomo stop`, `timer 10 min tea`, `bluetooth`,
 `dark mode`, `emoji party`, `define serendipity`, `translate bom dia`, `translate` (what you copied), `uuid`, `json`, `paste markdown`, `add`,
 `add note buy milk`, `screenshot`, any file
 name (`invoice`), text inside a file or a picture (`29.99`), an app by what it does (`draw`, `noise`), `f readme` (files only), `github.com/swiftlang` (opens it), anything at all (the last row
 searches the web), `~/code/copperlight` or `/Applications` (lists the folder), `:` (every command), `:min`, `:quit saf`, `:window term`, `:!git status`. The selected row says what Enter does.
 
-**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `port `, `add todo `, `add event `, `add note `,
+**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `port `, `note `, `add todo `, `add event `, `add note `,
 `:quit `, `:window `, `:output `, `:!`, `f `) turns into a copper chip at the start of the field when you press Tab:
 `tra` Tab is the Translate chip, and `stock aapl` Tab is the Stock chip with `aapl` after it. Typing never makes one,
 so `stock apple` still finds `stock_Apple.pdf`. The field then holds what follows, with a hint while it's empty, and
@@ -52,17 +52,22 @@ time, fading over a few weeks. So `s` + Enter opens Safari once you use it, and 
 | `:next display` | Move it to the next screen, same place and share of the screen |
 | `:restore` | Put it back where it was before Copperlight moved it (several moves in a row count as one) |
 | `:quit saf`, `:force quit saf`, `:hide saf` | Quit, force quit (asks first) or hide a running app. Alone, they list every running app |
-| `:hide others`, `:relaunch slack` | Hide every app but the one in front; quit an app and open it again |
+| `:hide others`, `:unhide all`, `:relaunch slack` | Hide every app but the one in front, or show them all again; quit an app and open it again |
+| `:quit all`, `:quit others` | Quit every app, or every app but the one in front (both ask first; Finder stays) |
 | `:reveal readme`, `:copy path readme` | Reveal a file in Finder, or copy its path (file search, so from 2 letters). Given a path (`:copy path ~/code/copperlight/`), they list that folder |
 | `:lock`, `:sleep`, `:sleep displays` | Lock the screen (sends ⌃⌘Q, so it needs Accessibility), sleep the Mac or only its displays |
-| `:restart`, `:shut down`, `:empty trash` | Ask first, then do it. Apps with unsaved changes still get their say |
+| `:restart`, `:shut down`, `:log out`, `:empty trash` | Ask first, then do it. Apps with unsaved changes still get their say |
+| `:screen saver`, `:show desktop`, `:open trash` | Start the screen saver; hide every app to see the desktop (`:unhide all` undoes it); open the Trash |
+| `:open with readme` | Open a file with another app: pick the file (Tab), then the app, its default app first (`:open with ~/x/readme.md code`) |
+| `:trash readme`, `:terminal readme` | Move a file to the Trash (asks first), or open its folder (a folder itself) in your terminal: Terminal, or the app in Settings › Files › Terminal |
 | `:dark`, `:wifi`, `:hidden files` | Dark mode and Wi-Fi on or off (the row says which: Turn Wi-Fi Off); show or hide hidden files in Finder (Finder restarts) |
 | `:awake` | Keep the Mac and its displays awake until you run it again (Stop Keeping Awake) or Copperlight quits. A sun in the menu bar shows it's on; click it to stop |
 | `:play`, `:next track`, `:previous track` | The keyboard's media keys: play or pause, skip, go back, in whatever is playing (Music, a browser tab, Spotify). Needs Accessibility, like pasting |
 | `:mute`, `:volume 30` | Mute or unmute (the row says which), set the output volume (0–100, unmutes). A display's speakers can't be muted from the Mac: a beep says so |
+| `:mute mic` | Mute or unmute the microphone (Mute Microphone, Unmute Microphone). One without a mute control gets its input level set to 0, and back |
 | `:output airpods` | Switch the sound output: lists speakers, headphones, displays and AirPlay, the current one first |
 | `:eject` | Eject a disk (lists external drives and disk images) |
-| `:shortcut name` | Run one of your Shortcuts. That's also the way to Focus modes: make a Shortcut that sets one |
+| `:shortcut name` | Run one of your Shortcuts. That's also the way to Focus modes: make a Shortcut that sets one. Text after the name (`:shortcut log water 500 ml`) is its input, as a text file |
 | `:!git status` | Run a shell line (below) |
 | `:config` | Open config.toml |
 | `:copy …`, `:delete …`, `:clear` (clipboard history) | Copy an item without pasting it, or delete it, or all of them (asks first). Deleting keeps the panel open, for several in a row |
@@ -179,10 +184,23 @@ you were in, the same way the paste tools do (Accessibility; without it, Enter c
 clipboard back. Placeholders: `{date}` (`2026-10-13`), `{time}` (`16:55`), `{clipboard}`, and `{query}`, the text
 typed after the name. A snippet without `{query}` only matches its name, so `sig more` finds nothing.
 
-**Note:** type `n` (any start of "note") and it's the first result. Esc hides it again. It floats on a glass card
-like the launcher's: drag it by its title, resize it from its bottom-right corner. `note work` opens a named note
-(`notes/work.txt`), created when you first type in it; `note` lists the named ones too, and `note wo` finds them.
-Each keeps its own place on screen. `add note` adds to the note.
+**Note:** type `n` (any start of "note") and it's the first result: your last note. Esc hides it again. It floats on a
+glass card like the launcher's: drag it by its title, resize it from its bottom-right corner. Each note keeps its own
+place on screen. `add note` adds a line to note.txt.
+
+**Your notes:** they have no names. A note's first line is its title, on its card and in the list (a heading's `#`s
+left out). The list has every note, the last edited first, each with the line after its title and how long ago it
+changed; the selected one's text shows beside the list. New Note comes last: Enter opens an empty one, saved once you
+type. The list is the Notes chip: `note` shows your last note and Notes, and Tab on it (or Enter) turns it into the chip,
+with only your notes, no apps or search row. Typed in the chip, `milk` keeps the notes with "milk" in them (with the
+line), and New Note then starts one with "milk" on its first line; `note milk` ⇥ goes straight there. `new note` works
+from the field too. Anywhere else, from 3 letters, a note with the words you typed shows below what matches by name.
+`:delete note milk` moves one to the Trash, after asking. Notes are text files: note.txt, and the ones in `notes/`.
+
+**Markdown in notes:** as you type, `# headings` (to `###`), `**bold**`, `*italic*`, `` `code` ``, lists, `> quotes`
+and links (`[text](url)`, or a bare `https://…`) show styled, the syntax dimmed beside them. `- [ ]` is a checkbox:
+click it to tick it (`- [x]`, struck through), and ⌘Z to undo. A click on a link opens it. Only the look changes:
+the file stays plain text. Settings › General › Notes turns it off (`[notes] markdown`).
 
 **System Settings:** a page by name from 3 letters (`bluetooth`, `displays`, `keyboard`, `privacy`), or by
 something on it (`dark mode`, `night shift`, `dock`, `default browser`, `login items`). Enter opens that page.
@@ -277,10 +295,19 @@ profile and opens there). Chrome, Brave, Edge, Vivaldi and Chromium (bookmarks J
 Safari's `Bookmarks.plist` and `History.db` need Full Disk Access for Copperlight (Privacy & Security). Arc isn't read.
 Loaded in the background when the launcher opens, at most every 2 minutes; never written anywhere.
 
-**Meetings:** `meetings` (from `mee`) lists the rest of today's events from Calendar, all-day ones aside, with
-their times and how soon they start. Enter joins the video call it finds in the event's URL, location or notes
-(Google Meet, Zoom, Teams, Webex), opening web links where `[browser]` says, or opens Calendar. The first time,
-the row asks to read your calendars (full access; `add event` only asked to add).
+**Meetings:** `meetings` (from `mee`), `agenda` (from `age`) or `events` list the rest of today's events from
+Calendar, all-day ones aside, with their times and how soon they start; `calendar` typed whole too, below the
+Calendar app. One that starts within the hour, or is going, has a copper badge ("in 17 min", "Now"). Tab shows its
+details beside the list: its day, times and notes, its calendar, place, call and link, who's coming and who asked.
+Enter joins the video call it finds in the event's URL, location or notes (Google Meet, Zoom, Teams, Webex), opening
+web links where `[browser]` says, or opens Calendar. The first time, the row asks to read your calendars (full
+access; `add event` only asked to add).
+
+**The next meeting:** a few minutes before a meeting with a call, there's no need to type: from 10 minutes before it
+starts until 10 minutes after, the empty launcher shows that meeting with its badge, and Enter joins. Settings ›
+General › Calendar › Show today's events when the launcher opens (`[meetings] show_on_open`) lists the day's next
+five events there instead, with or without a call. Either only once Calendars access is given; opening the launcher
+never asks. Typing hides it.
 
 **Pomodoro:** `pomo` starts `default_minutes`, `pomo 50` starts 50 minutes (1–240), `pomo break` starts
 `break_minutes` of break (`pomo break 15` for another length; a cup in the menu bar), `pomo stop` stops. While

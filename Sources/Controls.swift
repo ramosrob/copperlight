@@ -84,6 +84,32 @@ func outputIsMuted() -> Bool {
     }
 }
 
+func currentInput() -> AudioObjectID { audioProperty(system, kAudioHardwarePropertyDefaultInputDevice, AudioObjectID(0)) ?? 0 }
+
+/// The microphone's level before `:mute mic` set it to 0, for one with no mute control (many built-in ones).
+private let micLevelBeforeMute = Mutex<Float32?>(nil)
+
+func micIsMuted() -> Bool {
+    audioProperty(currentInput(), kAudioDevicePropertyMute, scope: kAudioObjectPropertyScopeInput, UInt32(0)) == 1
+        || micLevelBeforeMute.withLock { $0 != nil }
+}
+
+/// `:mute mic`: the input device's mute; for a mic without one, its input level to 0 and back. A beep if neither works.
+@MainActor func toggleMicMute() {
+    let mic = currentInput(), input = kAudioObjectPropertyScopeInput
+    if let before = micLevelBeforeMute.withLock({ $0 }) {
+        if setAudioProperty(mic, kAudioDevicePropertyVolumeScalar, scope: input, before) { micLevelBeforeMute.withLock { $0 = nil } } else { NSSound.beep() }
+        return
+    }
+    let muted = audioProperty(mic, kAudioDevicePropertyMute, scope: input, UInt32(0))
+    if let muted, setAudioProperty(mic, kAudioDevicePropertyMute, scope: input, UInt32(muted == 1 ? 0 : 1)) { return }
+    if let level = audioProperty(mic, kAudioDevicePropertyVolumeScalar, scope: input, Float32(0)),
+       setAudioProperty(mic, kAudioDevicePropertyVolumeScalar, scope: input, Float32(0)) {
+        return micLevelBeforeMute.withLock { $0 = level }
+    }
+    NSSound.beep()
+}
+
 // MARK: Wi-Fi
 
 func wifiIsOn() -> Bool { CWWiFiClient.shared().interface()?.powerOn() ?? false }

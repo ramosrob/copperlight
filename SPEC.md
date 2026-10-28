@@ -19,8 +19,11 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
   what you type in other apps: snippets are pasted from the launcher, and macOS's Text Replacements expand text
   anywhere (decided 2026-10-28). The hotkey reads what's selected when it's pressed, and only then: the launcher
   opens with that text typed and selected, so typing replaces it (decided 2026-10-28).
-  No modifier keys in the panel either: any action besides Enter is a command typed after `:`, vim style. Tab only
-  fills in: a name that takes text, which becomes a chip in the field (decided 2026-10-27). Typing never makes a chip,
+  No modifier keys in the panel either: any action besides Enter is a command typed after `:`, vim style. Tab goes a
+  step into the selected row: a name that takes text becomes a chip in the field (decided 2026-10-27), and a row with
+  something to show opens its preview beside the list. In the general search the list keeps its full width until
+  then; where reading is the point (clipboard history, a chip, a command's output) the preview is open from the start,
+  and it only ever shows for a row with something in it (decided 2026-10-28). Typing never makes a chip,
   a space being only a space: `stock apple` may be the start of a file's name (decided 2026-10-28).
 - **One symbol.** `:` is the only prefix, and it controls things: the Mac, the window in front, running apps,
   files (`:left`, `:quit saf`, `:lock`; `:!git status` runs a shell line, like vim). Everything else is typed by
@@ -43,7 +46,8 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
   alone waits for a pause in typing and then asks Yahoo Finance (decided 2026-10-28).
 - **Plain files.** Config, state and the note are human-readable files in `~/.config/copperlight/`. What belongs
   to this Mac (recent queries, saved window layouts, whose frames fit its screens) lives in `state.json`, not
-  config.toml, so a config kept in git works on any Mac (decided 2026-10-28).
+  config.toml, so a config kept in git works on any Mac (decided 2026-10-28). Notes are plain text: their Markdown is
+  drawn as you type, and the file never changes for it (decided 2026-10-28).
 - **Never crash on user input.** Malformed math, currency or config shows nothing (or an error row); it never crashes.
 
 ## Stack

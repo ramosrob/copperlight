@@ -14,19 +14,39 @@ extension Hotkey {
 
 /// Launcher rows for Copperlight's own features.
 struct BuiltinProvider: ResultProvider {
-    let showNote: @MainActor @Sendable (String?) -> Void // nil: the note, else a named one
+    let showNote: @MainActor @Sendable (URL) -> Void // a note's file
     let showClipboard: @MainActor @Sendable () -> Void
     var showWelcome: @MainActor @Sendable () -> Void = {}
     var showSettings: @MainActor @Sendable () -> Void = {}
+    var newNote: @MainActor @Sendable (String) -> Void = { _ in } // a new note starting with this text ("": empty)
     var notesFolder = notesDir
+    var noteFile = mainNoteFile
+
+    /// The Notes chip (`note` ⇥): your notes alone, without apps or the search row.
+    var modes: [Mode] {
+        Feature.notes.isOn ? [Mode(prefix: "note ", title: "Notes", icon: .symbol("note.text"), hint: "A word in them, or nothing for all")] : []
+    }
+
+    func modeResults(for query: String) async -> [LauncherResult] {
+        // The launcher trims the query: the chip alone is "note".
+        let lower = query.lowercased()
+        return lower == "note" || lower.hasPrefix("note ") ? noteRows(query.dropFirst(4).trimmingCharacters(in: .whitespaces)) : results(for: query)
+    }
 
     func results(for query: String) -> [LauncherResult] {
         var rows: [LauncherResult] = []
+        let lower = query.lowercased()
         if Feature.notes.isOn, let score = score(query, prefixOf: "note", title: "Note") {
-            rows.append(LauncherResult(id: "builtin:note", title: "Note", subtitle: "Floating note · Esc hides it",
-                                       icon: .symbol("note.text"), score: score, action: { [showNote] in showNote(nil) }))
+            let last = notes().first?.url
+            rows.append(LauncherResult(id: "builtin:note", title: "Note", subtitle: "Your last note · Esc hides it",
+                                       icon: .symbol("note.text"), score: score,
+                                       action: { [showNote, newNote] in if let last { showNote(last) } else { newNote("") } }))
         }
-        if Feature.notes.isOn { rows += noteRows(query) }
+        if Feature.notes.isOn {
+            rows += notesStartRow(lower).map { [$0] } ?? []
+            if lower.count >= 5, "new note".hasPrefix(lower) { rows.append(newNoteRow("", score: 50)) }
+            rows += noteTextRows(query)
+        }
         // From 3 letters: "c" and "cl" belong to Chrome, Calendar, Claude…
         if Feature.clipboard.isOn, let score = score(query, prefixOf: "clipboard", minLength: 3, title: "Clipboard History") {
             rows.append(LauncherResult(id: "builtin:clipboard", title: "Clipboard History", subtitle: "Search past copies",
@@ -47,23 +67,54 @@ struct BuiltinProvider: ResultProvider {
         return rows
     }
 
-    /// `note` lists the named notes too; `note wo` the ones starting with "wo", and a new "wo" unless there's one.
-    private func noteRows(_ query: String) -> [LauncherResult] {
+    /// ponytail: every note is read on every keystroke that asks for them; cache by date if there are many.
+    private func notes() -> [NoteFile] { notesByDate(in: notesFolder, main: noteFile) }
+
+    private func noteRow(_ note: NoteFile, id: String, subtitle: String, score: Double) -> LauncherResult {
+        let url = note.url
+        return LauncherResult(id: id, title: note.title, subtitle: subtitle, accessory: shortAge(note.edited), icon: .symbol("note.text"),
+                              score: score, action: { [showNote] in showNote(url) }, preview: note.text.isEmpty ? nil : note.text,
+                              previewStyle: .prose)
+    }
+
+    /// `not`, `note`, `notes`: the list, a Tab away (the Notes chip); `note milk`: the list, already searching.
+    private func notesStartRow(_ lower: String) -> LauncherResult? {
+        let typed = lower.hasPrefix("note ") ? lower.dropFirst(5).trimmingCharacters(in: .whitespaces) : ""
+        let score: Double
+        if !typed.isEmpty { score = 50 }
+        else if lower.count >= 3, "notes".hasPrefix(lower) { score = lower.hasPrefix("notes") ? 50.01 : 49.99 }
+        else if let other = otherNameScore(lower, "All Notes") { score = other }
+        else { return nil }
+        return LauncherResult(id: "builtin:notes", title: typed.isEmpty ? "Notes" : "Notes with “\(typed)”",
+                              subtitle: typed.isEmpty ? "All your notes, the last edited first" : "Your notes that say it",
+                              icon: .symbol("list.bullet.rectangle"), score: score, actionTitle: "List",
+                              action: {}, completion: "note " + typed)
+    }
+
+    private func newNoteRow(_ text: String, score: Double) -> LauncherResult {
+        LauncherResult(id: "note:new", title: "New Note", subtitle: text.isEmpty ? "An empty one" : "Starting with “\(text)”",
+                       icon: .symbol("square.and.pencil"), score: score, actionTitle: "Create", action: { [newNote] in newNote(text) })
+    }
+
+    /// In the Notes chip: every note by its first line, last edited first, with the next line and, beside the list,
+    /// its text; then New Note. `milk`: the notes with "milk" in them, and a new one starting with it.
+    private func noteRows(_ typed: String) -> [LauncherResult] {
+        notes().enumerated().compactMap { index, note -> LauncherResult? in
+            let line = typed.isEmpty ? nil : matchingLine(note.text, typed)
+            guard typed.isEmpty || line != nil else { return nil }
+            return noteRow(note, id: "note:\(note.url.lastPathComponent)", subtitle: line ?? note.summary, score: 49 - Double(index) / 100)
+        } + [newNoteRow(typed, score: 0)]
+    }
+
+    /// The notes with `query`'s words in them, anywhere, from 3 letters: below what matches by name, with the line.
+    private func noteTextRows(_ query: String) -> [LauncherResult] {
         let lower = query.lowercased()
-        guard lower == "note" || lower.hasPrefix("note ") else { return [] }
-        let typed = query.dropFirst(4).trimmingCharacters(in: .whitespaces)
-        let names = noteNames(in: notesFolder)
-        var rows = names.enumerated().compactMap { index, name -> LauncherResult? in
-            guard name.lowercased().hasPrefix(typed.lowercased()) else { return nil }
-            return LauncherResult(id: "note:\(name)", title: name, subtitle: "Note", icon: .symbol("note.text"),
-                                  score: 49 - Double(index) / 100, action: { [showNote] in showNote(name) })
+        guard query.count >= 3, lower != "note", !lower.hasPrefix("note ") else { return [] }
+        return notes().compactMap { note in
+            matchingLine(note.text, query).map {
+                noteRow(note, id: "note-text:\(note.url.lastPathComponent)", subtitle: "Note · \($0)", score: 0.3)
+            }
         }
-        // A name is a file name: no folders, no hidden files.
-        if !typed.isEmpty, !typed.contains("/"), !typed.hasPrefix("."), !names.contains(where: { $0.lowercased() == typed.lowercased() }) {
-            rows.append(LauncherResult(id: "note:new", title: typed, subtitle: "New note", icon: .symbol("square.and.pencil"),
-                                       score: 48, actionTitle: "Create", action: { [showNote] in showNote(typed) }))
-        }
-        return rows
     }
 
     /// A prefix of `keyword` (at least `minLength` long) ranks first: above apps, fuzzy commands and
@@ -126,9 +177,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var builtins = BuiltinProvider(showNote: { [unowned self] in showNote($0) },
                                                 showClipboard: { [unowned self] in showClipboard() },
                                                 showWelcome: { [unowned self] in showWelcome() },
-                                                showSettings: { [unowned self] in showSettings() })
+                                                showSettings: { [unowned self] in showSettings() },
+                                                newNote: { [unowned self] in newNote($0) })
     private lazy var capture = CaptureProvider(addToNote: { [unowned self] in addToNote($0) })
-    private lazy var verbs = VerbProvider(verbs: Verb.launcher(files: files), more: { frontMenuRows($0) })
+    private lazy var verbs = VerbProvider(
+        verbs: Verb.launcher(files: files)
+            + (Feature.notes.isOn ? Verb.notes(release: { [unowned self] in releaseNote($0) }) : []),
+        more: { frontMenuRows($0) })
     // Each provider with the feature it belongs to (none: always on); Features.swift says which are on.
     private lazy var model = SearchModel(
         providers: ([(commands, .commands), (ScriptProvider(), .scripts), (snippets, .snippets), (builtins, nil),
@@ -141,8 +196,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .compactMap { $0.1?.isOn == false ? nil : $0.0 } + (photoText.map { [PhotoTextProvider(store: $0)] } ?? []),
         exclusive: [FileSearchProvider.prefix: files, VerbProvider.prefix: verbs,
                     ShellProvider.prefix: ShellProvider(state: .shared), "~": PathProvider(), "/": PathProvider()],
-        frecency: .shared)
+        frecency: .shared, idle: Self.upNext(meetings))
     private lazy var panel = LauncherPanel(model: model, placeholder: "Type anything")
+
+    /// What the empty launcher shows: the meeting to join, a few minutes before it starts.
+    nonisolated private static func upNext(_ meetings: MeetingsProvider) -> @Sendable () async -> [LauncherResult] {
+        { await meetings.upNext() }
+    }
     private var history: ClipboardHistory? // nil if clipboard.sqlite can't be opened
     private var historyError: String?
     private lazy var clipboardProvider = history.map {
@@ -152,7 +212,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         providers: clipboardProvider.map { [$0] } ?? [], searchesEmptyQuery: true,
         exclusive: clipboardProvider.map { [VerbProvider.prefix: VerbProvider(verbs: $0.verbs)] } ?? [:])
     private lazy var clipboardPanel = LauncherPanel(model: clipboardModel, placeholder: "Search clipboard history, : for commands…")
-    private var notes: [String: NotePanel] = [:] // by name; "" is the note
+    private var notes: [String: NotePanel] = [:] // by the file's path
     private var welcome: WelcomeWindow?
     private var settings: SettingsWindow?
     private var watcher: DirectoryWatcher?
@@ -184,7 +244,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         watcher = DirectoryWatcher(configDir) { [unowned self] in
             reloadConfig()
-            notes[""]?.reloadIfChanged()
+            notes[mainNoteFile.path]?.reloadIfChanged()
         }
         KeyboardShortcuts.onKeyDown(for: .toggleLauncher) { [unowned self] in
             welcome?.model.triedHotkey = true
@@ -253,17 +313,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         clipboardPanel.show()
     }
 
-    private func note(_ name: String?) -> NotePanel {
-        if let panel = notes[name ?? ""] { return panel }
-        let panel = NotePanel(name: name)
-        notes[name ?? ""] = panel
+    private func note(_ file: URL) -> NotePanel {
+        if let panel = notes[file.path] { return panel }
+        let panel = NotePanel(file: file)
+        notes[file.path] = panel
         return panel
     }
 
-    private func showNote(_ name: String?) { note(name).show() }
+    private func showNote(_ file: URL) { note(file).show() }
+
+    /// A new note, opened: empty (its file is written once you type), or starting with `text` on its first line.
+    private func newNote(_ text: String) {
+        let file = newNoteFile()
+        if !text.isEmpty {
+            try? FileManager.default.createDirectory(at: notesDir, withIntermediateDirectories: true)
+            try? (text + "\n").write(to: file, atomically: true, encoding: .utf8)
+        }
+        showNote(file)
+    }
+
+    /// Closes a note's panel, saved, before it goes to the Trash.
+    private func releaseNote(_ file: URL) {
+        guard let panel = notes.removeValue(forKey: file.path) else { return }
+        panel.saveNow()
+        panel.orderOut(nil)
+    }
 
     /// Through the panel, open or not, so text being typed in it isn't overwritten by the file.
-    private func addToNote(_ line: String) { note(nil).append(line) }
+    private func addToNote(_ line: String) { note(mainNoteFile).append(line) }
 
     /// Re-reads config.toml if it changed. A broken file keeps the current config and pins an
     /// error row to the launcher until it parses again.
@@ -287,6 +364,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func apply(_ config: Config) {
         KeyboardShortcuts.setShortcut(config.hotkeys.launcher.shortcut, for: .toggleLauncher)
         history?.settings = config.clipboard
+        NotePanel.stylesMarkdown = config.notes.markdown
+        notes.values.forEach { $0.restyle() }
         pomodoro.defaultMinutes = config.pomodoro.defaultMinutes
         pomodoro.breakMinutes = config.pomodoro.breakMinutes
         // Chained so back-to-back reloads reach the providers in order.
@@ -297,6 +376,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await web.setBrowser(config.browser)
             await pages.setBrowser(config.browser)
             await meetings.setBrowser(config.browser)
+            await meetings.setShowsOnOpen(config.meetings.showOnOpen)
             await pages.refresh()
             await currency.setDefaultTarget(config.currency.defaultTarget)
             translate.setDefaultTarget(config.translate.defaultTarget)

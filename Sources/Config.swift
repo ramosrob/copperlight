@@ -15,6 +15,8 @@ struct Config: Decodable, Equatable {
     var pomodoro = Pomodoro()
     var translate = Translate()
     var browser = Browser()
+    var notes = Notes()
+    var meetings = Meetings()
     var commands: [Command] = []
     var snippets: [Snippet] = []
 
@@ -59,6 +61,30 @@ struct Config: Decodable, Equatable {
         private enum CodingKeys: String, CodingKey { case defaultTarget = "default_target" }
     }
 
+    /// The floating notes. `markdown`: style Markdown as you type (headings, bold, checkboxes); the files stay plain text.
+    struct Notes: Decodable, Equatable {
+        var markdown = true
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            markdown = try c.decodeIfPresent(Bool.self, forKey: .markdown) ?? markdown
+        }
+        private enum CodingKeys: String, CodingKey { case markdown }
+    }
+
+    /// Today's events. `show_on_open`: the empty launcher lists them; otherwise it only shows a meeting about to start.
+    struct Meetings: Decodable, Equatable {
+        var showOnOpen = false
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            showOnOpen = try c.decodeIfPresent(Bool.self, forKey: .showOnOpen) ?? showOnOpen
+        }
+        private enum CodingKeys: String, CodingKey { case showOnOpen = "show_on_open" }
+    }
+
     struct Clipboard: Decodable, Equatable {
         /// Copies made while one of these apps is in front aren't recorded.
         var ignoreApps = ["com.1password.1password", "com.agilebits.onepassword7", "com.bitwarden.desktop",
@@ -90,14 +116,16 @@ struct Config: Decodable, Equatable {
         var scopes = ["~/code", "~/Documents", "~/Downloads", "~/Desktop"]
         /// Results with one of these as a folder (or file) name anywhere in their path are dropped.
         var exclude = ["node_modules", ".git", ".venv", "__pycache__", "DerivedData", "build", ".build"]
+        var terminal: String? // where `:terminal` opens a folder (an app's name or bundle id); nil: Terminal
 
         init() {}
         init(from decoder: any Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             scopes = try c.decodeIfPresent([String].self, forKey: .scopes) ?? scopes
             exclude = try c.decodeIfPresent([String].self, forKey: .exclude) ?? exclude
+            terminal = try c.decodeIfPresent(String.self, forKey: .terminal)
         }
-        private enum CodingKeys: String, CodingKey { case scopes, exclude }
+        private enum CodingKeys: String, CodingKey { case scopes, exclude, terminal }
     }
 
     struct Pomodoro: Decodable, Equatable {
@@ -179,10 +207,12 @@ struct Config: Decodable, Equatable {
         pomodoro = try c.decodeIfPresent(Pomodoro.self, forKey: .pomodoro) ?? pomodoro
         translate = try c.decodeIfPresent(Translate.self, forKey: .translate) ?? translate
         browser = try c.decodeIfPresent(Browser.self, forKey: .browser) ?? browser
+        notes = try c.decodeIfPresent(Notes.self, forKey: .notes) ?? notes
+        meetings = try c.decodeIfPresent(Meetings.self, forKey: .meetings) ?? meetings
         commands = try c.decodeIfPresent([Command].self, forKey: .commands) ?? []
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? []
     }
-    private enum CodingKeys: String, CodingKey { case hotkeys, currency, clipboard, files, apps, pomodoro, translate, browser, commands = "command", snippets = "snippet" }
+    private enum CodingKeys: String, CodingKey { case hotkeys, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, commands = "command", snippets = "snippet" }
 
     static func parse(_ text: String) throws -> Config {
         try TOMLDecoder().decode(Config.self, from: text)
@@ -230,6 +260,7 @@ struct Config: Decodable, Equatable {
         scopes = ["~/code", "~/Documents", "~/Downloads", "~/Desktop"]
         # Results with one of these anywhere in their path are hidden.
         exclude = ["node_modules", ".git", ".venv", "__pycache__", "DerivedData", "build", ".build"]
+        # terminal = "Ghostty"         # optional: where :terminal opens a folder (iTerm, Ghostty, Warp…); unset: Terminal
 
         [apps]
         # Apps are found by what they do too ("draw", "noise"), from an index of each app's category, the files it
@@ -244,6 +275,14 @@ struct Config: Decodable, Equatable {
 
         [translate]
         # default_target = "german"    # for "translate bom dia" without "to …"; unset: your Mac's languages
+
+        [meetings]
+        show_on_open = false           # true: the empty launcher lists today's events. false: only a meeting with a call,
+                                       # from 10 minutes before it starts. Needs Calendars access ("meetings" asks).
+
+        [notes]
+        markdown = true                # style Markdown as you type: # headings, **bold**, - [ ] checkboxes, links.
+                                       # The files stay plain text.
 
         [browser]
         # Where web links open: typed URLs ("gmail.com"), the search row, and url commands without their

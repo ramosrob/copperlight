@@ -510,6 +510,9 @@ func configRejectsInvalidFiles(_ toml: String, _ messageContains: String) {
         ("browser", "name", .string("Firefox"), { $0.browser.name = "Firefox" }),
         ("browser", "profile", .string("Work"), { $0.browser.profile = "Work" }),
         ("browser", "search", .string("brave"), { $0.browser.search = .brave }),
+        ("files", "terminal", .string("Ghostty"), { $0.files.terminal = "Ghostty" }),
+        ("notes", "markdown", .bool(false), { $0.notes.markdown = false }),
+        ("meetings", "show_on_open", .bool(true), { $0.meetings.showOnOpen = true }),
     ]
     for (table, key, value, change) in edits {
         file.set(key, in: table, to: value)
@@ -608,12 +611,14 @@ func configRejectsInvalidFiles(_ toml: String, _ messageContains: String) {
 }
 
 @Test func builtinsRankFirstOnPrefix() {
-    let builtins = BuiltinProvider(showNote: { _ in }, showClipboard: {}, notesFolder: URL(filePath: "/nonexistent"))
+    let builtins = BuiltinProvider(showNote: { _ in }, showClipboard: {}, notesFolder: URL(filePath: "/nonexistent"),
+                                   noteFile: URL(filePath: "/nonexistent/note.txt"))
     func top(_ query: String) -> String? { builtins.results(for: query).max { $0.score < $1.score }?.title }
     func score(_ query: String, _ title: String) -> Double { builtins.results(for: query).first { $0.title == title }?.score ?? 0 }
-    for query in ["n", "no", "NOT", "note"] {
+    for query in ["n", "no", "NOT"] {
         #expect(score(query, "Note") > 2, "\(query)") // apps top out at 1.8 (match 1 + running 0.3 + frecency 0.5)
     }
+    #expect(builtins.results(for: "note").map(\.title) == ["Note", "Notes"] && score("note", "Notes") > 2) // the list is Tab away
     #expect(builtins.results(for: "notes").allSatisfy { $0.title != "Note" })
     for query in ["cli", "clip", "CLIPBO", "clipboard"] {
         #expect(score(query, "Clipboard History") > 2 && top(query) == "Clipboard History", "\(query)")
@@ -622,19 +627,94 @@ func configRejectsInvalidFiles(_ toml: String, _ messageContains: String) {
     #expect(top("welc") == "Welcome to Copperlight" && score("we", "Welcome to Copperlight") < 1.8)
 }
 
-@Test func namedNotes() throws {
+@MainActor private final class Opened { var files: [String] = [], created: [String] = [] }
+
+/// Notes have no names: a note's title is its first line. `note` offers the last one and the list (Tab: the Notes chip),
+/// which shows only notes, last edited first, with the next line and, beside the list, the text; then New Note. What's
+/// typed in the chip finds them by what's in them. Anywhere else, from 3 letters, a note with the words shows below
+/// the names.
+@MainActor @Test func notesBrowser() async throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: "copperlight-notes-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    for name in ["work", "Groceries", ".hidden"] { try "".write(to: folder.appending(path: name + ".txt"), atomically: true, encoding: .utf8) }
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let main = FileManager.default.temporaryDirectory.appending(path: "note-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: main) }
+    try "## Buy milk\nand bread".write(to: folder.appending(path: "work.txt"), atomically: true, encoding: .utf8)
+    for name in ["2026-10-28-101010", ".hidden"] { try "".write(to: folder.appending(path: name + ".txt"), atomically: true, encoding: .utf8) }
     try "".write(to: folder.appending(path: "readme.md"), atomically: true, encoding: .utf8)
-    #expect(noteNames(in: folder) == ["Groceries", "work"])
-    let builtins = BuiltinProvider(showNote: { _ in }, showClipboard: {}, notesFolder: folder)
-    let titles = { (query: String) in builtins.results(for: query).sorted { $0.score > $1.score }.map(\.title) }
-    #expect(titles("note") == ["Note", "Groceries", "work"])
-    #expect(titles("note wo") == ["work", "wo"]) // and a new note named "wo"
-    #expect(titles("note WORK") == ["work"]) // it exists: no new one
-    #expect(titles("note a/b").isEmpty && titles("note .x").isEmpty)
-    #expect(titles("no") == ["Note"]) // the named ones from "note" on
+    try "Call Ana".write(to: main, atomically: true, encoding: .utf8)
+    for (url, ago) in [(folder.appending(path: "work.txt"), 0.0), (main, 60), (folder.appending(path: "2026-10-28-101010.txt"), 3600)] {
+        try FileManager.default.setAttributes([.modificationDate: Date.now - ago], ofItemAtPath: url.path)
+    }
+    let opened = Opened()
+    let builtins = BuiltinProvider(showNote: { [opened] in opened.files.append($0.lastPathComponent) }, showClipboard: {},
+                                   newNote: { [opened] in opened.created.append($0) }, notesFolder: folder, noteFile: main)
+    #expect(builtins.modes.map(\.prefix) == ["note "])
+    let list = { (typed: String) async in await builtins.modeResults(for: "note " + typed).sorted { $0.score > $1.score } }
+    #expect(await list("").map(\.title) == ["Buy milk", "Call Ana", "Empty Note", "New Note"]) // last edited first, then a new one
+    let work = try #require(await list("").first)
+    #expect(work.subtitle == "and bread" && work.preview == "## Buy milk\nand bread")
+    work.action()
+    await list("").last?.action() // New Note: made and opened, nothing to name
+    #expect(opened.files == ["work.txt"] && opened.created == [""])
+    let bread = await list("bread")
+    #expect(bread.map(\.title) == ["Buy milk", "New Note"] && bread[0].subtitle == "and bread") // by what's in it
+    #expect(bread[1].subtitle == "Starting with “bread”")
+    bread[1].action()
+    #expect(opened.created == ["", "bread"])
+
+    // Outside the chip, no list mixed with apps: the last note, and the list a Tab away.
+    let rows = { (query: String) in builtins.results(for: query).sorted { $0.score > $1.score } }
+    #expect(rows("note").map(\.title) == ["Note", "Notes"] && rows("note")[1].completion == "note ")
+    #expect(rows("notes").first?.title == "Notes")
+    #expect(rows("note bread").first { $0.completion == "note bread" }?.title == "Notes with “bread”")
+    #expect(rows("no").map(\.title) == ["Note"]) // the last note edited
+    rows("no")[0].action()
+    #expect(opened.files.last == "work.txt")
+    #expect(rows("new note").first?.title == "New Note")
+    let anywhere = builtins.results(for: "bread").filter { $0.id.hasPrefix("note-text:") }
+    #expect(anywhere.map(\.title) == ["Buy milk"] && anywhere[0].subtitle == "Note · and bread" && anywhere[0].score < 1)
+    #expect(builtins.results(for: "br").allSatisfy { !$0.id.hasPrefix("note-text:") }) // from 3 letters
+
+    let model = SearchModel(providers: [builtins, Fixed(rows: [("Notes app", 1)])])
+    model.query = "note"
+    try await Task.sleep(for: .milliseconds(100))
+    model.complete() // Tab
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(model.mode?.title == "Notes" && model.rows.map(\.title) == ["Buy milk", "Call Ana", "Empty Note", "New Note"])
+
+    #expect(noteTitle("\n  # Plan  \nmore") == "Plan" && noteTitle(" \n") == nil)
+    let fresh = newNoteFile(in: folder, now: Date(timeIntervalSince1970: 0))
+    #expect(fresh.pathExtension == "txt" && !FileManager.default.fileExists(atPath: fresh.path)) // written once you type
+}
+
+@MainActor @Test func noteCommands() async throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: "copperlight-notes-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    try "Buy milk".write(to: folder.appending(path: "a.txt"), atomically: true, encoding: .utf8)
+    try "Ideas".write(to: folder.appending(path: "b.txt"), atomically: true, encoding: .utf8)
+    let verbs = VerbProvider(verbs: Verb.notes(folder: folder, main: folder.appending(path: "none.txt"), release: { _ in }))
+    let delete = try #require(await verbs.results(for: ":delete note milk").first)
+    #expect(delete.title == "Delete Note: Buy milk" && delete.confirm == "Move the note “Buy milk” to the Trash?")
+    #expect(await verbs.results(for: ":delete note").count == 2)
+    #expect(await verbs.results(for: ":rename note").isEmpty) // titles come from the first line: nothing to rename
+}
+
+@Test func markdownStyling() {
+    let text = "# Title\nSome **bold**, *it* and `code`\n- [ ] milk\n- [x] bread\n> said\n1. first\n[site](https://x.com) and https://y.com"
+    let pairs = Set(markdownSpans(text).map { "\((text as NSString).substring(with: $0.range))|\($0.style)" })
+    for expected in ["# |marker", "# Title|heading(1)", "bold|bold", "**|marker", "it|italic", "code|code", "`|marker", "- |bullet",
+                     "[ ]|checkbox(done: false)", "[x]|checkbox(done: true)", "bread|done", "> |marker", "> said|quote", "1. |bullet",
+                     "site|link(\"https://x.com\")", "https://y.com|link(\"https://y.com\")"] {
+        #expect(pairs.contains(expected), "\(expected)")
+    }
+    #expect(!pairs.contains { $0.hasPrefix("https://x.com|") }) // a link's address isn't a link of its own
+    #expect(markdownSpans("2 * 3 * 4 and snake_case_name").isEmpty) // not emphasis
+    let tick = checkboxToggle("- [ ] milk" as NSString, at: 3)
+    #expect(tick?.range == NSRange(location: 2, length: 3) && tick?.replacement == "[x]")
+    #expect(checkboxToggle("- [x] milk" as NSString, at: 2)?.replacement == "[ ]")
+    #expect(checkboxToggle("plain" as NSString, at: 1) == nil)
 }
 
 // MARK: Clipboard
@@ -1354,7 +1434,8 @@ private struct Sized: ResultProvider {
     #expect(await verbs.results(for: ":kill finder").map(\.title) == ["Force Quit Finder"])
     #expect(otherNameScore("tu", "Shut Down") == nil) // from 3 letters
 
-    let builtins = BuiltinProvider(showNote: { _ in }, showClipboard: {}, notesFolder: URL(filePath: "/nonexistent"))
+    let builtins = BuiltinProvider(showNote: { _ in }, showClipboard: {}, notesFolder: URL(filePath: "/nonexistent"),
+                                   noteFile: URL(filePath: "/nonexistent/note.txt"))
     #expect(builtins.results(for: "paste hist").map(\.id) == ["builtin:clipboard"])
     let apps = AppProvider(index: nil)
     await apps.rescan()
@@ -2100,6 +2181,148 @@ private struct Speak: ResultProvider {
     #expect(await verbs.results(for: ":layout").allSatisfy { $0.id != "layout:work" })
     let none = VerbProvider(verbs: Verb.layouts(store: store, capture: { nil }, apply: { _ in }))
     #expect(await none.results(for: ":layout save x").first?.output?({ _ in }).title == "Allow Copperlight in Accessibility to save layouts")
+}
+
+// MARK: More of the Mac, file commands, Shortcuts with input
+
+@MainActor @Test func moreMacCommands() async {
+    let verbs = VerbProvider(verbs: Verb.launcher(files: FileSearchProvider()))
+    let titles = Set(await verbs.results(for: ":").map(\.title))
+    for title in ["Quit All Apps", "Quit Other Apps", "Unhide All Apps", "Log Out", "Start Screen Saver", "Show Desktop", "Open Trash",
+                  "Open With", "Move to Trash", "Open in Terminal"] {
+        #expect(titles.contains(title), "\(title)")
+    }
+    #expect(await verbs.results(for: ":quit all").first?.confirm == "Quit every app? Apps with unsaved changes ask first.")
+    #expect(await verbs.results(for: ":quit others").first?.confirm == "Quit every app but the one in front? Apps with unsaved changes ask first.")
+    #expect(await verbs.results(for: ":log out").first?.confirm == "Log out? Apps with unsaved changes ask first.")
+    #expect(Set(await verbs.results(for: ":mute").map(\.subtitle)) == [":mute", ":mute mic"]) // one group: the sound, then the mic
+    #expect(Set(await verbs.results(for: ":open").map(\.subtitle)) == [":open with", ":open trash"])
+}
+
+@Test func shortcutInput() {
+    let names = ["Translate", "Translate Text", "Log Water"]
+    #expect(shortcutAndInput("translate text hola", names: names).map { [$0.name, $0.input] } == ["Translate Text", "hola"]) // longest name
+    #expect(shortcutAndInput("Log water 500 ml", names: names).map { [$0.name, $0.input] } == ["Log Water", "500 ml"])
+    #expect(shortcutAndInput("translate", names: names) == nil) // no text: the plain row
+    #expect(shortcutAndInput("trans", names: names) == nil)
+    let rows = shortcutRows("log water 500 ml", names: names)
+    #expect(rows.map(\.title) == ["Run Shortcut: Log Water"] && rows[0].subtitle == "With “500 ml”")
+    #expect(shortcutRows("log", names: names).map(\.title) == ["Run Shortcut: Log Water"]) // narrowing, as before
+}
+
+@MainActor @Test func fileCommands() async throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: "open-with-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let file = folder.appending(path: "a b.txt")
+    try "hi".write(to: file, atomically: true, encoding: .utf8)
+    #expect(existingPathPrefix("\(file.path) text").map { [$0.path, $0.rest] } == [file.path, "text"]) // a space in its name
+    #expect(existingPathPrefix(file.path).map { [$0.path, $0.rest] } == [file.path, ""])
+    #expect(existingPathPrefix("readme") == nil)
+    let files = FileSearchProvider()
+    #expect(await openWithRows(file.path, files: files).contains { $0.title == "TextEdit" })
+    #expect(await openWithRows("\(file.path) textedi", files: files).first?.title == "TextEdit")
+    #expect(terminalFolder(for: file.path) == folder.path && terminalFolder(for: folder.path) == folder.path)
+    let verbs = VerbProvider(verbs: Verb.launcher(files: files))
+    let trash = try #require(await verbs.results(for: ":trash \(file.path)").first { $0.id == "trash:\(file.path)" })
+    #expect(trash.title == "Move to Trash: a b.txt" && trash.confirm == "Move “a b.txt” to the Trash?")
+    let pick = try #require(await verbs.results(for: ":open with \(folder.path)/a").first { $0.id == "open with:\(file.path)" })
+    #expect(pick.completion == ":open with \(file.path) ") // Tab or Enter: then the apps
+}
+
+// MARK: The preview pane
+
+/// In the general search the list keeps its width: Tab on a row with something to show opens the preview beside it,
+/// and a row with nothing to show never leaves an empty pane. Where reading is the point (clipboard history, a chip), it's
+/// open from the start.
+@MainActor @Test func previewWaitsForTab() async throws {
+    struct Mixed: ResultProvider {
+        func results(for query: String) async -> [LauncherResult] {
+            [LauncherResult(id: "note", title: "Note", icon: .symbol("note.text"), score: 2, action: {}, preview: "what it says"),
+             LauncherResult(id: "app", title: "App", icon: .symbol("app"), score: 1, action: {})]
+        }
+    }
+    let model = SearchModel(providers: [Mixed()])
+    model.query = "x"
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(!model.showsPreview) // the list keeps its width
+    model.complete() // Tab
+    #expect(model.showsPreview)
+    model.move(1)
+    #expect(!model.showsPreview) // nothing to show: no empty pane
+    model.move(-1)
+    #expect(model.showsPreview)
+    model.complete()
+    #expect(!model.showsPreview) // Tab again closes it
+    model.complete()
+    model.query = "y"
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(!model.showsPreview) // a new search starts with the list alone
+    let clipboard = SearchModel(providers: [Mixed()], searchesEmptyQuery: true)
+    clipboard.query = ""
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(clipboard.showsPreview)
+}
+
+// MARK: The next meeting
+
+/// The meeting the empty launcher offers: one with a call to join, from 10 minutes before it starts to 10 after.
+@Test func nextMeetingWindow() {
+    let now = Date(timeIntervalSince1970: 1_000_000), call = URL(string: "https://meet.google.com/abc-defg-hij")!
+    func item(_ title: String, in minutes: Double, for length: Double = 30, link: URL? = call) -> CalendarItem {
+        CalendarItem(title: title, start: now + minutes * 60, end: now + (minutes + length) * 60, link: link)
+    }
+    #expect(nextMeeting([item("Later", in: 25), item("Soon", in: 8)], now: now)?.title == "Soon")
+    #expect(nextMeeting([item("Later", in: 25)], now: now) == nil) // more than 10 minutes away: not yet
+    #expect(nextMeeting([item("Late", in: -4)], now: now)?.title == "Late") // started 4 minutes ago: still worth joining
+    #expect(nextMeeting([item("Long ago", in: -20, for: 60)], now: now) == nil)
+    #expect(nextMeeting([item("No call", in: 5, link: nil)], now: now) == nil) // nothing to join
+    #expect(nextMeeting([item("Late", in: -4), item("Soon", in: 3)], now: now)?.title == "Soon") // the one about to start
+    #expect(callService(call) == "Google Meet" && callService(URL(string: "https://acme.zoom.us/j/123")!) == "Zoom")
+}
+
+/// An event soon (15 minutes) or going gets a copper badge; Tab shows its details: the call and its link among them.
+@Test func eventBadgesAndDetails() {
+    let now = Date(timeIntervalSince1970: 1_000_000), call = URL(string: "https://meet.google.com/abc-defg-hij")!
+    func item(in minutes: Double, for length: Double = 60) -> CalendarItem {
+        CalendarItem(title: "Meet kids at school", start: now + minutes * 60, end: now + (minutes + length) * 60, link: nil)
+    }
+    #expect(eventBadge(item(in: 9), now: now) == "in 9 min")
+    #expect(eventBadge(item(in: 17), now: now) == "in 17 min") // within the hour: coming up
+    #expect(eventBadge(item(in: 90), now: now) == nil) // not soon yet
+    #expect(eventBadge(item(in: -20), now: now) == "Now")
+    #expect(eventBadge(item(in: -90, for: 60), now: now) == nil) // over
+    var party = item(in: 9)
+    (party.calendar, party.location, party.link, party.notes) = ("Family", "School gate", call, "Bring the bikes")
+    (party.people, party.organizer) = (["Ana", "Mario", "Bia", "Rui", "Leo"], "Ana")
+    let preview = eventPreview(party, now: now)
+    #expect(preview.text.hasPrefix("Meet kids at school\n") && preview.text.hasSuffix("Bring the bikes"))
+    #expect(preview.details.map(\.0) == ["Calendar", "Where", "Call", "Link", "People", "Organizer"])
+    #expect(preview.details.first { $0.0 == "People" }?.1 == "Ana, Mario, Bia, Rui +1")
+    #expect(preview.details.first { $0.0 == "Call" }?.1 == "Google Meet")
+    #expect(preview.details.first { $0.0 == "Link" }?.1 == call.absoluteString)
+}
+
+/// `meetings`, `agenda`, `events`: today's events. `calendar`, typed whole, too, but under the Calendar app.
+@Test func eventWords() async {
+    let meetings = MeetingsProvider()
+    for word in ["mee", "meetings", "age", "agenda", "events", "event"] { #expect(!(await meetings.results(for: word)).isEmpty, "\(word)") }
+    #expect(await meetings.results(for: "calendar").allSatisfy { $0.score < 1.5 })
+    #expect(!(await meetings.results(for: "calendar")).isEmpty)
+    #expect(await meetings.results(for: "cal").isEmpty) // the Calendar app's, and Evernote's
+    #expect(await meetings.results(for: "eve").isEmpty)
+}
+
+@MainActor @Test func theEmptyFieldShowsWhatsUpNext() async throws {
+    let model = SearchModel(providers: [Fixed(rows: [("x", 1)])],
+                            idle: { [LauncherResult(id: "meeting:next", title: "Design review", icon: .symbol("video"), score: 100, action: {})] })
+    model.query = ""
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(model.rows.map(\.title) == ["Design review"])
+    model.query = "x"
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(model.rows.map(\.title) == ["x"]) // typing: it steps aside
+    #expect(SearchModel(providers: []).rows.isEmpty)
 }
 
 // MARK: Stocks

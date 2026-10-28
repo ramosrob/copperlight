@@ -53,7 +53,7 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | Tool | What it does |
 |---|---|
 | **Clipboard history**<br>`clip` | Everything you copy, text and images, searchable. Enter pastes it into the app you were in. Passwords are never recorded. |
-| **Floating notes**<br>`note`, `note work` | A glass note that floats above your windows and saves as you type. Give one a name and you have another. |
+| **Floating notes**<br>`note`, `note milk` | Glass notes that float above your windows and save as you type, as many as you like, each titled by its first line. `note` lists them, last edited first; Markdown is styled as you type, and checkboxes tick with a click. |
 | **Pomodoro**<br>`pomo`, `pomo 50` | A focus timer that counts down in the menu bar and tells you when it's done. |
 | **Timer**<br>`timer 10 min tea` | A countdown for anything else, with what it's for: in the menu bar, with a sound when it's done. |
 | **Quick capture**<br>`add todo`, `add event` | Reminders, calendar events and note lines, with the date read from what you type: `add todo call mom tomorrow 5pm`. |
@@ -154,10 +154,11 @@ The answer appears as you type; Enter copies it.
 | `:layout save work`, `:layout work` | Every window on screen, saved by name, and put back where it was |
 | `:window term` | Any window of any app, found by its title |
 | `:export pdf`, `:new tab` | The menus of the app you're in, with their shortcuts |
-| `:quit saf`, `:hide others`, `:relaunch slack` | The apps that are running |
-| `:dark`, `:wifi`, `:awake`, `:lock`, `:empty trash` | The Mac itself; each row says what Enter does (Turn Wi-Fi Off), and the ones you can't undo ask first |
-| `:play`, `:next track`, `:mute`, `:volume 30`, `:output airpods` | What's playing, in any app, and where the sound goes |
-| `:shortcut name` | Your Shortcuts, Focus modes included |
+| `:quit saf`, `:quit all`, `:hide others`, `:unhide all`, `:relaunch slack` | The apps that are running |
+| `:open with readme`, `:trash readme`, `:terminal ~/code/app` | A file: open it with another app, move it to the Trash (asks first), or open its folder in your terminal |
+| `:dark`, `:wifi`, `:awake`, `:lock`, `:show desktop`, `:log out`, `:empty trash` | The Mac itself; each row says what Enter does (Turn Wi-Fi Off), and the ones you can't undo ask first |
+| `:play`, `:next track`, `:mute`, `:mute mic`, `:volume 30`, `:output airpods` | What's playing, in any app, where the sound goes, and your microphone |
+| `:shortcut name`, `:shortcut name some text` | Your Shortcuts, Focus modes included; text after the name is its input |
 | `bluetooth`, `displays`, `dark mode` | That page of System Settings |
 | `ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery, free space, and what's listening on a port (Enter ends it) |
 
@@ -165,10 +166,11 @@ The answer appears as you type; Enter copies it.
 
 | Type | You get |
 |---|---|
-| `meetings` | The rest of today's meetings; Enter joins the video call |
+| `meetings`, `agenda`, `events` | The rest of today's events, a copper badge on what's soon; Tab shows the details (call link, people, notes), Enter joins the call. A few minutes before a call, it's already there when you open the launcher (or all of today, with Settings › General › Calendar) |
 | `add todo call mom tomorrow 5pm` | A reminder, due and alerting then |
 | `add event fri 10am dentist` | An event in your calendar |
-| `note`, `note work`, `add note buy milk` | Floating notes, saved as you type |
+| `note` ⇥, `note milk` ⇥, `new note`, `add note buy milk` | Floating notes, saved as you type: Tab on `note` lists only your notes, with a preview, and typing finds the one that says it |
+| `:delete note milk` | Move a note to the Trash (asks first) |
 | `pomo`, `pomo 50`, `pomo break` | A pomodoro, counting down in the menu bar |
 | `timer 10 min tea`, `timer 90s`, `timer 1h 30m` | A timer, counting down in the menu bar, with a sound when it's done |
 | `screenshot`, `record` | The macOS screenshot toolbar |
@@ -233,7 +235,7 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 | Calendars | `meetings` (reads today's events) and `add event` (add-only access is enough for that) |
 | Reminders | `add todo` |
 | Notifications | The end of a pomodoro or a timer, shell lines that finish in the background, errors |
-| Automation | `:empty trash`, `:dark`, `:restart`, `:shut down` (asking Finder, System Events or loginwindow) |
+| Automation | `:empty trash`, `:dark`, `:restart`, `:shut down`, `:log out` (asking Finder, System Events or loginwindow) |
 | Full Disk Access, by hand | Safari's bookmarks and history only |
 
 ## Privacy

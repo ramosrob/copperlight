@@ -175,7 +175,8 @@ Sources/
   PhotoText.swift           the text in Photos (Vision), in photos.sqlite (FTS5)
   Pomodoro.swift            timer, menu bar countdown (shared with the timer), pomo rows
   Timers.swift              `timer 10 min tea`: parsing the length, the countdown, timer rows
-  NotePanel.swift           floating notes
+  NotePanel.swift           floating notes (titled by their first line), the notes the launcher lists, `:delete note`
+  Markdown.swift            Markdown in notes: what to style where, and ticking checkboxes
   Welcome.swift             the welcome window: hotkey, permissions (live status), Open at Login; AppWindow
   Settings.swift            the Settings window: a pane per group, commands and snippets editors, About
   Acknowledgements.swift    the open source Copperlight is built with, shown in Settings › About (a test checks it)

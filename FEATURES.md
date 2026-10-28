@@ -22,7 +22,7 @@ files and the text in photos. Everything else on this page is on.
 | `3pm lisbon in sf`, `now in tokyo` | The time there | Copies it |
 | `stock AAPL`, `stock MGLU3.SA` | The price, today's change, a 7-day chart (Yahoo Finance) | Opens it on Yahoo Finance |
 | `copperlight git` | Bookmarks and recent pages from your browser | Opens it in its profile |
-| `meetings` | The rest of today's meetings | Joins the video call |
+| `meetings`, `agenda`, `events` | The rest of today's events; a copper badge on what's soon; Tab: the details | Joins the video call |
 | `bluetooth`, `dark mode` | System Settings pages | Opens that page |
 | `emoji party` | Emoji by name | Pastes it |
 | `define serendipity` | The dictionary entry | Opens it in Dictionary |
@@ -38,7 +38,7 @@ files and the text in photos. Everything else on this page is on.
 | `paste plain`, `paste markdown` | The clipboard, cleaned or as Markdown | Pastes it |
 | `add note …`, `add todo …`, `add event …` | Capture | Adds it |
 | `screenshot`, `record` | The screenshot toolbar | Opens it |
-| `note`, `note work` | The floating note, or a named one | Shows it |
+| `note`, then Tab | The Notes chip: your notes alone, last edited first, titled by their first line; typing finds the ones that say it | Opens it; New Note makes one |
 | `clip` | Clipboard history | Shows it |
 | `pomo`, `pomo 50`, `pomo break`, `pomo stop` | The pomodoro timer | Starts or stops it |
 | `timer 10 min tea`, `timer 90s`, `timer stop` | A timer | Starts or stops it |
@@ -53,8 +53,13 @@ files and the text in photos. Everything else on this page is on.
 - **Opens on what you selected:** with text selected in the app you're in, the hotkey opens with it typed and
   selected (on one line, up to 500 characters): `tra` ⇥ translates it, Enter searches it, typing replaces it. Read
   through Accessibility, never from a password field; apps that don't share their selection open empty.
-- **Keys:** ↑ ↓ move, Enter runs, Tab fills in, Esc hides (or backs out of a question or an output). No other
+- **Keys:** ↑ ↓ move, Enter runs, Tab fills in (or opens the preview), Esc hides (or backs out of a question or an output). No other
   modifiers: anything else is a `:` command.
+- **The next meeting, waiting:** from 10 minutes before a meeting with a call (Meet, Zoom, Teams, Webex) until 10
+  minutes after it started, the empty launcher shows it, with a copper badge ("in 4 min", "Now"); Enter joins, Tab
+  shows its details. With `[meetings] show_on_open` (Settings › General › Calendar), the empty launcher lists the day's
+  next five events instead. It needs Calendars access already given (`meetings` asks): opening the launcher never asks.
+  Typing hides it.
 - **↑ in the empty field brings back what you ran,** the last 50 queries, newest first; ↑ again (on the top row)
   goes further back. Each comes back as it was run: in its chip, or typed. Kept in `state.json`.
 - **It never takes focus** from the app you were in, so window commands and pastes act on that app.
@@ -63,7 +68,7 @@ files and the text in photos. Everything else on this page is on.
 - **Some rows fill in instead of run,** and their key is Tab: Tab on `Translate` types `translate `, on `Quit
   Application` `:quit `, on a folder its path (Enter does the same). With a name typed whole (`translate`), Tab fills
   it in whatever row is selected.
-- **A name that takes text becomes a chip:** `translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `port `, `add todo `, `:quit `, `:!`,
+- **A name that takes text becomes a chip:** `translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `port `, `note `, `add todo `, `:quit `, `:!`,
   `f `. Tab turns the name into a copper chip at the start of the field, keeping what you typed after it
   (`stock aapl` ⇥); the field shows what comes after it with a hint while empty, and only that feature answers (no
   search row). Typing never makes a chip, so `stock apple` still finds `stock_Apple.pdf`. Delete in the empty
@@ -77,6 +82,10 @@ files and the text in photos. Everything else on this page is on.
   (Sources/OtherNames.swift); NaturalLanguage's phrase similarity was tried and guessed wrong too often.
 - **Ranking:** an exact command alias first, then Copperlight's own features typed by name, then apps, commands, math
   and currency by how well they match, then files, and the search row last.
+- **The preview beside the list:** in the general search the list keeps its full width; a row with something to show
+  (a note, a file's text, a long snippet) says "Preview ⇥", and Tab opens it beside the list (Tab again closes it; a
+  new search starts without it). In clipboard history, in chips and in a command's output it's open from the start.
+  It only ever shows for a row with something in it.
 - **The look:** two floating glass pieces, a pill search field and a results card
   under it, in the icon's copper. Long lists fade at the edges instead of being cut. Follows light and dark mode.
 
@@ -152,9 +161,10 @@ files and the text in photos. Everything else on this page is on.
   profile, or all of them (the row says which). Each opens in the profile it came from. Chrome, Brave, Edge,
   Vivaldi, Chromium and Firefox work as they are; Safari needs Full Disk Access for Copperlight. Loaded when the
   launcher opens (at most every 2 minutes), kept in memory only.
-- **Meetings** (`meetings`, from `mee`): the rest of today, soonest first, with start time and how soon. Enter
-  joins a Meet, Zoom, Teams or Webex call found in the event (a Meet link opens in your `[browser]` profile), or
-  opens Calendar. Calendars added to the Calendar app count (Google, Outlook).
+- **Meetings** (`meetings` from `mee`, `agenda` from `age`, `events`): the rest of today, soonest first, with start
+  time and how soon, a copper badge on one within the hour or going; Tab shows its details. Enter joins a Meet,
+  Zoom, Teams or Webex call found in the event (a Meet link opens in your `[browser]` profile), or opens Calendar.
+  Calendars added to the Calendar app count (Google, Outlook).
 
 ## Words
 
@@ -220,10 +230,11 @@ The row shows its first line, and long ones show whole in the preview pane.
 | Windows | `:window term` lists every window of every app (this Space and minimized ones) by title or app, front first; Enter brings it forward |
 | Window in front | `:minimize`, `:fullscreen`, `:close`, `:maximize`, `:center`, `:left`, `:right`, `:top`, `:bottom`, quarters (`:top left`…), thirds (`:left third`…), two thirds, `:next display`, `:nudge left` (right, up, down: a step of 5% of the screen; the panel stays open, so Enter again moves it again), `:restore` (undo Copperlight's last moves) |
 | Layouts | `:layout save work` keeps every window on screen (this Space: not hidden, minimized or full screen) by app and title; `:layout work` puts them back, matching each app's windows by title, then in order, on the same screen or the same share of the main one if it's gone; apps that aren't open are named in a notification. `:layout` lists them, `:layout delete work` forgets one. Kept in `state.json`, since the frames belong to this Mac's screens |
-| Running apps | `:quit saf`, `:force quit saf` (asks first), `:hide saf`, `:hide others`, `:relaunch slack` |
-| Files | `:reveal readme`, `:copy path readme` (file search, or a path: `:copy path ~/code/copperlight/`) |
-| The Mac | `:lock`, `:sleep`, `:sleep displays`, `:restart`, `:shut down`, `:empty trash` (these three ask first), `:dark`, `:wifi`, `:awake`, `:hidden files`, `:eject`, `:shortcut name` (your Shortcuts, also the way to Focus modes). `:dark`, `:wifi` and `:awake` say what Enter does now (Turn Wi-Fi Off) |
-| Sound | `:play` (play or pause), `:next track`, `:previous track`: the keyboard's media keys, so they reach whatever is playing (Music, a browser tab, Spotify). `:mute` (Mute or Unmute), `:volume 30`, `:output airpods` lists the sound outputs, the current one first; Enter switches to it |
+| Running apps | `:quit saf`, `:force quit saf` (asks first), `:hide saf`, `:hide others`, `:unhide all`, `:relaunch slack`, `:quit all` and `:quit others` (every app, or all but the one in front; ask first; never Finder) |
+| Files | `:reveal readme`, `:copy path readme`, `:trash readme` (asks first), `:terminal readme` (its folder, in `[files] terminal`: Terminal unless you pick another in Settings › Files) (file search, or a path: `:copy path ~/code/copperlight/`). `:open with readme` lists files; Tab on one, then the apps that open it, its default first (`:open with ~/x/readme.md code`) |
+| The Mac | `:lock`, `:sleep`, `:sleep displays`, `:restart`, `:shut down`, `:log out`, `:empty trash` (these four ask first), `:screen saver`, `:show desktop` (hides every app; `:unhide all` brings them back), `:open trash`, `:dark`, `:wifi`, `:awake`, `:hidden files`, `:eject`, `:shortcut name` (your Shortcuts, also the way to Focus modes; `:shortcut name some text` gives it the text as input). `:dark`, `:wifi` and `:awake` say what Enter does now (Turn Wi-Fi Off) |
+| Sound | `:play` (play or pause), `:next track`, `:previous track`: the keyboard's media keys, so they reach whatever is playing (Music, a browser tab, Spotify). `:mute` (Mute or Unmute), `:mute mic` (the microphone: its mute, or for one without, its level to 0 and back), `:volume 30`, `:output airpods` lists the sound outputs, the current one first; Enter switches to it |
+| Notes | `:delete note milk` (by its title or what's in it; to the Trash, asks first) |
 | Shell | `:!git status` (below) |
 | Copperlight | `:config` opens config.toml |
 
@@ -270,9 +281,17 @@ The row shows the title and date Copperlight read before you press Enter; a noti
 - **Note** (`note`): a floating note on a glass card like the launcher's, always at hand, saved to `note.txt` as
   you type. Drag it by its title, resize it from its bottom-right corner; it remembers both. Esc hides it. Edits
   made in another editor are picked up.
-- **Named notes** (`note work`): as many as you like, each in `notes/<name>.txt`, with its own place on screen.
-  `note` lists them under the note; `note wo` finds them by name, or offers a new one. `add note` adds to the
-  note. To delete one, delete its file.
+- **Notes, as many as you like, with no names:** a note's first line is its title (a heading's `#`s left out), on its
+  card and in the list. `note` offers your last note and Notes; Tab on it is the Notes chip, with only your notes,
+  the last edited first, each with the line after the title, its age and, beside the list, its text, then New Note:
+  Enter opens an empty one, written once you type. Typed in the chip, `milk` keeps the notes that say it (with the
+  line), and New Note starts one with it; `note milk` ⇥ goes straight there. `new note` works from the field. `n` opens your last note. Anywhere, from 3
+  letters, a note with the words shows below the name matches. `:delete note milk` (to the Trash, asks first).
+  Each is a text file (note.txt, and the ones in `notes/`, named by when they were made), with its own place on
+  screen. `add note` adds a line to note.txt.
+- **Markdown in notes** (`[notes] markdown`, on by default): headings, bold, italic, code, lists, quotes and links are
+  styled as you type, the syntax dimmed; `- [ ]` checkboxes tick with a click (⌘Z undoes it). The files stay plain
+  text.
 - **Clipboard history** (`clip`): text and images you copy, newest first under Today, Yesterday, Earlier,
   with a preview and details. Typing filters (`image` lists images). Enter pastes into the app you were in.
   Its own `:` commands: `:copy` (copy without pasting), `:delete`, `:clear` (asks first). Skips copies marked
@@ -312,7 +331,7 @@ Otherwise macOS asks when a feature first needs one:
 | macOS asks for | When | For |
 |---|---|---|
 | Accessibility | First paste or window command | Pasting (⌘V into your app), window commands and layouts, `:window`, `:lock`, menu search, `:play` and the track keys, opening on the selected text |
-| Automation | First `:empty trash`, `:dark`, `:restart`, `:shut down` | Asking Finder, System Events, loginwindow to do it |
+| Automation | First `:empty trash`, `:dark`, `:restart`, `:shut down`, `:log out` | Asking Finder, System Events, loginwindow to do it |
 | Reminders | First `add todo` | Adding reminders (no add-only option exists) |
 | Calendars, add only | First `add event` | Adding events |
 | Calendars, full access | `meetings`, from its Allow row | Reading today's events |
@@ -327,7 +346,7 @@ first time per launch; after that, a notification says where it is.
 ## Where things live
 
 All in `~/.config/copperlight/`: `config.toml` (your settings, hot reloaded; a mistake shows as an error row),
-`note.txt`, `notes/` (named notes), `state.json` (frecency, recent queries, saved layouts, the timer), `clipboard.sqlite` (history, readable only
+`note.txt`, `notes/` (the other notes), `state.json` (frecency, recent queries, saved layouts, the timer), `clipboard.sqlite` (history, readable only
 by you), `rates.json` (currency rates), `apps.json` (what each app does) and `homebrew-apps.json` (Homebrew's list,
 trimmed), `photos.sqlite` (the text in your photos), `scripts/` (on the shell's PATH).
 

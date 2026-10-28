@@ -28,10 +28,20 @@ max_images = 100               # default; images also count toward max_items. 0 
 [files]
 scopes = ["~/code", "~/Documents", "~/Downloads", "~/Desktop"]                 # default
 exclude = ["node_modules", ".git", ".venv", "__pycache__", "DerivedData", "build", ".build"]   # default
+terminal = "Ghostty"           # optional: where :terminal opens a folder (an app's name or bundle id); unset: Terminal.
+                               # Settings › Files › Terminal.
 
 [pomodoro]
 default_minutes = 25           # default, 1–240
 break_minutes = 5              # default, 1–240
+
+[meetings]
+show_on_open = false           # default. true: the empty launcher lists today's next events. false: only a meeting
+                               # with a call, from 10 minutes before it starts. Settings › General › Calendar.
+
+[notes]
+markdown = true                # default: style Markdown in notes as you type (# headings, **bold**, - [ ] checkboxes,
+                               # links). The files stay plain text. Settings › General › Notes.
 
 [translate]
 default_target = "german"      # optional: "translate bom dia" without "to …" goes here (an English name or a code,
@@ -129,8 +139,8 @@ Everything lives in `~/.config/copperlight/`:
 - `config.toml`: yours to edit (above).
 - `note.txt`: the note's text. Saved 500 ms after you stop typing, and when the note hides or the app
   quits. Edits made elsewhere are picked up while the note doesn't have focus.
-- `notes/`: named notes (`note work` → `notes/work.txt`), saved the same way. Edits made elsewhere show the next
-  time the note opens. Delete a file to delete that note.
+- `notes/`: the other notes, one text file each, named by when they were made (a note's title is its first line),
+  saved the same way. Edits made elsewhere show the next time the note opens. Delete a file to delete that note.
 - `state.json`: app state, one top-level section per feature (`frecency`, `windows`, `pomodoro`). Written by the app
   (debounced, atomic). Sections it doesn't know are kept. If the file is unreadable it's moved to
   `state.json.bad` and the app starts fresh.

@@ -105,6 +105,11 @@ extension Verb {
             Verb(keyword: "hide", title: "Hide Application", icon: .symbol("eye.slash"),
                  targets: { runningAppRows($0, verb: "Hide") { $0.hide() } }),
             Verb(keyword: "hide others", title: "Hide Others", icon: .symbol("eye.slash.circle"), run: { hideOtherApps() }),
+            Verb(keyword: "unhide all", title: "Unhide All Apps", icon: .symbol("eye"), run: { unhideAllApps() }),
+            Verb(keyword: "quit all", title: "Quit All Apps", icon: .symbol("xmark.circle"),
+                 confirm: "Quit every app? Apps with unsaved changes ask first.", run: { quitApps(keepingFront: false) }),
+            Verb(keyword: "quit others", title: "Quit Other Apps", icon: .symbol("xmark.circle"),
+                 confirm: "Quit every app but the one in front? Apps with unsaved changes ask first.", run: { quitApps(keepingFront: true) }),
             Verb(keyword: "relaunch", title: "Relaunch Application", icon: .symbol("arrow.clockwise.circle"),
                  targets: { runningAppRows($0, verb: "Relaunch") { relaunch($0) } }),
             // Files
@@ -112,8 +117,21 @@ extension Verb {
                 NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: $0)])
             },
             fileVerb("copy path", "Copy Path", icon: .symbol("doc.on.doc"), files: files) { copyToClipboard($0) },
+            Verb(keyword: "open with", title: "Open With", icon: .symbol("arrow.up.forward.app"), targets: { await openWithRows($0, files: files) }),
+            fileVerb("trash", "Move to Trash", icon: .symbol("trash"), files: files, confirm: { "Move “\($0)” to the Trash?" }) { moveToTrash($0) },
+            fileVerb("terminal", "Open in Terminal", icon: .symbol("terminal"), files: files) { path in
+                Task { openInTerminal(path, app: await files.terminalApp()) }
+            },
             // The Mac
             Verb(keyword: "lock", title: "Lock Screen", icon: .symbol("lock.fill"), run: { lockScreen() }),
+            Verb(keyword: "log out", title: "Log Out", icon: .symbol("rectangle.portrait.and.arrow.right"),
+                 confirm: "Log out? Apps with unsaved changes ask first.",
+                 run: { osascript(#"tell application "loginwindow" to «event aevtrlgo»"#, label: "Log Out") }),
+            Verb(keyword: "screen saver", title: "Start Screen Saver", icon: .symbol("sparkles.tv"),
+                 run: { runDetached("/usr/bin/open", ["-a", "ScreenSaverEngine"], label: "Screen Saver") }),
+            Verb(keyword: "show desktop", title: "Show Desktop", icon: .symbol("menubar.dock.rectangle"), run: { hideAllApps() }),
+            Verb(keyword: "open trash", title: "Open Trash", icon: .symbol("trash"),
+                 run: { NSWorkspace.shared.open(URL.homeDirectory.appending(path: ".Trash")) }),
             Verb(keyword: "sleep", title: "Sleep", icon: .symbol("moon.zzz.fill"),
                  run: { runDetached("/usr/bin/pmset", ["sleepnow"], label: "Sleep") }),
             Verb(keyword: "sleep displays", title: "Sleep Displays", icon: .symbol("display"),
@@ -147,6 +165,8 @@ extension Verb {
             Verb(keyword: "volume", title: "Set Volume", icon: .symbol("speaker.wave.2.fill"), targets: { volumeRows($0) }),
             Verb(keyword: "mute", title: "Toggle Mute", icon: .symbol("speaker.slash.fill"),
                  showing: { outputIsMuted() ? "Unmute" : "Mute" }, run: { toggleMute() }),
+            Verb(keyword: "mute mic", title: "Toggle Microphone", icon: .symbol("mic.slash.fill"),
+                 showing: { micIsMuted() ? "Unmute Microphone" : "Mute Microphone" }, run: { toggleMicMute() }),
             Verb(keyword: "output", title: "Switch Sound Output", icon: .symbol("hifispeaker"), targets: { outputRows($0) }),
             Verb(keyword: "hidden files", title: "Toggle Hidden Files", icon: .symbol("eye"), run: {
                 // Finder reads it at launch, so it restarts (its windows come back).
@@ -165,22 +185,15 @@ extension Verb {
     }
 
     /// `:reveal readme`: a row per matching file (file search, so from 2 letters). A path (`:reveal ~/code/copperlight/`)
-    /// lists that folder instead, with the folder itself first.
+    /// lists that folder instead, with the folder itself first. `confirm`: a question to ask first, given the file's name.
     private static func fileVerb(_ keyword: String, _ title: String, icon: LauncherResult.Icon, files: FileSearchProvider,
+                                 confirm: (@Sendable (String) -> String)? = nil,
                                  act: @escaping @MainActor @Sendable (String) -> Void) -> Verb {
         Verb(keyword: keyword, title: title, icon: icon, targets: { filter in
-            let paths: [(path: String, name: String)]
-            if let query = pathQuery(filter) {
-                let folder = query.url
-                paths = (query.filter.isEmpty ? [(folder.path, folder.lastPathComponent)] : [])
-                    + (pathEntries(query) ?? []).map { ($0.path, $0.name) }
-            } else {
-                paths = await files.hits(for: filter, limit: 20).map { ($0.path, $0.name) }
-            }
-            return paths.enumerated().map { index, file in
+            await fileTargets(filter, files: files).enumerated().map { index, file in
                 LauncherResult(id: "\(keyword):\(file.path)", title: "\(title): \(file.name)", subtitle: shortParentPath(file.path),
                                icon: .file(file.path), score: -Double(index), actionTitle: title,
-                               action: { act(file.path) })
+                               action: { act(file.path) }, confirm: confirm?(file.name))
             }
         })
     }
@@ -209,6 +222,28 @@ func runningAppRows(_ filter: String, verb: String, confirm: Bool = false,
 @MainActor func hideOtherApps() {
     let front = NSWorkspace.shared.frontmostApplication
     for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && app != front { app.hide() }
+}
+
+/// Every app's windows back (`:hide others`, `:show desktop` undone).
+@MainActor func unhideAllApps() {
+    for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && app.isHidden { app.unhide() }
+}
+
+/// `:show desktop`: every app hidden, the one in front too, Finder's windows included. `:unhide all` brings them back.
+/// ponytail: hides rather than sweeping windows aside as Mission Control does (that's a private API).
+@MainActor func hideAllApps() {
+    for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && app.processIdentifier != getpid() { app.hide() }
+}
+
+/// `:quit all`, `:quit others`: asks every app to quit, as ⌘Q would (unsaved changes ask first). Never Finder, which
+/// isn't meant to quit, or Copperlight.
+@MainActor func quitApps(keepingFront: Bool) {
+    let front = NSWorkspace.shared.frontmostApplication
+    for app in NSWorkspace.shared.runningApplications
+    where app.activationPolicy == .regular && app.bundleIdentifier != "com.apple.finder" && app.processIdentifier != getpid()
+        && !(keepingFront && app == front) {
+        app.terminate()
+    }
 }
 
 @MainActor func relaunch(_ app: NSRunningApplication) {
@@ -264,13 +299,102 @@ func volumeRows(_ text: String) -> [LauncherResult] {
 }
 
 /// `:shortcut name`: a row per Shortcut from Apple's Shortcuts app.
-func shortcutRows(_ filter: String) -> [LauncherResult] {
-    shortcutNames().enumerated().compactMap { index, name in
+/// The Shortcut a query names, the longest name first, and the text after it: `log water 500ml` → ("Log Water", "500ml").
+/// nil without text after a whole name.
+func shortcutAndInput(_ text: String, names: [String]) -> (name: String, input: String)? {
+    let lower = text.lowercased()
+    for name in names.sorted(by: { $0.count > $1.count }) where lower.hasPrefix(name.lowercased() + " ") {
+        let input = text.dropFirst(name.count).trimmingCharacters(in: .whitespaces)
+        if !input.isEmpty { return (name, input) }
+    }
+    return nil
+}
+
+/// `:shortcut name`, and `:shortcut name text`: the text is the Shortcut's input.
+func shortcutRows(_ filter: String, names: [String]? = nil) -> [LauncherResult] {
+    let names = names ?? shortcutNames()
+    if let (name, input) = shortcutAndInput(filter, names: names) {
+        return [LauncherResult(id: "shortcut:\(name)", title: "Run Shortcut: \(name)", subtitle: "With “\(input)”",
+                               icon: .file("/System/Applications/Shortcuts.app"), score: 1, actionTitle: "Run",
+                               action: { runShortcut(name, input: input) })]
+    }
+    return names.enumerated().compactMap { index, name in
         guard let score = filter.isEmpty ? -0.01 * Double(index) : fuzzyScore(filter, name) else { return nil }
         return LauncherResult(id: "shortcut:\(name)", title: "Run Shortcut: \(name)",
                               icon: .file("/System/Applications/Shortcuts.app"), score: score, actionTitle: "Run",
-                              action: { runDetached("/usr/bin/shortcuts", ["run", name], label: name) })
+                              action: { runShortcut(name, input: nil) })
     }
+}
+
+/// Runs a Shortcut, `input` given as a text file, which text actions read as text.
+@MainActor func runShortcut(_ name: String, input: String?) {
+    guard let input else { return runDetached("/usr/bin/shortcuts", ["run", name], label: name) }
+    let file = FileManager.default.temporaryDirectory.appending(path: "shortcut-input-\(UUID().uuidString).txt")
+    guard (try? input.write(to: file, atomically: true, encoding: .utf8)) != nil else { return notify("Couldn't run \(name)") }
+    runDetached("/usr/bin/shortcuts", ["run", name, "--input-path", file.path], label: name)
+    Task { // read when the Shortcut starts; then it's not needed
+        try? await Task.sleep(for: .seconds(60))
+        try? FileManager.default.removeItem(at: file)
+    }
+}
+
+// MARK: Files
+
+/// The files a `:` file command lists: file search (from 2 letters), or a path's folder, the folder itself first.
+func fileTargets(_ filter: String, files: FileSearchProvider) async -> [(path: String, name: String)] {
+    guard let query = pathQuery(filter) else { return await files.hits(for: filter, limit: 20).map { ($0.path, $0.name) } }
+    let folder = query.url
+    return (query.filter.isEmpty ? [(folder.path, folder.lastPathComponent)] : []) + (pathEntries(query) ?? []).map { ($0.path, $0.name) }
+}
+
+/// Something that exists at the start of `text`, and what follows it: `~/a b.txt code` → ("/Users/…/a b.txt", "code").
+/// The longest first, so names with spaces work. nil when `text` doesn't start with one.
+func existingPathPrefix(_ text: String) -> (path: String, rest: String)? {
+    guard text.hasPrefix("/") || text.hasPrefix("~") else { return nil }
+    for end in [text.endIndex] + text.indices.filter({ text[$0] == " " }).reversed() {
+        let path = (String(text[..<end]) as NSString).expandingTildeInPath
+        if FileManager.default.fileExists(atPath: path) { return (path, text[end...].trimmingCharacters(in: .whitespaces)) }
+    }
+    return nil
+}
+
+/// `:open with readme`: files, as `:reveal` lists them, each filling itself in (Tab or Enter); then, after a file's path,
+/// the apps that open it, its default app first, narrowed by what follows (`… code`).
+func openWithRows(_ text: String, files: FileSearchProvider) async -> [LauncherResult] {
+    guard let (path, filter) = existingPathPrefix(text) else {
+        return await fileTargets(text, files: files).enumerated().map { index, file in
+            LauncherResult(id: "open with:\(file.path)", title: "Open With: \(file.name)", subtitle: shortParentPath(file.path),
+                           icon: .file(file.path), score: -Double(index), actionTitle: "Choose", action: {},
+                           completion: ":open with \(file.path) ")
+        }
+    }
+    let url = URL(filePath: path), name = url.lastPathComponent
+    let standard = NSWorkspace.shared.urlForApplication(toOpen: url)
+    var seen = Set<String>()
+    let apps = ([standard].compactMap(\.self) + NSWorkspace.shared.urlsForApplications(toOpen: url)).filter { seen.insert($0.path).inserted }
+    return apps.enumerated().compactMap { index, app -> LauncherResult? in
+        let appName = FileManager.default.displayName(atPath: app.path).replacingOccurrences(of: ".app", with: "")
+        guard let score = filter.isEmpty ? -0.01 * Double(index) : fuzzyScore(filter, appName) else { return nil }
+        return LauncherResult(id: "open with:\(path):\(app.path)", title: appName, subtitle: app == standard ? "\(name) · its default app" : name,
+                              icon: .file(app.path), score: score, actionTitle: "Open With",
+                              action: { NSWorkspace.shared.open([url], withApplicationAt: app, configuration: .init()) })
+    }.sorted { $0.score > $1.score }
+}
+
+/// Where `:terminal` opens: a folder itself, a file's folder.
+func terminalFolder(for path: String) -> String {
+    var folder: ObjCBool = false
+    return FileManager.default.fileExists(atPath: path, isDirectory: &folder) && folder.boolValue ? path : (path as NSString).deletingLastPathComponent
+}
+
+/// `app`: `[files] terminal` (iTerm, Ghostty, Warp…), nil for Terminal.
+@MainActor func openInTerminal(_ path: String, app: String?) {
+    runDetached("/usr/bin/open", ["-a", app ?? "Terminal", terminalFolder(for: path)], label: app ?? "Terminal")
+}
+
+@MainActor func moveToTrash(_ path: String) {
+    do { try FileManager.default.trashItem(at: URL(filePath: path), resultingItemURL: nil) }
+    catch { notify("Couldn't move \((path as NSString).lastPathComponent) to the Trash", error.localizedDescription) }
 }
 
 /// Asks the `shortcuts` tool. ponytail: blocks this (background) thread ~20 ms per keystroke; cache it if that grows.

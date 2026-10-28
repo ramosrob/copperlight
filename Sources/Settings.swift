@@ -245,6 +245,16 @@ private struct GeneralPane: View {
                 Note("For text without “to …”, like “translate bom dia”. Automatic: the first of your Mac’s languages the text isn’t in, which is also used when the text is already in this one.")
             }
         }
+        Section {
+            Toggle("Show today's events when the launcher opens", isOn: model.binding(\.meetings.showOnOpen, "meetings", "show_on_open") { .bool($0) })
+        } header: { Text("Calendar") } footer: {
+            Note("Before you type, the launcher lists what's next today, with a copper badge on what's soon. Off, it only shows a meeting with a call, from 10 minutes before it starts. Either needs Calendars access: type “meetings” once.")
+        }
+        Section {
+            Toggle("Style Markdown as you type", isOn: model.binding(\.notes.markdown, "notes", "markdown") { .bool($0) })
+        } header: { Text("Notes") } footer: {
+            Note("# headings, **bold**, *italic*, `code`, lists, - [ ] checkboxes you can click, and links. The notes stay plain text files.")
+        }
         Section("Pomodoro") {
             Minutes(title: "Focus", value: model.binding(\.pomodoro.defaultMinutes, "pomodoro", "default_minutes") { .int($0) })
             Minutes(title: "Break", value: model.binding(\.pomodoro.breakMinutes, "pomodoro", "break_minutes") { .int($0) })
@@ -327,6 +337,17 @@ private struct FilesPane: View {
             }
         } header: { Text("Hide results inside") } footer: {
             Note("Whole folder or file names, anywhere in the path, like node_modules.")
+        }
+        let terminal = model.text(\.files.terminal, "files", "terminal")
+        let terminals = installedTerminals()
+        Section {
+            Picker("Open folders in", selection: terminal) {
+                Text("Terminal").tag(String?.none)
+                let current = terminal.wrappedValue.map { terminals.contains($0) ? [] : [$0] } ?? []
+                ForEach(terminals + current, id: \.self) { AppName(app: $0).tag(String?.some($0)) }
+            }
+        } header: { Text("Terminal") } footer: {
+            Note("Where :terminal opens a folder, or a file's folder.")
         }
         Section {
             Toggle("Look up app descriptions online", isOn: model.binding(\.apps.online, "apps", "online") { .bool($0) })
@@ -760,6 +781,12 @@ private struct AppChooser: View {
 /// Folders, several at once.
 @MainActor private func chooseFile() async -> String? {
     await choose(NSOpenPanel()).map { ($0.path as NSString).abbreviatingWithTildeInPath }
+}
+
+/// The terminal apps installed besides Terminal, by name.
+private func installedTerminals() -> [String] {
+    ["com.googlecode.iterm2", "com.mitchellh.ghostty", "dev.warp.Warp-Stable", "net.kovidgoyal.kitty", "org.alacritty", "com.github.wez.wezterm"]
+        .compactMap { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0)?.deletingPathExtension().lastPathComponent }
 }
 
 /// Apps that open web links, by name.

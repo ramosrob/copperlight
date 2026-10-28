@@ -52,6 +52,8 @@ struct LauncherResult: Identifiable, Sendable {
     var completion: String? = nil
     /// The key the selected row shows beside what it does.
     var key: String { completion != nil ? "tab" : "↵" }
+    /// Something for the pane beside the list: text, text to load, or a picture.
+    var hasPreview: Bool { preview != nil || loadPreview != nil || previewImage != nil }
     /// Enter runs it, drops the row and keeps the panel open, so several can go in a row (`:delete`).
     var staysOpen = false
     /// Enter runs it and leaves the panel as it is, for the next press (`:nudge left`).
@@ -60,6 +62,8 @@ struct LauncherResult: Identifiable, Sendable {
     var confirm: String? = nil
     /// Rows get a header where this changes (clipboard: Today, Yesterday, Earlier).
     var section: String? = nil
+    /// A copper pill beside the title, for what's coming up ("in 9 min", "Now").
+    var badge: String? = nil
     /// Full text for the preview pane beside the list, with label/value lines under it.
     var preview: String? = nil
     var previewStyle = PreviewStyle.code
@@ -159,6 +163,8 @@ final class SearchModel {
     @ObservationIgnored private let state: StateStore?
     @ObservationIgnored private var frecency: Frecency.Table
     @ObservationIgnored private var recent: [RecentQuery]
+    /// What the empty field shows (the next meeting, a few minutes before it starts); nothing once you type.
+    @ObservationIgnored private let idle: (@Sendable () async -> [LauncherResult])?
     /// The query ↑ brought back, and where it is in `recent`: ↑ again goes on from there.
     @ObservationIgnored private var recalled: (index: Int, query: String)?
 
@@ -166,7 +172,8 @@ final class SearchModel {
     /// `exclusive`: a query starting with one of these prefixes ("f ") goes to that provider alone.
     /// `frecency`: rows picked often rise, counted in this store (the launcher; clipboard history keeps its order).
     init(providers: [any ResultProvider], searchesEmptyQuery: Bool = false, exclusive: [String: any ResultProvider] = [:],
-         frecency state: StateStore? = nil) {
+         frecency state: StateStore? = nil, idle: (@Sendable () async -> [LauncherResult])? = nil) {
+        self.idle = idle
         self.providers = providers
         self.searchesEmptyQuery = searchesEmptyQuery
         self.exclusive = exclusive
@@ -242,6 +249,8 @@ final class SearchModel {
             picked(row.id)
             return fill(completion)
         }
+        // A row with something to show: Tab opens it beside the list (and closes it again).
+        if let row = selected, row.hasPreview, !previewsByDefault { return previewOpen.toggle() }
         // The shortest name that starts with it, when every other one goes on from it ("translate " before
         // "translate to german "); "add" could be several things, so it fills in nothing.
         let lower = query.lowercased()
@@ -273,6 +282,13 @@ final class SearchModel {
     }
 
     var rows: [LauncherResult] { confirming.map { [$0] } ?? ((notice.map { [$0] } ?? []) + results) }
+
+    /// The preview beside the list, opened with Tab in the general search, for the selected row, until the query changes.
+    var previewOpen = false
+    /// Where reading is the point it's open from the start: clipboard history, a chip, a command's output.
+    var previewsByDefault: Bool { searchesEmptyQuery || mode != nil || confirming != nil }
+    /// Only for a row with something to show: never an empty pane.
+    var showsPreview: Bool { (selected?.hasPreview ?? false) && (previewsByDefault || previewOpen) }
     var selected: LauncherResult? { rows.indices.contains(selection) ? rows[selection] : nil }
 
     func move(_ delta: Int) {
@@ -292,9 +308,14 @@ final class SearchModel {
     private func search() {
         task?.cancel()
         confirming = nil
+        previewOpen = false
         selection = 0
         let query = query.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty || searchesEmptyQuery else { results = []; settling = false; return }
+        guard !query.isEmpty || searchesEmptyQuery else {
+            (results, settling) = ([], false)
+            if let idle { task = Task { let rows = await idle(); if !Task.isCancelled { results = rows } } }
+            return
+        }
         // A chip's provider alone; else the longest prefix wins: ":!" (shell) over ":" (commands).
         let inMode = modeMatch != nil
         let providers = modeMatch.map { [$0.provider] }
@@ -596,8 +617,8 @@ private struct LauncherView: View {
                 .modifier(GlassBackground(shape: Capsule(), radius: Self.fieldHeight / 2 - 0.5)) // a mask 2r + 1 tall: exactly the field
                 .overlay(Capsule().strokeBorder(LinearGradient.brand, lineWidth: 1.5))
             if let selected = model.selected {
-                // A list with previews (clipboard) keeps its full height so the preview has room.
-                let hasPreview = model.rows.contains { $0.preview != nil || $0.loadPreview != nil || $0.previewImage != nil }
+                // With the preview showing, the card takes its full height so the preview has room.
+                let hasPreview = model.showsPreview
                 HStack(spacing: Self.cardPadding) {
                     list
                     if hasPreview { PreviewPane(result: selected).frame(width: Self.previewWidth) }
@@ -634,7 +655,9 @@ private struct LauncherView: View {
                                     .padding(.bottom, 6)
                                     .frame(maxWidth: .infinity, minHeight: Self.sectionHeight, alignment: .bottomLeading)
                             }
-                            ResultRow(result: result, selected: index == model.selection)
+                            let selected = index == model.selection
+                            ResultRow(result: result, selected: selected,
+                                      offersPreview: selected && result.hasPreview && result.completion == nil && !model.showsPreview)
                         }
                         .id(result.id)
                     }
@@ -725,12 +748,22 @@ struct Keycap: View {
 private struct ResultRow: View {
     let result: LauncherResult
     let selected: Bool
+    var offersPreview = false // "Preview ⇥": Tab opens the pane beside the list
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         HStack(spacing: 13) {
             IconView(icon: result.icon, size: 26)
             Text(result.title).font(.system(size: 14.5)).lineLimit(1).layoutPriority(1)
+            if let badge = result.badge {
+                ViewThatFits(in: .horizontal) { // the title comes first: with the preview open, the badge steps aside
+                    Text(badge).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.copperDeep)
+                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .background(Color.copper.opacity(0.18), in: Capsule())
+                        .fixedSize()
+                    Color.clear.frame(width: 0, height: 0)
+                }
+            }
             if !result.subtitle.isEmpty {
                 ViewThatFits(in: .horizontal) { // whole or not at all: cut to a letter or two, it said nothing
                     Text(result.subtitle).font(.system(size: 13)).foregroundStyle(.tertiary).lineLimit(1).fixedSize()
@@ -738,10 +771,16 @@ private struct ResultRow: View {
                 }
             }
             Spacer(minLength: 8)
-            if selected, !result.actionTitle.isEmpty {
+            if selected, !result.actionTitle.isEmpty || offersPreview {
                 HStack(spacing: 7) {
-                    Text(result.actionTitle).font(.system(size: 12)).foregroundStyle(.secondary)
-                    Keycap(label: result.key)
+                    if offersPreview {
+                        Text("Preview").font(.system(size: 12)).foregroundStyle(.secondary)
+                        Keycap(label: "tab").padding(.trailing, 6)
+                    }
+                    if !result.actionTitle.isEmpty {
+                        Text(result.actionTitle).font(.system(size: 12)).foregroundStyle(.secondary)
+                        Keycap(label: result.key)
+                    }
                 }
                 .fixedSize()
             } else if !result.accessory.isEmpty {

@@ -9,16 +9,10 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Date math:** `days until dec 25`, `monday in 3 weeks`, `time in 4 hours`, recognized by their shape, like math.
 - **Better placeholders:** `{cursor}` (where the cursor lands after a snippet pastes), dates with a format and an
   offset (`{date +7d}`), and `{clipboard}`, `{selection}` and `{date}` inside url and shell commands.
-- **File commands:** `:open with`, `:trash` and `:terminal` on a file or folder.
 - **Your own fallback rows:** choose what the last rows offer when nothing matches: several search engines, or any of
   your commands.
-- **The next meeting, before it starts:** a few minutes ahead it's the first row, and Enter joins.
 - **Script filters:** a script prints rows, Copperlight lists them, Enter runs the one you pick. New features can live
   in a script instead of the core.
-- **Shortcuts with input:** text after `:shortcut name` goes to the Shortcut, which reaches any app's actions.
-- **More of the Mac:** `:quit all`, `:quit others`, `:unhide all`, `:log out`, `:screen saver`, `:show desktop`,
-  `:open trash`, and `:mute mic` for calls.
-- **Search your notes:** the text of every note, from the launcher.
 - **Updates,** for 1.0: tell you when a new version is out, and install it.
 
 ## Later
@@ -41,8 +35,8 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   selected in Finder as what the hotkey acts on; `:uninstall` (asks first); volume per app.
 - **Your day:** contacts (call, FaceTime, message or email someone by name); meetings beyond today, free slots to
   copy, and the next meeting in the menu bar; due and overdue reminders, with Enter to complete one; lists, priorities
-  and places in `add todo` and `add event`; Markdown and checkboxes in notes; a stopwatch and `timer until 15:30`;
-  screenshots by date, and pasting the latest.
+  and places in `add todo` and `add event`; a stopwatch and `timer until 15:30`; screenshots by date, and pasting the
+  latest.
 - **Screen tools:** pick a color from the screen; copy the text or a QR code in a region of the screen (recognized on
   your Mac); make a QR code from text.
 - **The Mac:** Stage Manager on and off; dismiss notifications.
@@ -57,9 +51,17 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
-- **v0.6:** opens with the text you selected; ↑ for what you ran before; `ip`, `battery`, `disk` and `port
-  3000`; window quarters, `:nudge`, and saved layouts (`:layout save work`, `:layout work`); a search engine to
-  choose, with its logo; System Settings opens once per launch when Accessibility is off.
+- **v0.7:** the preview opens with Tab in the general search, so the list keeps its width; the next meeting, waiting
+  in the empty launcher from 10 minutes before it starts (Enter joins), or all of today's events with a setting;
+  `agenda` and `events` too, a copper badge on what's within the hour, and Tab for an event's details; notes you
+  browse (`note` ⇥: the Notes chip, every note, last edited first, with a preview; typing finds the one that says it,
+  and so does typing `milk` anywhere), titled by their first line, `:delete note`, and Markdown styled as you type,
+  with checkboxes you click; `:open with`, `:trash` and `:terminal` (Terminal, or the app you pick) on files and
+  folders; text after `:shortcut name` is its input; `:quit all`, `:quit others`, `:unhide all`, `:log out`, `:screen
+  saver`, `:show desktop`, `:open trash` and `:mute mic`.
+- **v0.6:** opens with the text you selected; ↑ for what you ran before; `ip`, `battery`, `disk` and `port 3000`;
+  window quarters, `:nudge`, and saved layouts (`:layout save work`, `:layout work`); a search engine to choose, with
+  its logo; System Settings opens once per launch when Accessibility is off.
 - **v0.5:** Settings › General › Translate to; text in a language that isn't one of your Mac's is read right.
 - **v0.4:** timers (`timer 10 min tea`), counting down in the menu bar beside the pomodoro.
 - **v0.3:** music and sound from the field (`:play`, `:next track`, `:mute`, `:output airpods`); `:wifi` and `:awake`,

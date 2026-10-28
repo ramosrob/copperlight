@@ -66,6 +66,9 @@ actor FileSearchProvider: ResultProvider {
 
     func setSettings(_ settings: Config.Files) { self.settings = settings }
 
+    /// `[files] terminal`, for `:terminal`.
+    func terminalApp() -> String? { settings.terminal }
+
     /// Matches by name; typed after "f ", files with the words inside too (the launcher gets those from
     /// FileContentProvider, so the names never wait for the slower content search).
     func results(for query: String) async -> [LauncherResult] {
