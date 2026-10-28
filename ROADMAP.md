@@ -35,8 +35,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   selected in Finder as what the hotkey acts on; `:uninstall` (asks first); volume per app.
 - **Your day:** contacts (call, FaceTime, message or email someone by name); meetings beyond today, free slots to
   copy, and the next meeting in the menu bar; due and overdue reminders, with Enter to complete one; lists, priorities
-  and places in `add todo` and `add event`; a stopwatch and `timer until 15:30`; screenshots by date, and pasting the
-  latest.
+  and places in `add todo` and `add event`; screenshots by date, and pasting the latest.
 - **Screen tools:** pick a color from the screen; copy the text or a QR code in a region of the screen (recognized on
   your Mac); make a QR code from text.
 - **The Mac:** Stage Manager on and off; dismiss notifications.
@@ -51,6 +50,8 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
+- **Next release:** `timer until 15:30`; a stopwatch; what's running (the pomodoro, the timer, the stopwatch) waiting
+  in the empty launcher, its time ticking.
 - **v0.7:** the preview opens with Tab in the general search, so the list keeps its width; the next meeting, waiting
   in the empty launcher from 10 minutes before it starts (Enter joins), or all of today's events with a setting;
   `agenda` and `events` too, a copper badge on what's within the hour, and Tab for an event's details; notes you

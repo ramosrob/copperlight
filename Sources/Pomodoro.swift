@@ -49,15 +49,18 @@ func countdown(_ seconds: TimeInterval) -> String {
     }
 
     private static let stateSection = "pomodoro"
+    private let store: StateStore
     var defaultMinutes = 25 // [pomodoro] default_minutes
     var breakMinutes = 5 // [pomodoro] break_minutes
     private(set) var running: Running?
     private var item: NSStatusItem?
     private var timer: Timer?
 
+    init(store: StateStore = .shared) { self.store = store }
+
     /// Picks up a timer from before a restart. One that ran out meanwhile ends right away.
     func restore() {
-        running = StateStore.shared.get(Self.stateSection, as: Running.self)
+        running = store.get(Self.stateSection, as: Running.self)
         if running != nil { show() }
     }
 
@@ -66,13 +69,13 @@ func countdown(_ seconds: TimeInterval) -> String {
         Task { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) }
         if running != nil { stop() } // a break replacing a pomodoro gets its own icon and menu
         running = Running(deadline: .now + Double(minutes) * 60, minutes: minutes, isBreak: isBreak ? true : nil)
-        StateStore.shared.set(Self.stateSection, running)
+        store.set(Self.stateSection, running)
         show()
     }
 
     func stop() {
         running = nil
-        StateStore.shared.set(Self.stateSection, running)
+        store.set(Self.stateSection, running)
         timer?.invalidate()
         timer = nil
         if let item { NSStatusBar.system.removeStatusItem(item) }
@@ -138,24 +141,29 @@ struct PomodoroProvider: ResultProvider {
         // "timer" (another name) is "pomo".
         let commands = parsePomodoro(otherNameScore(query, "Pomodoro") != nil ? "pomo" : query, defaultMinutes: defaultMinutes, breakMinutes: breakMinutes)
         let left = running.map { countdown(remaining(until: $0.deadline)) }
+        // Plain "pomo" offers what makes sense now: not starting the one that's running. Asked for ("pomo 50"), it asks.
+        let (offered, onBreak) = (commands.count > 1, running.map { $0.isBreak == true })
         // Scores above apps (they top out at 1.8): typing "pomo" means this.
         return commands.compactMap { command in
             switch command {
             case .start(let minutes):
+                if offered, onBreak == false { return nil }
                 return LauncherResult(
                     id: "pomodoro:start", title: "Start Pomodoro", subtitle: "\(minutes) minutes",
                     icon: .symbol("timer"), score: 50, actionTitle: "Start", action: { pomodoro.start(minutes: minutes) },
                     confirm: left.map { "Replace the running \(running!.title.lowercased()) (\($0) left) with \(minutes) minutes?" })
             case .startBreak(let minutes):
+                if offered, onBreak == true { return nil }
                 return LauncherResult(
                     id: "pomodoro:break", title: "Take a Break", subtitle: "\(minutes) minutes",
                     icon: .symbol("cup.and.saucer"), score: 50, actionTitle: "Start", action: { pomodoro.start(minutes: minutes, isBreak: true) },
                     confirm: left.map { "Replace the running \(running!.title.lowercased()) (\($0) left) with a \(minutes)-minute break?" })
             case .stop:
-                if let left, let running {
+                if let running {
                     return LauncherResult(
-                        id: "pomodoro:stop", title: "Stop \(running.title)", subtitle: "\(left) left",
-                        icon: .symbol("stop.fill"), score: 51, actionTitle: "Stop", action: { pomodoro.stop() })
+                        id: "pomodoro:stop", title: "Stop \(running.title)",
+                        subtitle: "\(running.minutes) minutes · ends \(running.deadline.formatted(date: .omitted, time: .shortened))",
+                        icon: .symbol("stop.fill"), score: 51, actionTitle: "Stop", action: { pomodoro.stop() }, ticking: .down(to: running.deadline))
                 }
                 // "pomo stop" with nothing running says so; plain "pomo" just offers to start.
                 return commands.count > 1 ? nil : LauncherResult(

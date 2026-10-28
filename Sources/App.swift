@@ -174,6 +174,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var photoIndexer = photoText.map(PhotoIndexer.init)
     private let pomodoro = Pomodoro()
     private let countdown = Countdown()
+    private let stopwatch = Stopwatch()
     private lazy var builtins = BuiltinProvider(showNote: { [unowned self] in showNote($0) },
                                                 showClipboard: { [unowned self] in showClipboard() },
                                                 showWelcome: { [unowned self] in showWelcome() },
@@ -191,17 +192,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                      (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (TextToolProvider(), .quickTools), (capture, .notes), (apps, nil),
                      (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
                      (TimeZoneProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools),
-                     (TimerProvider(clock: countdown), .quickTools), (LookupProvider(), .quickTools), (files, nil),
+                     (TimerProvider(clock: countdown), .quickTools),
+                     (StopwatchProvider(watch: stopwatch), .quickTools), (LookupProvider(), .quickTools), (files, nil),
                      (FileContentProvider(files: files), .fileContent), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
             .compactMap { $0.1?.isOn == false ? nil : $0.0 } + (photoText.map { [PhotoTextProvider(store: $0)] } ?? []),
         exclusive: [FileSearchProvider.prefix: files, VerbProvider.prefix: verbs,
                     ShellProvider.prefix: ShellProvider(state: .shared), "~": PathProvider(), "/": PathProvider()],
-        frecency: .shared, idle: Self.upNext(meetings))
+        frecency: .shared, idle: Self.upNext(meetings, clocks: { [unowned self] in
+            runningClocks(pomodoro: pomodoro, timer: countdown, stopwatch: stopwatch)
+        }))
     private lazy var panel = LauncherPanel(model: model, placeholder: "Type anything")
 
-    /// What the empty launcher shows: the meeting to join, a few minutes before it starts.
-    nonisolated private static func upNext(_ meetings: MeetingsProvider) -> @Sendable () async -> [LauncherResult] {
-        { await meetings.upNext() }
+    /// What the empty launcher shows: the meeting to join, a few minutes before it starts, and what's counting.
+    nonisolated private static func upNext(_ meetings: MeetingsProvider,
+                                           clocks: @escaping @MainActor @Sendable () -> [LauncherResult]) -> @Sendable () async -> [LauncherResult] {
+        { (await meetings.upNext() + MainActor.run { clocks() }).sorted { $0.score > $1.score } }
     }
     private var history: ClipboardHistory? // nil if clipboard.sqlite can't be opened
     private var historyError: String?
@@ -240,6 +245,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if Feature.quickTools.isOn {
             pomodoro.restore()
             countdown.restore()
+            stopwatch.restore()
             Task { _ = await TranslateProvider.languages() } // its language chips
         }
         watcher = DirectoryWatcher(configDir) { [unowned self] in

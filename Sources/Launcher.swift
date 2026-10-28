@@ -64,6 +64,8 @@ struct LauncherResult: Identifiable, Sendable {
     var section: String? = nil
     /// A copper pill beside the title, for what's coming up ("in 9 min", "Now").
     var badge: String? = nil
+    /// A clock in that pill instead, ticking while the row is shown: a timer's time left, a stopwatch's time so far.
+    var ticking: Ticking? = nil
     /// Full text for the preview pane beside the list, with label/value lines under it.
     var preview: String? = nil
     var previewStyle = PreviewStyle.code
@@ -755,9 +757,9 @@ private struct ResultRow: View {
         HStack(spacing: 13) {
             IconView(icon: result.icon, size: 26)
             Text(result.title).font(.system(size: 14.5)).lineLimit(1).layoutPriority(1)
-            if let badge = result.badge {
+            if let pill {
                 ViewThatFits(in: .horizontal) { // the title comes first: with the preview open, the badge steps aside
-                    Text(badge).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.copperDeep)
+                    pill.font(.system(size: 11.5, weight: .semibold)).monospacedDigit().foregroundStyle(Color.copperDeep)
                         .padding(.horizontal, 7).padding(.vertical, 2)
                         .background(Color.copper.opacity(0.18), in: Capsule())
                         .fixedSize()
@@ -801,7 +803,18 @@ private struct ResultRow: View {
         }
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
+
+    /// The badge, or the clock: SwiftUI's timer text updates itself, so the row needs no refresh to tick.
+    private var pill: Text? {
+        switch result.ticking {
+        case .down(let end): Text(timerInterval: Date.now...max(end, .now), countsDown: true)
+        case .up(let start): Text(timerInterval: start...Date.distantFuture, countsDown: false)
+        case nil: result.badge.map { Text(verbatim: $0) }
+        }
+    }
 }
+
+enum Ticking: Equatable, Sendable { case down(to: Date), up(from: Date) }
 
 /// A mode's name at the start of the field (`translate ` → Translate), in the selected row's copper.
 private struct ModeChip: View {

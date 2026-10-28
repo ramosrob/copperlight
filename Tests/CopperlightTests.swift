@@ -2416,15 +2416,91 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(await PomodoroProvider(pomodoro: Pomodoro()).results(for: "timer").isEmpty) // "timer" is the timer's now
 
     // One running, kept in state.json like the pomodoro: "timer" offers to stop it, a new one asks first.
-    store.set("timer", Countdown.Running(deadline: .now + 300, seconds: 600, label: "tea"))
+    let deadline = Date(timeIntervalSince1970: (Date.now + 300).timeIntervalSince1970.rounded(.down)) // state.json keeps seconds
+    store.set("timer", Countdown.Running(deadline: deadline, seconds: 600, label: "tea"))
     let countdown = Countdown(store: store)
     countdown.restore()
     let running = TimerProvider(clock: countdown)
     let stop = await running.results(for: "timer").max { $0.score < $1.score }
-    #expect(stop?.title == "Stop Timer" && stop?.subtitle.hasPrefix("tea · 0") == true) // "tea · 05:00 left"
+    #expect(stop?.title == "Stop Timer" && stop?.subtitle.hasPrefix("tea · ends ") == true)
+    #expect(stop?.ticking == .down(to: deadline)) // the time left ticks, like the menu bar's
     #expect(await running.results(for: "timer 5").first?.confirm?.hasPrefix("Replace the running timer") == true)
     countdown.stop()
     #expect(store.get("timer", as: Countdown.Running.self) == nil)
+}
+
+@MainActor @Test func pomodoroWhileRunning() async throws {
+    let store = StateStore(file: try tempStateFile())
+    let now = Date(timeIntervalSince1970: Date.now.timeIntervalSince1970.rounded(.down)) // state.json keeps seconds
+    store.set("pomodoro", Pomodoro.Running(deadline: now + 600, minutes: 25))
+    let pomodoro = Pomodoro(store: store)
+    pomodoro.restore()
+    let provider = PomodoroProvider(pomodoro: pomodoro)
+    let rows = await provider.results(for: "pomo").sorted { $0.score > $1.score }
+    #expect(rows.map(\.title) == ["Stop Pomodoro", "Take a Break"]) // not another one: it's running
+    #expect(rows.first?.ticking == .down(to: now + 600)) // the time left ticks, like the menu bar's
+    #expect(await provider.results(for: "pomo 50").first?.confirm != nil) // asked for by length: replaces it, after asking
+    pomodoro.stop()
+
+    store.set("pomodoro", Pomodoro.Running(deadline: now + 300, minutes: 5, isBreak: true))
+    pomodoro.restore()
+    #expect(await provider.results(for: "pomo").sorted { $0.score > $1.score }.map(\.title) == ["Stop Break", "Start Pomodoro"])
+    pomodoro.stop()
+}
+
+@MainActor @Test func timerUntil() async throws {
+    #expect(parseTimer("until 15:30 standup") == .until(hour: 15, minute: 30, label: "standup"))
+    #expect(parseTimer("until 3pm") == .until(hour: 15, minute: 0, label: ""))
+    #expect(parseTimer("at 9:05am call mom") == .until(hour: 9, minute: 5, label: "call mom"))
+    #expect(parseTimer("till 12am") == .until(hour: 0, minute: 0, label: ""))
+    #expect(parseTimer("until 12:15 pm") == .until(hour: 12, minute: 15, label: ""))
+    for none in ["until", "until 25:00", "until 13pm", "until 9:75", "until noon"] { #expect(parseTimer(none) == nil, "\(none)") }
+    let four = try #require(Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 28, hour: 16)))
+    #expect(nextTime(hour: 16, minute: 30, after: four) == four + 1800)
+    #expect(nextTime(hour: 15, minute: 30, after: four) == four + 23.5 * 3600) // gone today: tomorrow's
+
+    let timer = TimerProvider(clock: Countdown(store: StateStore(file: try tempStateFile())))
+    let start = try #require(await timer.results(for: "timer until 23:59 standup").first)
+    #expect(start.title == "Start Timer" && start.subtitle.hasPrefix("Until ") && start.subtitle.hasSuffix(" · standup"))
+}
+
+@MainActor @Test func stopwatch() async throws {
+    #expect(elapsedTime(75) == "1:15")
+    #expect(elapsedTime(3723) == "1:02:03")
+    let store = StateStore(file: try tempStateFile())
+    let rows = StopwatchProvider(watch: Stopwatch(store: store))
+    #expect(await rows.results(for: "stopw").first?.title == "Start Stopwatch")
+    #expect(await rows.results(for: "sto").isEmpty) // "stop" stops things
+
+    // Running, kept in state.json: "stopwatch" stops it, its time counting up on the row.
+    let started = Date(timeIntervalSince1970: (Date.now - 75).timeIntervalSince1970.rounded(.down)) // state.json keeps seconds
+    store.set("stopwatch", started)
+    let watch = Stopwatch(store: store)
+    watch.restore()
+    let stop = try #require(await StopwatchProvider(watch: watch).results(for: "stopwatch").first)
+    #expect(stop.title == "Stop Stopwatch" && stop.ticking == .up(from: started))
+    #expect(try #require(watch.stop()) >= 75)
+    #expect(store.get("stopwatch", as: Date.self) == nil && watch.stop() == nil)
+}
+
+@MainActor @Test func runningClocksWaitInTheEmptyLauncher() throws {
+    let store = StateStore(file: try tempStateFile())
+    let (pomodoro, timer, watch) = (Pomodoro(store: store), Countdown(store: store), Stopwatch(store: store))
+    #expect(runningClocks(pomodoro: pomodoro, timer: timer, stopwatch: watch).isEmpty)
+
+    let now = Date(timeIntervalSince1970: Date.now.timeIntervalSince1970.rounded(.down)) // state.json keeps seconds
+    store.set("pomodoro", Pomodoro.Running(deadline: now + 600, minutes: 25))
+    store.set("timer", Countdown.Running(deadline: now + 120, seconds: 300, label: "tea"))
+    store.set("stopwatch", now - 60)
+    for clock in [pomodoro.restore, timer.restore, watch.restore] { clock() }
+    let rows = runningClocks(pomodoro: pomodoro, timer: timer, stopwatch: watch)
+    #expect(rows.map(\.title) == ["Pomodoro", "tea", "Stopwatch"])
+    #expect(rows.map(\.ticking) == [.down(to: now + 600), .down(to: now + 120), .up(from: now - 60)])
+    #expect(rows.allSatisfy { $0.actionTitle == "Stop" && $0.confirm != nil }) // Enter on opening asks first
+    // After the first event and before the rest: the meeting about to start keeps Enter.
+    #expect(rows.allSatisfy { $0.score < 100 && $0.score > 99.99 })
+    for clock in [pomodoro.stop, timer.stop] { clock() }
+    _ = watch.stop()
 }
 
 // MARK: Translate to

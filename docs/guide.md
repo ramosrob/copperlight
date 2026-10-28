@@ -21,7 +21,7 @@ command you type after `:`. Everything else (note, clipboard history, pomodoro�
 
 Things to type: `saf`, `vsc`, `2^10 / 3`, `sqrt(2) * pi`, `20% of 150`, `255 in hex`, `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`,
 `25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), any command alias,
-`note`, `note milk`, `clip` (opens clipboard history), `pomo`, `pomo 50`, `pomo break`, `pomo stop`, `timer 10 min tea`, `bluetooth`,
+`note`, `note milk`, `clip` (opens clipboard history), `pomo`, `pomo 50`, `pomo break`, `pomo stop`, `timer 10 min tea`, `stopwatch`, `bluetooth`,
 `dark mode`, `emoji party`, `define serendipity`, `translate bom dia`, `translate` (what you copied), `uuid`, `json`, `paste markdown`, `add`,
 `add note buy milk`, `screenshot`, any file
 name (`invoice`), text inside a file or a picture (`29.99`), an app by what it does (`draw`, `noise`), `f readme` (files only), `github.com/swiftlang` (opens it), anything at all (the last row
@@ -310,15 +310,24 @@ five events there instead, with or without a call. Either only once Calendars ac
 never asks. Typing hides it.
 
 **Pomodoro:** `pomo` starts `default_minutes`, `pomo 50` starts 50 minutes (1–240), `pomo break` starts
-`break_minutes` of break (`pomo break 15` for another length; a cup in the menu bar), `pomo stop` stops. While
-it runs, the menu bar shows the countdown; click it to stop. Nothing is shown when no timer runs. The end time
-is saved, so the timer keeps going through sleep and app restarts (if it ended while the app was closed, you
-get the notification on the next launch). When it ends: a notification with a sound. Starting a timer the first
-time asks to allow notifications. Starting one while another runs asks before replacing it.
+`break_minutes` of break (`pomo break 15` for another length; a cup in the menu bar), `pomo stop` stops. While it
+runs, the menu bar shows the countdown; click it to stop. Nothing is shown when no timer runs. The end time is
+saved, so the timer keeps going through sleep and app restarts (if it ended while the app was closed, you get the
+notification on the next launch). When it ends: a notification with a sound. Starting a timer the first time asks to
+allow notifications. While one runs, `pomo` offers to stop it, its time left ticking, and a break (or, during a
+break, a pomodoro), not another of the same; `pomo 50` replaces it, after asking.
 
 **Timer:** `timer 10 min tea` counts down 10 minutes for tea, beside the pomodoro and like it: an hourglass and the
 time left in the menu bar (click it to stop), kept through sleep and restarts, and a notification with a sound when
 it's done ("Timer done", tea · 10 minutes). The length comes first: `10` (minutes), `10 min`, `90s`, `1h30m`,
-`1 hour 30`, from one second to 24 hours; whatever follows is what it's for (`for` dropped: `timer 20m for the
-laundry`). One runs at a time; starting another asks before replacing it. `timer` alone offers to stop the one
-running, and so does `timer stop`. `tim` Tab is the Timer chip.
+`1 hour 30`, from one second to 24 hours; whatever follows is what it's for (`for` dropped:
+`timer 20m for the laundry`). One runs at a time; starting another asks before replacing it. `timer` alone offers to
+stop the one running, and so does `timer stop`. `tim` Tab is the Timer chip. A time of day works too:
+`timer until 15:30 standup`, `timer at 3pm` (tomorrow's, if it's gone today).
+
+**Stopwatch:** `stopwatch` (from `stopw`) starts one, counting up in the menu bar and kept through restarts;
+`stopwatch` again, or a click on it in the menu bar, stops it and says the time in a notification.
+
+**What's running, when you open it:** while a pomodoro, a break, a timer or the stopwatch runs, the empty launcher
+lists it with its time ticking in a copper pill: left for the pomodoro and the timer, so far for the stopwatch.
+Enter stops it, after asking. A meeting about to start stays above them, so Enter still joins.

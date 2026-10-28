@@ -41,7 +41,8 @@ files and the text in photos. Everything else on this page is on.
 | `note`, then Tab | The Notes chip: your notes alone, last edited first, titled by their first line; typing finds the ones that say it | Opens it; New Note makes one |
 | `clip` | Clipboard history | Shows it |
 | `pomo`, `pomo 50`, `pomo break`, `pomo stop` | The pomodoro timer | Starts or stops it |
-| `timer 10 min tea`, `timer 90s`, `timer stop` | A timer | Starts or stops it |
+| `timer 10 min tea`, `timer until 15:30`, `timer stop` | A timer | Starts or stops it |
+| `stopwatch` | The stopwatch | Starts or stops it |
 | `ip`, `battery`, `disk` | Your IP addresses (and the public one, asked on Enter), the battery, free space per disk | Copies the IP, opens Battery or Storage settings |
 | `port`, `port 3000` | Your processes listening on TCP ports | Ends that process (asks first) |
 | `:layout save work`, `:layout work` | Every window on screen, saved by name | Saves them, or puts them back |
@@ -306,8 +307,14 @@ The row shows the title and date Copperlight read before you press Enter; a noti
   default; `pomo break 15` for another length), with a cup in the menu bar instead of the timer.
 - **Timer** (`timer 10 min tea`): the same for anything else, beside the pomodoro: an hourglass and the countdown in
   the menu bar, and "Timer done" with what it was for, and a sound. A length is `10`, `10 min`, `90s`, `1h30m` or
-  `1 hour 30` (a bare number is minutes), from a second to 24 hours; what follows is the label ("for" dropped). One at
-  a time: a new one asks before replacing it. `timer` alone offers to stop it; `timer stop` too.
+  `1 hour 30` (a bare number is minutes), from a second to 24 hours; what follows is the label ("for" dropped). One
+  at a time: a new one asks before replacing it. `timer` alone offers to stop it; `timer stop` too. Or until a time
+  of day: `timer until 15:30 standup`, `timer at 3pm`.
+- **Stopwatch** (`stopwatch`, from `stopw`): counts up in the menu bar, kept through restarts; stopping it says the
+  time.
+- **What's running, on opening:** the pomodoro, the timer and the stopwatch, while they run, are rows in the empty
+  launcher, their time ticking in a copper pill; Enter stops one after asking. The meeting about to start stays
+  first.
 
 ## Settings
 
