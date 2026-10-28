@@ -189,9 +189,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var model = SearchModel(
         providers: ([(commands, .commands), (ScriptProvider(), .scripts), (snippets, .snippets), (builtins, nil),
                      (EmojiProvider(), .quickTools), (DefineProvider(), .quickTools),
-                     (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (TextToolProvider(), .quickTools), (capture, .notes), (apps, nil),
+                     (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (TextToolProvider(), .quickTools),
+                     (ColorProvider(show: { [unowned self] in panel.show(typing: $0) }), .quickTools), (QRCodeProvider(), .quickTools), (capture, .notes), (apps, nil),
                      (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
-                     (TimeZoneProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools),
+                     (TimeZoneProvider(), .quickTools), (DateMathProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools),
                      (TimerProvider(clock: countdown), .quickTools),
                      (StopwatchProvider(watch: stopwatch), .quickTools), (LookupProvider(), .quickTools), (files, nil),
                      (FileContentProvider(files: files), .fileContent), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
@@ -201,7 +202,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         frecency: .shared, idle: Self.upNext(meetings, clocks: { [unowned self] in
             runningClocks(pomodoro: pomodoro, timer: countdown, stopwatch: stopwatch)
         }))
-    private lazy var panel = LauncherPanel(model: model, placeholder: "Type anything")
+    private lazy var panel: LauncherPanel = LauncherPanel(model: model, placeholder: "Type anything")
 
     /// What the empty launcher shows: the meeting to join, a few minutes before it starts, and what's counting.
     nonisolated private static func upNext(_ meetings: MeetingsProvider,

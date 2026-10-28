@@ -6,14 +6,16 @@ struct CurrencyQuery: Equatable {
     var to: String
 }
 
-/// `25USD to EUR`, `25 usd in eur`, `25usd eur`, `12,50 gbp usd`. Case-insensitive.
+/// `25USD to EUR`, `25 usd in eur`, `25usd eur`, `12,50 gbp usd`, and math before it (`39*8 usd`). Case-insensitive.
 /// With no target (`25 usd`) it converts to `defaultTarget`, or to USD when that's the source
 /// (EUR if the default is USD itself), so `25 eur` still shows something.
 func parseCurrency(_ query: String, defaultTarget: String = "EUR") -> CurrencyQuery? {
-    let pattern = #/(\d+(?:[.,]\d+)?)\s*([a-z]{3})(?:\s+(?:(?:to|in)\s+)?([a-z]{3}))?/#.ignoresCase()
-    guard let match = query.trimmingCharacters(in: .whitespaces).wholeMatch(of: pattern),
-          let amount = Double(match.1.replacing(",", with: "."))
-    else { return nil }
+    let pattern = #/([\d(][\d.,\s+\-*\/^()]*?)\s*([a-z]{3})(?:\s+(?:(?:to|in)\s+)?([a-z]{3}))?/#.ignoresCase()
+    guard let match = query.trimmingCharacters(in: .whitespaces).wholeMatch(of: pattern) else { return nil }
+    let number = String(match.1)
+    let amount = number.wholeMatch(of: #/\d+(?:[.,]\d+)?/#) != nil ? Double(number.replacing(",", with: "."))
+        : number.contains(where: "+-*/^".contains) ? calculate(number).flatMap { $0 >= 0 && $0.isFinite ? $0 : nil } : nil
+    guard let amount else { return nil }
     let from = match.2.uppercased()
     let to = match.3?.uppercased() ?? (from != defaultTarget ? defaultTarget : from == "USD" ? "EUR" : "USD")
     return CurrencyQuery(amount: amount, from: from, to: to)

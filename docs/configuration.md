@@ -90,6 +90,10 @@ Alex"""
 [[snippet]]
 name = "reply"                 # "reply John"
 text = "Hi {query}, thanks for the note. I'll get back to you by {date}."
+
+[[snippet]]
+name = "dear"
+text = "Dear {cursor},\n\nBest,\nAlex"   # pasted, the cursor waits after "Dear "
 ```
 
 **The hotkey** is `modifier+…+key`. Modifiers: `command`/`cmd`, `option`/`opt`/`alt`, `control`/`ctrl`,

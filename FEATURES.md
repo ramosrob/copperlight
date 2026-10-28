@@ -17,9 +17,10 @@ files and the text in photos. Everything else on this page is on.
 | `gmail.com`, `localhost:3000` | An "Open" row | Opens it in `[browser]` |
 | anything | "Search Google for …", always last | Searches (Settings › Browser picks the engine) |
 | `2^10 / 3`, `20% of 150`, `255 in hex` | The result | Copies it |
-| `25 usd to eur`, `25 usd` | The conversion | Copies it |
+| `25 usd to eur`, `25 usd`, `39*8 usd` | The conversion | Copies it |
 | `10 km in mi`, `30c` | Units converted | Copies it |
 | `3pm lisbon in sf`, `now in tokyo` | The time there | Copies it |
+| `days until dec 25`, `in 3 weeks`, `dec 25` | How long, which day; a date's weekday and week | Copies it |
 | `stock AAPL`, `stock MGLU3.SA` | The price, today's change, a 7-day chart (Yahoo Finance) | Opens it on Yahoo Finance |
 | `copperlight git` | Bookmarks and recent pages from your browser | Opens it in its profile |
 | `meetings`, `agenda`, `events` | The rest of today's events; a copper badge on what's soon; Tab: the details | Joins the video call |
@@ -35,6 +36,8 @@ files and the text in photos. Everything else on this page is on.
 | `:play`, `:mute`, `:wifi`, `:awake`, `:output` | What's playing, the sound, Wi-Fi, keeping the Mac awake | Toggles it, or switches to that output |
 | `:!git status` | A shell line | Runs it, shows the output; Enter again copies |
 | `json`, `uuid`, `upper hi`… | Text tools | Copies (or pastes) the result |
+| `#c87533`, `rgb(…)`, `pick color` | The color in the other notations, with its swatch; a color from the screen | Copies it |
+| `qr`, `qr https://…` | A QR code of what you typed or copied, beside the list | Copies the picture |
 | `paste plain`, `paste markdown` | The clipboard, cleaned or as Markdown | Pastes it |
 | `add note …`, `add todo …`, `add event …` | Capture | Adds it |
 | `screenshot`, `record` | The screenshot toolbar | Opens it |
@@ -126,8 +129,8 @@ files and the text in photos. Everything else on this page is on.
     alone shows 255.
   - `ans`: the last result you copied with Enter (`ans * 2`, `ans in hex`). Forgotten on quit.
 - **Currency:** `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`. Without a target, it converts to
-  `[currency] default_target`, and that currency itself converts to USD. ECB rates, cached for a day, so it
-  works offline.
+  `[currency] default_target`, and that currency itself converts to USD. Math before it works too: `39*8 usd`. ECB
+  rates, cached for a day, so it works offline.
 - **Stocks:** `stock AAPL`, `stock MGLU3.SA`, `stock ^BVSP`, `stock BTC-USD` (Yahoo Finance's tickers; `sto` ⇥ is the
   Stock chip). The row is the price and today's change; the preview pane draws the last 7 days, hourly, in copper,
   with the change over them, the previous close, the exchange and when it was last traded. Enter opens the stock on
@@ -141,6 +144,11 @@ files and the text in photos. Everything else on this page is on.
 - **Time zones:** `now in tokyo`, `time in tokyo`, `3pm in sf` (3pm here), `15:30 lisbon in new york`, `noon utc
   to sf`. Places are cities (any time zone city), common aliases (`sf`, `nyc`, `la`, `india`) or abbreviations
   (`pst`, `utc`, `cet`). The row says the day there and how many hours ahead or behind.
+- **Dates:** `days until dec 25`, `weeks since jan 1`, `in 3 weeks`, `100 days from today`, `3 days ago`, `30 days
+  after dec 25`, `dec 25 + 2 weeks`, `monday in 3 weeks` (that week's Monday), `time in 4 hours`. A date alone (`dec
+  25`, `next friday`, `2026-12-25`, `christmas`) shows its weekday, how far it is and its week. Before you finish, `in
+  3` answers in 3 hours, days, weeks and months, `3 weeks` from now and ago, and `days` offers until or since a date
+  (Tab). Enter copies it.
 
 ## The Mac's numbers
 
@@ -220,6 +228,7 @@ The row shows its first line, and long ones show whole in the preview pane.
 | `{date}`, `{time}` | Today and now: `2026-10-13`, `16:55` |
 | `{clipboard}` | The clipboard's text |
 | `{query}` | The text typed after the name: `reply John` with `Hi {query},` pastes `Hi John,` |
+| `{cursor}` | Where the cursor ends up once it's pasted: `Dear {cursor},` leaves it after `Dear ` |
 
 ## `:` commands
 
@@ -263,6 +272,15 @@ preview pane. From 3 letters, a name's start finds it too (`pas` → the paste t
 | `unix`, `unix 1700000000` | Now as a timestamp; a timestamp as a date |
 | `hex #ff8800`, `hex 255 136 0` | The color in the other notation |
 | `paste plain`, `paste markdown` | Pastes the clipboard without formatting, or as Markdown (from web pages, Google Docs, Slack, Word…) |
+
+## Colors and QR codes
+
+- **Colors:** `#c87533`, `#f80`, `rgb(200, 117, 51)` or `hsl(27, 59%, 49%)` shows in the other two notations, each
+  row with the color's swatch, the one you typed last. Tab shows it big. Enter copies it.
+- **`pick color`** (or `color picker`, `eyedropper`): macOS's magnifier; click anywhere on the screen and its hex is
+  copied, and the launcher comes back with it, the other notations a row away.
+- **QR codes:** `qr https://copperlight.app` (`qr` ⇥ is the QR Code chip) shows the code beside the list, and `qr`
+  alone makes one of what you copied. Enter copies the picture. Made on your Mac.
 
 ## Capture
 

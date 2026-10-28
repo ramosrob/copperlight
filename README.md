@@ -68,6 +68,8 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Lookups**<br>`ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery and its health, free space on each disk, and what's listening on a port, with Enter to end it. |
 | **Keep awake**<br>`:awake` | Keeps your Mac and its displays awake until you say so, with a sun in the menu bar while it's on. |
 | **Text tools**<br>`json`, `uuid`, `b64`, `hex` | Format JSON, make a UUID or a password, encode text, convert colors and timestamps. |
+| **Colors**<br>`#c87533`, `pick color` | A color in hex, RGB and HSL, with its swatch. Pick one off the screen and its hex is copied. |
+| **QR codes**<br>`qr` | A QR code of a link or any text, or of what you copied, ready to paste. |
 | **Emoji**<br>`emoji party` | Every emoji by name, pasted where you are. |
 | **Screenshots**<br>`screenshot`, `record` | The macOS screenshot toolbar, ready to capture or record. |
 
@@ -128,9 +130,10 @@ The answer appears as you type; Enter copies it.
 |---|---|
 | `20% of 150`, `150 + 20%` | `30`, `180` |
 | `255 in hex` | `0xFF` |
-| `25 usd to eur` | The amount in euros, at today's rate |
+| `25 usd to eur`, `39*8 usd` | The amount in euros, at today's rate |
 | `10 km in mi`, `30c` | `6.21 mi`, `86 °F` |
 | `3pm lisbon in sf`, `now in tokyo` | The time there |
+| `days until dec 25`, `in 3 weeks` | `58 days`, the date in 3 weeks; `dec 25` alone says it's a Friday |
 | `stock AAPL`, `stock MGLU3.SA` | The price now, today's change and the last 7 days as a chart (from Yahoo Finance) |
 
 ### Words
@@ -151,7 +154,8 @@ The answer appears as you type; Enter copies it.
 | `paste plain`, `paste markdown` | The clipboard without its formatting, or as Markdown (from web pages, Google Docs, Slack) |
 | `json`, `upper`, `snake`, `b64`, `sha256` | The clipboard formatted, converted or hashed; or type the text after it: `upper hello` |
 | `uuid`, `password 32`, `lorem 3` | A UUID, a password, placeholder text |
-| `unix 1700000000`, `hex #ff8800` | `2023-11-14T22:13:20Z`, `rgb(255, 136, 0)` |
+| `unix 1700000000`, `#ff8800` | `2023-11-14T22:13:20Z`, `rgb(255, 136, 0)` and `hsl(32, 100%, 50%)` |
+| `qr`, `qr https://copperlight.app` | A QR code of what you copied, or of what you type, beside the results |
 
 ### Windows, apps and the Mac
 

@@ -94,6 +94,9 @@ func calculatorRejectsNonMath(_ input: String) {
     ("25 usd to try", CurrencyQuery(amount: 25, from: "USD", to: "TRY")),
     ("25 usd", CurrencyQuery(amount: 25, from: "USD", to: "EUR")), // no target → default
     ("25usd", CurrencyQuery(amount: 25, from: "USD", to: "EUR")),
+    ("39*8 usd", CurrencyQuery(amount: 312, from: "USD", to: "EUR")), // math first
+    ("(10 + 5) * 2 gbp in usd", CurrencyQuery(amount: 30, from: "GBP", to: "USD")),
+    ("2^10 jpy", CurrencyQuery(amount: 1024, from: "JPY", to: "EUR")),
 ])
 func currencyParses(_ input: String, _ expected: CurrencyQuery) {
     #expect(parseCurrency(input) == expected)
@@ -102,6 +105,7 @@ func currencyParses(_ input: String, _ expected: CurrencyQuery) {
 @Test(arguments: [
     "", "25", "usd to eur", "25 us", "25 usd to", "25 usd in", "25 dollars to eur", "25 usd eur extra",
     "1.2.3 usd eur", "25 usd toeur", "25usdeur", ".5 usd eur", "25. usd eur", "-25 usd eur", "2+2",
+    "hello usd", "2+ usd", "10-15 usd", "(2 usd",
 ])
 func currencyRejects(_ input: String) {
     #expect(parseCurrency(input) == nil)
@@ -1132,6 +1136,120 @@ private func testPNG(width: Int, height: Int, red: CGFloat = 1) -> Data {
     #expect(lorem.map(\.title) == ["Lorem Ipsum"] && lorem[0].preview != nil) // in the preview pane: the row names the tool
 }
 
+// MARK: Colors
+
+@Test func colorsByTheirShape() async {
+    let orange = RGBColor(red: 255, green: 136, blue: 0)
+    #expect(parseColor("#ff8800")?.color == orange && parseColor("#F80")?.color == orange && parseColor("#ff8800")?.notation == .hex)
+    #expect(parseColor("rgb(255, 136, 0)")?.color == orange && parseColor("rgb(255 136 0)")?.notation == .rgb)
+    #expect(parseColor("hsl(32, 100%, 50%)")?.color == orange && parseColor("hsl(32 100% 50%)")?.notation == .hsl)
+    #expect(parseColor("hsl(120, 100%, 25%)")?.color == RGBColor(red: 0, green: 128, blue: 0))
+    #expect(parseColor("ff8800") == nil && parseColor("#ff88") == nil && parseColor("rgb(300, 0, 0)") == nil
+            && parseColor("hsl(10, 120%, 50%)") == nil && parseColor("#ff8800 tea") == nil)
+    #expect(orange.hex == "#ff8800" && orange.rgb == "rgb(255, 136, 0)" && orange.hsl == "hsl(32, 100%, 50%)")
+    #expect(RGBColor(red: 128, green: 128, blue: 128).hsl == "hsl(0, 0%, 50%)")
+
+    // The other notations first, then the one typed (its swatch, at least); Enter copies.
+    let provider = ColorProvider()
+    let rows = await provider.results(for: "#ff8800")
+    #expect(rows.map(\.title) == ["rgb(255, 136, 0)", "hsl(32, 100%, 50%)", "#ff8800"])
+    #expect(rows.map(\.accessory) == ["RGB", "HSL", "Hex"] && rows.allSatisfy { $0.actionTitle == "Copy" && $0.previewImage != nil })
+    #expect(await provider.results(for: "rgb(255, 136, 0)").first?.title == "#ff8800")
+    #expect(await provider.results(for: "hello").isEmpty)
+
+    // Picking one from the screen, by its name or another word for it.
+    for query in ["pick", "pick color", "color picker", "eyedropper"] {
+        #expect(await provider.results(for: query).first?.title == "Pick Color", "\(query)")
+    }
+}
+
+// MARK: Date math
+
+@Test func dateMath() {
+    var calendar = Calendar(identifier: .gregorian)
+    (calendar.timeZone, calendar.firstWeekday, calendar.minimumDaysInFirstWeek) = (.gmt, 2, 4) // weeks as in Europe
+    let now = Date(timeIntervalSince1970: 1_793_203_080) // Wednesday, 2026-10-28 15:58 UTC
+    let us = Locale(identifier: "en_US"), uk = Locale(identifier: "en_GB")
+    let answer = { (query: String) in Copperlight.dateMath(query, now: now, calendar: calendar, locale: us) }
+    let says = { (query: String) in answer(query).map { "\($0.title) | \($0.subtitle)" } }
+
+    // How long until, or since
+    #expect(says("days until dec 25") == "58 days | Until Friday, December 25, 2026")
+    #expect(answer("how many days until christmas?")?.title == "58 days" && answer("days till Dec 25")?.title == "58 days")
+    #expect(answer("weeks until dec 25")?.title == "8 weeks, 2 days" && answer("days until tomorrow")?.title == "1 day")
+    #expect(says("days since jan 1") == "300 days | Since Thursday, January 1, 2026")
+    #expect(answer("days until friday")?.title == "2 days" && answer("days since friday")?.title == "5 days")
+
+    // A date from today, or from another date
+    #expect(says("in 3 weeks") == "Wednesday, November 18, 2026 | In 21 days · week 47")
+    for query in ["3 weeks from now", "3 weeks from today", "21 days from now"] { #expect(answer(query)?.title == "Wednesday, November 18, 2026") }
+    #expect(answer("in a week")?.title == "Wednesday, November 4, 2026" && answer("100 days from today")?.title == "Friday, February 5, 2027")
+    #expect(says("3 days ago") == "Sunday, October 25, 2026 | 3 days ago · week 43")
+    #expect(answer("in 2 months")?.title == "Monday, December 28, 2026" && answer("in 1 year")?.title == "Thursday, October 28, 2027")
+    #expect(answer("30 days after dec 25")?.title == "Sunday, January 24, 2027" && answer("dec 25 + 2 weeks")?.title == "Friday, January 8, 2027")
+    #expect(answer("2 weeks before dec 25")?.title == "Friday, December 11, 2026" && answer("dec 25 - 1 day")?.title == "Thursday, December 24, 2026")
+    #expect(answer("monday in 3 weeks")?.title == "Monday, November 16, 2026") // that week's Monday
+
+    // A time from now
+    let time = { (query: String) in Copperlight.dateMath(query, now: now, calendar: calendar, locale: uk).map { "\($0.title) | \($0.subtitle)" } }
+    #expect(time("time in 4 hours") == "19:58 | Today" && time("in 90 minutes") == "17:28 | Today")
+    #expect(time("in 10 hours") == "1:58 | Tomorrow" && time("4 hours from now") == "19:58 | Today")
+
+    // A date alone: its weekday, how far, and its week
+    #expect(says("dec 25") == "Friday, December 25, 2026 | In 58 days · week 52")
+    #expect(answer("25 december 2027")?.title == "Saturday, December 25, 2027" && answer("Dec 25th")?.title == "Friday, December 25, 2026")
+    #expect(answer("2026-12-25")?.title == "Friday, December 25, 2026" && answer("2026-12-25")!.score > 10) // over its subtraction
+    #expect(says("tomorrow") == "Thursday, October 29, 2026 | Tomorrow · week 44" && answer("yesterday")?.subtitle == "Yesterday · week 44")
+    #expect(answer("next friday")?.title == "Friday, November 6, 2026" && answer("last friday")?.title == "Friday, October 23, 2026")
+    #expect(answer("friday")?.title == "Friday, October 30, 2026" && answer("friday")!.score < 1) // under an app called Friday
+    #expect(answer("jan 1")?.title == "Friday, January 1, 2027") // the next one
+
+    for nothing in ["feb 30", "hello", "dec", "25", "in 3 lightyears", "time in lisbon", "days until", "in weeks", "2026-13-01", "12/25"] {
+        #expect(answer(nothing) == nil, "\(nothing)")
+    }
+    // A phrase on its way: its likely ends, answered already; the start of a question, a Tab away from its rest.
+    let suggest = { (query: String) in Copperlight.dateSuggestions(query, now: now, calendar: calendar, locale: us) }
+    #expect(suggest("in 3").map(\.accessory) == ["in 3 hours", "in 3 days", "in 3 weeks", "in 3 months"])
+    #expect(suggest("in 3")[2].title == "Wednesday, November 18, 2026")
+    #expect(suggest("3 weeks").map(\.title) == ["Wednesday, November 18, 2026", "Wednesday, October 7, 2026"])
+    #expect(suggest("3 weeks").map(\.accessory) == ["3 weeks from now", "3 weeks ago"])
+    #expect(suggest("days").map(\.completion) == ["days until ", "days since "] && suggest("days s").map(\.completion) == ["days since "])
+    #expect(suggest("how many weeks").map(\.title) == ["Weeks Until a Date", "Weeks Since a Date"])
+    for nothing in ["days until dec 25", "da", "in 3 lightyears", "hello", "3"] { #expect(suggest(nothing).isEmpty, "\(nothing)") }
+}
+
+// MARK: QR codes
+
+@Test func qrCodes() async throws {
+    let code = try #require(qrCode("https://copperlight.app"))
+    #expect(code.width == code.height && code.width >= 600)
+    let read = CIDetector(ofType: CIDetectorTypeQRCode, context: nil)?.features(in: CIImage(cgImage: code)).first as? CIQRCodeFeature
+    #expect(read?.messageString == "https://copperlight.app") // it scans
+    #expect(qrCode(String(repeating: "x", count: 5000)) == nil) // more than a QR code holds
+
+    let provider = QRCodeProvider(clipboard: { "https://copperlight.app" })
+    #expect(provider.modes.map(\.prefix) == ["qr "])
+    // Typed, a row offers the chip, where the code shows beside the list.
+    let offer = await provider.results(for: "qr hello world")
+    #expect(offer.map(\.title) == ["QR Code for “hello world”"] && offer[0].completion == "qr hello world")
+    for alone in ["qr", "qr code", "QR Co"] {
+        #expect(await provider.results(for: alone).first?.completion == "qr ", "\(alone)")
+    }
+    #expect(await provider.results(for: "qrs").isEmpty)
+    #expect(await provider.results(for: "q").isEmpty)
+
+    // In the chip: the code for the text, or for what you copied; Enter copies the picture.
+    let typed = await provider.modeResults(for: "qr hello world")
+    #expect(typed.map(\.title) == ["hello world"] && typed[0].subtitle == "QR code" && typed[0].previewImage != nil
+            && typed[0].actionTitle == "Copy")
+    let copied = await provider.modeResults(for: "qr")
+    #expect(copied.first?.title == "https://copperlight.app" && copied.first?.subtitle == "QR code · from the clipboard")
+    let nothing = await QRCodeProvider(clipboard: { nil }).modeResults(for: "qr")
+    #expect(nothing.first?.title == "Type text or a link" && nothing.first?.previewImage == nil)
+    let long = await provider.modeResults(for: "qr " + String(repeating: "x", count: 5000))
+    #expect(long.first?.title == "Too long for a QR code" && long.first?.previewImage == nil)
+}
+
 // MARK: Capture
 
 @Test func captureDates() throws {
@@ -1552,6 +1670,19 @@ private struct Sized: ResultProvider {
     let reply = await provider.results(for: "reply John")
     #expect(reply.first?.title == "reply John" && reply.first?.subtitle == "Hi John, thanks." && reply.first?.score == 100)
     #expect(await provider.results(for: "sig more").isEmpty) // no {query}: text after the name doesn't belong to it
+}
+
+@Test func snippetCursor() async {
+    // The text without {cursor}, and how far back from its end the cursor goes: the first one, if there are more.
+    let placed = { (text: String) in let split = placeCursor(text); return "\(split.text)|\(split.back)" }
+    #expect(placed("Dear {cursor},\nBest") == "Dear ,\nBest|6")
+    #expect(placed("a{cursor}b{cursor}c") == "abc|2" && placed("no marker") == "no marker|0" && placed("end{cursor}") == "end|0")
+    #expect(placed("👋🏽 {cursor}!") == "👋🏽 !|1") // characters, the way the arrow key moves
+
+    let provider = SnippetProvider()
+    await provider.setSnippets([.init(name: "dear", text: "Dear {cursor},\n\nBest,\nAlex")])
+    let dear = await provider.results(for: "dear")
+    #expect(dear.first?.subtitle == "Dear ," && dear.first?.preview == "Dear ,\n\nBest,\nAlex")
 }
 
 // MARK: Units and time zones

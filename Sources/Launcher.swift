@@ -33,8 +33,8 @@ enum PreviewStyle: Sendable { case code, prose }
 
 struct LauncherResult: Identifiable, Sendable {
     /// A file's Finder icon (apps), an SF Symbol in a ring, or a picture
-    /// loaded off the main thread (clipboard images; the string keys its cache).
-    enum Icon: Sendable { case file(String), symbol(String), asset(String), image(String, @Sendable () -> CGImage?) }
+    /// loaded off the main thread (clipboard images; the string keys its cache), or a color's swatch.
+    enum Icon: Sendable { case file(String), symbol(String), asset(String), image(String, @Sendable () -> CGImage?), color(RGBColor) }
 
     let id: String
     let title: String
@@ -864,6 +864,14 @@ private struct IconView: View {
                 .frame(width: size, height: size)
         case .image(let key, let load):
             Thumbnail(key: key, load: load).frame(width: size, height: size)
+        case .color(let color): // the swatch in the same ring, with an edge of its own for white on white
+            Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+                .overlay {
+                    Circle().fill(Color(.sRGB, red: Double(color.red) / 255, green: Double(color.green) / 255, blue: Double(color.blue) / 255))
+                        .overlay { Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 0.5) }
+                        .padding(size * 0.2)
+                }
+                .frame(width: size, height: size)
         }
     }
 }

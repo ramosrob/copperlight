@@ -381,17 +381,17 @@ actor ClipboardProvider: ResultProvider {
     pasteboard.writeObjects(saved)
 }
 
-/// Types a key with modifiers, as if on the keyboard (needs Accessibility).
-@MainActor func sendKeystroke(_ key: Int, _ flags: CGEventFlags) {
+/// Types a key with modifiers, as if on the keyboard (needs Accessibility), `times` times.
+@MainActor func sendKeystroke(_ key: Int, _ flags: CGEventFlags, times: Int = 1, after wait: Duration = .milliseconds(100)) {
     Task {
-        try? await Task.sleep(for: .milliseconds(100)) // let focus get back to the previous app first
+        try? await Task.sleep(for: wait) // let focus get back to the previous app first
         let source = CGEventSource(stateID: .combinedSessionState)
         // ponytail: kVK_ANSI_* is the key's position on a US keyboard; Dvorak etc. would need a layout lookup.
-        for keyDown in [true, false] {
+        for _ in 0..<times { for keyDown in [true, false] {
             let event = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(key), keyDown: keyDown)
             event?.flags = flags
             event?.post(tap: .cghidEventTap)
-        }
+        } }
     }
 }
 

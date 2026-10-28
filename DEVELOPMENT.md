@@ -158,6 +158,7 @@ Sources/
   Snippets.swift            [[snippet]] rows, placeholders, paste
   Units.swift               unit names and conversions (Foundation Measurement)
   TimeZones.swift           places, `3pm lisbon in sf`
+  Dates.swift               date math: `days until dec 25`, `in 3 weeks`, a date's weekday; what a phrase could become
   BrowserPages.swift        bookmarks and history: Chromium, Firefox, Safari readers, search
   Meetings.swift            today's events (EventKit), video call links
   SystemSettings.swift      System Settings pages by name
@@ -168,6 +169,8 @@ Sources/
   PathProvider.swift        `~/…` and `/…`: list a folder, go into it, open what's in it
   Capture.swift             add note/todo/event (EventKit, date reading), screenshot and record
   TextTools.swift           text tools (json, b64, case…), paste as plain text or Markdown (HTML → Markdown)
+  Colors.swift              `#c87533`, `rgb(…)`, `hsl(…)` in the other notations, `pick color` (NSColorSampler)
+  QRCode.swift              `qr`: QR codes (Core Image), copying a picture
   CommandProvider.swift     [[command]] entries, quicklinks, browsers and profiles, URL and web search fallbacks, search engines, detached processes, notifications
   Clipboard.swift           pasteboard polling (text, images), SQLite store, clipboard rows, ⌘V
   FileSearchProvider.swift  Spotlight (NSMetadataQuery) file search, by name and by the text inside

@@ -6,9 +6,8 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Next
 
-- **Date math:** `days until dec 25`, `monday in 3 weeks`, `time in 4 hours`, recognized by their shape, like math.
-- **Better placeholders:** `{cursor}` (where the cursor lands after a snippet pastes), dates with a format and an
-  offset (`{date +7d}`), and `{clipboard}`, `{selection}` and `{date}` inside url and shell commands.
+- **Better placeholders:** dates with a format and an offset (`{date +7d}`), and `{clipboard}`, `{selection}` and
+  `{date}` inside url and shell commands.
 - **Your own fallback rows:** choose what the last rows offer when nothing matches: several search engines, or any of
   your commands.
 - **Script filters:** a script prints rows, Copperlight lists them, Enter runs the one you pick. New features can live
@@ -27,8 +26,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   `:clear 15 min` in clipboard history; save an item as a snippet; paste in sequence, one older item each time.
 - **Text:** more placeholders (`{uuid}`, `{clipboard 1}`, a snippet inside another) with modifiers (`|upper`), and
   several named arguments; Markdown snippets pasted as rich text; title, kebab and sentence case, random numbers, and
-  the links pulled out of text; colors recognized by their shape, with a swatch; Large Type (`large 555-0100`);
-  spelling suggestions (`spell definately`).
+  the links pulled out of text; Large Type (`large 555-0100`); spelling suggestions (`spell definately`).
 - **Windows:** sixths, fourths, the full height or width, `:size 1280x800`, gaps between windows; layouts that open
   their apps too.
 - **Files and apps:** `:move to`, `:rename`, `:duplicate`, `:compress`, AirDrop and `:info` on a file; the files
@@ -36,8 +34,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Your day:** contacts (call, FaceTime, message or email someone by name); meetings beyond today, free slots to
   copy, and the next meeting in the menu bar; due and overdue reminders, with Enter to complete one; lists, priorities
   and places in `add todo` and `add event`; screenshots by date, and pasting the latest.
-- **Screen tools:** pick a color from the screen; copy the text or a QR code in a region of the screen (recognized on
-  your Mac); make a QR code from text.
+- **Screen tools:** copy the text or a QR code in a region of the screen (recognized on your Mac).
 - **The Mac:** Stage Manager on and off; dismiss notifications.
 - **Extending it:** script rows with live output and a choice of arguments; a URL scheme and Shortcuts actions; a
   starter library of commands, and importers for snippets and quicklinks from other apps.
@@ -50,6 +47,9 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
+- **Next release:** colors by their shape (`#c87533`, `rgb(…)`, `hsl(…)`) with a swatch, and `pick color`; `qr`
+  codes; date math (`days until dec 25`, `in 3 weeks`, a date's weekday and week), answered before you finish typing;
+  `{cursor}` in snippets; currency after math (`39*8 usd`).
 - **v0.8:** `timer until 15:30`; a stopwatch; what's running (the pomodoro, the timer, the stopwatch) waiting
   in the empty launcher, its time ticking.
 - **v0.7:** the preview opens with Tab in the general search, so the list keeps its width; the next meeting, waiting

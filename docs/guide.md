@@ -20,14 +20,15 @@ The launcher is the only global hotkey, and the panel has no modifier keys: anyt
 command you type after `:`. Everything else (note, clipboard history, pomodoro…) is found by typing.
 
 Things to type: `saf`, `vsc`, `2^10 / 3`, `sqrt(2) * pi`, `20% of 150`, `255 in hex`, `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`,
-`25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), any command alias,
+`25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), `39*8 usd`, `days until dec 25`,
+`in 3 weeks`, `#c87533`, `pick color`, `qr`, any command alias,
 `note`, `note milk`, `clip` (opens clipboard history), `pomo`, `pomo 50`, `pomo break`, `pomo stop`, `timer 10 min tea`, `stopwatch`, `bluetooth`,
 `dark mode`, `emoji party`, `define serendipity`, `translate bom dia`, `translate` (what you copied), `uuid`, `json`, `paste markdown`, `add`,
 `add note buy milk`, `screenshot`, any file
 name (`invoice`), text inside a file or a picture (`29.99`), an app by what it does (`draw`, `noise`), `f readme` (files only), `github.com/swiftlang` (opens it), anything at all (the last row
 searches the web), `~/code/copperlight` or `/Applications` (lists the folder), `:` (every command), `:min`, `:quit saf`, `:window term`, `:!git status`. The selected row says what Enter does.
 
-**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `port `, `note `, `add todo `, `add event `, `add note `,
+**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `qr `, `pomo `, `timer `, `port `, `note `, `add todo `, `add event `, `add note `,
 `:quit `, `:window `, `:output `, `:!`, `f `) turns into a copper chip at the start of the field when you press Tab:
 `tra` Tab is the Translate chip, and `stock aapl` Tab is the Stock chip with `aapl` after it. Typing never makes one,
 so `stock apple` still finds `stock_Apple.pdf`. The field then holds what follows, with a hint while it's empty, and
@@ -179,10 +180,22 @@ row's subtitle, and `needsConfirmation true` asks before it runs. A script that 
 (`argument1`…) gets that many, the last one holding the rest of what you typed, so `ask will it ship` passes "will
 it ship" whole. Where a script sets both, `@title`, `@icon` and `@output` win.
 
+**Colors:** a color typed as `#c87533`, `#f80`, `rgb(200, 117, 51)` or `hsl(27, 59%, 49%)` (spaces for commas
+too) shows in the other two notations, each row with the color's swatch, the one you typed last. Tab shows it big.
+Enter copies it. `pick color` (also `color picker`, `eyedropper`) opens macOS's magnifier: click anywhere on any
+screen and its hex is copied, and the launcher comes back with that color typed, so the other notations are a row
+away. Esc cancels. Colors are sRGB, what hex codes mean on the web.
+
+**QR codes:** `qr https://copperlight.app` offers the code (Tab or Enter), and in the QR Code chip it shows beside the
+list as you type. `qr` alone makes one of what you copied. Enter copies the picture (PNG). Made on your Mac; up to
+about 2,000 characters.
+
 **Snippets:** `[[snippet]]` entries ([configuration.md](configuration.md)) are found by name like commands. Enter pastes the text into the app
 you were in, the same way the paste tools do (Accessibility; without it, Enter copies), and then puts your
 clipboard back. Placeholders: `{date}` (`2026-10-13`), `{time}` (`16:55`), `{clipboard}`, and `{query}`, the text
-typed after the name. A snippet without `{query}` only matches its name, so `sig more` finds nothing.
+typed after the name. A snippet without `{query}` only matches its name, so `sig more` finds nothing. `{cursor}` is
+where the cursor ends up: after the paste, Copperlight presses ← that many times (the first `{cursor}`, if there are
+more).
 
 **Note:** type `n` (any start of "note") and it's the first result: your last note. Esc hides it again. It floats on a
 glass card like the launcher's: drag it by its title, resize it from its bottom-right corner. Each note keeps its own
@@ -271,6 +284,16 @@ temperature, volume, speed, data (`kb`… decimal, `kib`… binary), time and ar
 to sf`, also with `to`. A place is any time zone's city (`lisbon`, `new york`, `são paulo`), an alias (`sf`, `la`,
 `nyc`, `india`, `china`, `uk`) or an abbreviation (`pst`, `utc`, `cet`). The row shows the time there, the day
 and the difference in hours. Enter copies the time.
+
+**Dates:** `days until dec 25` (or `how many days until christmas?`), `weeks until dec 25` (8 weeks, 2 days), `days
+since jan 1`; `in 3 weeks`, `3 weeks from now`, `100 days from today`, `3 days ago`, `in 2 months`, `30 days after dec
+25`, `2 weeks before dec 25`, `dec 25 + 2 weeks`, `monday in 3 weeks` (the Monday of that week); `time in 4 hours`, `in
+90 minutes`. A date alone shows its weekday, how far it is and its week number (as your Mac's calendar counts them):
+`dec 25`, `25 december 2027`, `2026-12-25`, `tomorrow`, `next friday` (the one after this week's, as macOS reads it),
+`last friday`, `christmas`, `new year`. Without a year it's the next one, or the last one after `since`. A weekday's
+name alone ranks low, under an app with that name. While you type, `in 3` answers in 3 hours, days, weeks and months,
+`3 weeks` from now and ago, each with its phrase at the right edge, and `days` or `weeks` offers until or since a
+date: Tab, then the date. Enter copies the answer.
 
 **Stocks:** `stock AAPL`, `stock MGLU3.SA`, `stock ^BVSP`, `stock BTC-USD` (`sto` ⇥ for the Stock chip; tickers as
 Yahoo Finance writes them). The row shows the price and today's change; beside it, the last 7 days drawn hourly, the

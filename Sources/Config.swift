@@ -159,7 +159,7 @@ struct Config: Decodable, Equatable {
     }
 
 
-    /// Text you paste by name. `text` may hold {date}, {time}, {clipboard} and {query}.
+    /// Text you paste by name. `text` may hold {date}, {time}, {clipboard}, {query} and {cursor}.
     struct Snippet: Decodable, Equatable, Sendable {
         var name: String
         var text: String
@@ -333,8 +333,8 @@ struct Config: Decodable, Equatable {
         # type = "url"
         # url = "things:///add?title={query}"
 
-        # Snippets: type the name, Enter pastes the text. Placeholders: {date}, {time}, {clipboard}, and {query}
-        # for the text typed after the name ("reply John").
+        # Snippets: type the name, Enter pastes the text. Placeholders: {date}, {time}, {clipboard}, {query}
+        # for the text typed after the name ("reply John"), and {cursor} for where the cursor ends up.
         #
         # [[snippet]]
         # name = "sig"
