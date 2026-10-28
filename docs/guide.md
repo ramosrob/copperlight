@@ -12,6 +12,7 @@ config.toml.
 | ⌥Space | Show / hide the launcher |
 | ↑ ↓ | Move selection |
 | Enter | Run: open app or file, copy a calculator, currency or text tool result, run command, open URL, search Google. Clipboard: paste the item |
+| Tab | Fill in: on a row that says Tab (Translate, Quit Application, a folder), or with a name typed whole (`translate`), it types the name, which becomes a chip |
 | `:` (typed first) | Commands: the window in front, running apps, files, the Mac. Clipboard history has its own |
 | Esc, or click elsewhere | Hide (or back out of a confirmation) |
 
@@ -21,10 +22,17 @@ command you type after `:`. Everything else (note, clipboard history, pomodoro�
 Things to type: `saf`, `vsc`, `2^10 / 3`, `sqrt(2) * pi`, `20% of 150`, `255 in hex`, `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`,
 `25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), any command alias,
 `note`, `note work`, `clip` (opens clipboard history), `pomo`, `pomo 50`, `pomo break`, `pomo stop`, `bluetooth`,
-`dark mode`, `emoji party`, `define serendipity`, `translate bom dia`, `uuid`, `json`, `paste markdown`, `add`,
+`dark mode`, `emoji party`, `define serendipity`, `translate bom dia`, `translate` (what you copied), `uuid`, `json`, `paste markdown`, `add`,
 `add note buy milk`, `screenshot`, any file
 name (`invoice`), text inside a file or a picture (`29.99`), an app by what it does (`draw`, `noise`), `f readme` (files only), `github.com/swiftlang` (opens it), anything at all (the last row
 searches Google), `~/code/copperlight` or `/Applications` (lists the folder), `:` (every command), `:min`, `:quit saf`, `:window term`, `:!git status`. The selected row says what Enter does.
+
+**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `pomo `, `add todo `, `add event `, `add note `,
+`:quit `, `:window `, `:output `, `:!`, `f `) turns into a copper chip at the start of the field when you press Tab:
+`tra` Tab is the Translate chip, and `stock aapl` Tab is the Stock chip with `aapl` after it. Typing never makes one,
+so `stock apple` still finds `stock_Apple.pdf`. The field then holds what follows, with a hint while it's empty, and
+only that feature answers, so there's no "Search Google" row in the way. Delete in the empty field turns the chip back
+into text.
 
 What you pick rises: every row you press Enter on (an app, a command, a file, a `:` command) ranks higher next
 time, fading over a few weeks. So `s` + Enter opens Safari once you use it, and `:` lists your usual commands first.
@@ -45,8 +53,12 @@ time, fading over a few weeks. So `s` + Enter opens Safari once you use it, and 
 | `:reveal readme`, `:copy path readme` | Reveal a file in Finder, or copy its path (file search, so from 2 letters). Given a path (`:copy path ~/code/copperlight/`), they list that folder |
 | `:lock`, `:sleep`, `:sleep displays` | Lock the screen (sends ⌃⌘Q, so it needs Accessibility), sleep the Mac or only its displays |
 | `:restart`, `:shut down`, `:empty trash` | Ask first, then do it. Apps with unsaved changes still get their say |
-| `:dark`, `:hidden files` | Toggle dark mode; show or hide hidden files in Finder (Finder restarts) |
-| `:volume 30`, `:eject` | Set the output volume (0–100, unmutes); eject a disk (lists external drives and disk images) |
+| `:dark`, `:wifi`, `:hidden files` | Dark mode and Wi-Fi on or off (the row says which: Turn Wi-Fi Off); show or hide hidden files in Finder (Finder restarts) |
+| `:awake` | Keep the Mac and its displays awake until you run it again (Stop Keeping Awake) or Copperlight quits. A sun in the menu bar shows it's on; click it to stop |
+| `:play`, `:next track`, `:previous track` | The keyboard's media keys: play or pause, skip, go back, in whatever is playing (Music, a browser tab, Spotify). Needs Accessibility, like pasting |
+| `:mute`, `:volume 30` | Mute or unmute (the row says which), set the output volume (0–100, unmutes). A display's speakers can't be muted from the Mac: a beep says so |
+| `:output airpods` | Switch the sound output: lists speakers, headphones, displays and AirPlay, the current one first |
+| `:eject` | Eject a disk (lists external drives and disk images) |
 | `:shortcut name` | Run one of your Shortcuts. That's also the way to Focus modes: make a Shortcut that sets one |
 | `:!git status` | Run a shell line (below) |
 | `:config` | Open config.toml |
@@ -174,7 +186,10 @@ opens it in Dictionary.
 
 **Translate:** `translate bom dia`, `translate good morning to spanish` (`to`, `in` or `into`, then a language's
 English name or code). Apple's on-device translation (macOS 26): the source language is detected, and without a
-target it goes to your first language in System Settings that isn't the text's. Enter copies it. Language pairs
+target it goes to your first language in System Settings that isn't the text's. With no text, `translate` (or
+`translate to spanish`) translates what's on the clipboard: copy, ⌥Space, `translate`, Enter. The language joins the
+chip (Translate to German) when you press Tab with it first (`to ger` ⇥) or at the end of the text
+(`hello world to ger` ⇥); the field then holds only the text, and Delete takes the language back out. Enter copies it. Language pairs
 download once, from System Settings → General → Language & Region → Translation Languages; until then the row
 says so and opens that page.
 
@@ -227,6 +242,13 @@ temperature, volume, speed, data (`kb`… decimal, `kib`… binary), time and ar
 to sf`, also with `to`. A place is any time zone's city (`lisbon`, `new york`, `são paulo`), an alias (`sf`, `la`,
 `nyc`, `india`, `china`, `uk`) or an abbreviation (`pst`, `utc`, `cet`). The row shows the time there, the day
 and the difference in hours. Enter copies the time.
+
+**Stocks:** `stock AAPL`, `stock MGLU3.SA`, `stock ^BVSP`, `stock BTC-USD` (`sto` ⇥ for the Stock chip; tickers as
+Yahoo Finance writes them). The row shows the price and today's change; beside it, the last 7 days drawn hourly, the
+change over them, the previous close, the exchange and when it last traded. Enter opens the stock on Yahoo Finance.
+It's the one lookup that says what you asked for, so it waits for you: only in the Stock chip, and only once you
+pause typing, does the ticker go to Yahoo; the answer is kept for a minute. Typed without the chip, `stock aapl` asks
+nothing: below the files, a row offers it (Stock Price of AAPL), and Tab or Enter on it makes the chip.
 
 **Bookmarks and history:** from 2 letters, pages from your browser where each word you typed starts a word of
 the title or the address (`copperlight git`; `30c` doesn't match inside "HP30138C"): up to 4 bookmarks, then the 4 most

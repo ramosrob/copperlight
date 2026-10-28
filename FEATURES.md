@@ -20,17 +20,19 @@ files and the text in photos. Everything else on this page is on.
 | `25 usd to eur`, `25 usd` | The conversion | Copies it |
 | `10 km in mi`, `30c` | Units converted | Copies it |
 | `3pm lisbon in sf`, `now in tokyo` | The time there | Copies it |
+| `stock AAPL`, `stock MGLU3.SA` | The price, today's change, a 7-day chart (Yahoo Finance) | Opens it on Yahoo Finance |
 | `copperlight git` | Bookmarks and recent pages from your browser | Opens it in its profile |
 | `meetings` | The rest of today's meetings | Joins the video call |
 | `bluetooth`, `dark mode` | System Settings pages | Opens that page |
 | `emoji party` | Emoji by name | Pastes it |
 | `define serendipity` | The dictionary entry | Opens it in Dictionary |
-| `translate bom dia`, `… to spanish` | The translation (on the Mac) | Copies it |
+| `translate bom dia`, `… to spanish` | The translation (on the Mac); `translate` alone, what you copied | Copies it |
 | `gh copperlight`, `github` | Your `[[command]]` entries | Opens, launches or runs it |
 | `deploy staging` | Your scripts in `~/.config/copperlight/scripts/`, community script commands too | Runs it with the text as arguments |
 | `sig`, `reply John` | Your `[[snippet]]` entries | Pastes the text, placeholders filled in |
 | `:` | Commands for windows, apps, files, the Mac | Runs it |
 | `:export pdf`, `:new tab` | The menus of the app you were in | Chooses that menu item |
+| `:play`, `:mute`, `:wifi`, `:awake`, `:output` | What's playing, the sound, Wi-Fi, keeping the Mac awake | Toggles it, or switches to that output |
 | `:!git status` | A shell line | Runs it, shows the output; Enter again copies |
 | `json`, `uuid`, `upper hi`… | Text tools | Copies (or pastes) the result |
 | `paste plain`, `paste markdown` | The clipboard, cleaned or as Markdown | Pastes it |
@@ -44,12 +46,19 @@ files and the text in photos. Everything else on this page is on.
 
 - **One hotkey** opens and hides it (`[hotkeys] launcher`, ⌥Space by default). It's the only global hotkey:
   everything else is found by typing.
-- **Keys:** ↑ ↓ move, Enter runs, Esc hides (or backs out of a question or an output). No other modifiers:
-  anything else is a `:` command.
+- **Keys:** ↑ ↓ move, Enter runs, Tab fills in, Esc hides (or backs out of a question or an output). No other
+  modifiers: anything else is a `:` command.
 - **It never takes focus** from the app you were in, so window commands and pastes act on that app.
 - **The selected row says what Enter does** ("Open ↵", "Paste as Markdown ↵").
 - **Some rows ask first** (`:restart`, `:empty trash`, `:clear`): Enter shows the question, Enter again does it.
-- **Some rows type instead of run:** Enter on `Quit Application` types `:quit `, on a folder types its path.
+- **Some rows fill in instead of run,** and their key is Tab: Tab on `Translate` types `translate `, on `Quit
+  Application` `:quit `, on a folder its path (Enter does the same). With a name typed whole (`translate`), Tab fills
+  it in whatever row is selected.
+- **A name that takes text becomes a chip:** `translate `, `define `, `emoji `, `stock `, `pomo `, `add todo `, `:quit `, `:!`,
+  `f `. Tab turns the name into a copper chip at the start of the field, keeping what you typed after it
+  (`stock aapl` ⇥); the field shows what comes after it with a hint while empty, and only that feature answers (no
+  "Search Google" row). Typing never makes a chip, so `stock apple` still finds `stock_Apple.pdf`. Delete in the empty
+  field turns the chip back into the text.
 - **What you pick rises (frecency):** every Enter makes that row rank higher next time, fading over a few weeks.
   No aliases or numbers to set up.
 - **Other names work too:** Copperlight's own things and the Mac's apps answer to the words people also use for them,
@@ -99,6 +108,12 @@ files and the text in photos. Everything else on this page is on.
 - **Currency:** `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`. Without a target, it converts to
   `[currency] default_target`, and that currency itself converts to USD. ECB rates, cached for a day, so it
   works offline.
+- **Stocks:** `stock AAPL`, `stock MGLU3.SA`, `stock ^BVSP`, `stock BTC-USD` (Yahoo Finance's tickers; `sto` ⇥ is the
+  Stock chip). The row is the price and today's change; the preview pane draws the last 7 days, hourly, in copper,
+  with the change over them, the previous close, the exchange and when it was last traded. Enter opens the stock on
+  Yahoo Finance. The ticker goes to Yahoo only in the Stock chip, once typing pauses (350 ms); an answer is kept a
+  minute. It's Copperlight's one request that says what you looked up. Typed without the chip, `stock aapl` asks
+  nothing: a row under the files offers it (Stock Price of AAPL, Tab).
 
 - **Units:** `10 km in mi`, `10km mi`, `100 f to c`, `2,5 kg`, `1 gb in mb`, `90 min in h`, `1 day in hours`.
   Length, weight, temperature, volume, speed, data, time and area, by the names people type (`km`, `miles`,
@@ -125,7 +140,9 @@ files and the text in photos. Everything else on this page is on.
   preview pane. Enter opens it in Dictionary.
 - **Translate** (`translate bom dia`, `translate good morning to spanish`): Apple's on-device translation. The
   text's language is detected; it goes to the language you name (`to`, `in`, `into` + a name or a code), or else
-  to your first language in System Settings that isn't the text's. Enter copies it. A language pair that isn't
+  to your first language in System Settings that isn't the text's. With no text (`translate`, `translate to
+  spanish`) it translates what's on the clipboard. The language can be a chip, Translate to German: press Tab with
+  it first (`to ger` ⇥) or at the end of the text (`hello world to ger` ⇥), and the field keeps only the text. Enter copies it. A language pair that isn't
   downloaded yet gets a row that opens Language & Region, where Translation Languages downloads it. Needs macOS 26.
 
 ## Your commands
@@ -181,7 +198,8 @@ The row shows its first line, and long ones show whole in the preview pane.
 | Window in front | `:minimize`, `:fullscreen`, `:close`, `:maximize`, `:center`, `:left`, `:right`, `:top`, `:bottom`, thirds (`:left third`…), two thirds, `:next display`, `:restore` (undo Copperlight's last move) |
 | Running apps | `:quit saf`, `:force quit saf` (asks first), `:hide saf`, `:hide others`, `:relaunch slack` |
 | Files | `:reveal readme`, `:copy path readme` (file search, or a path: `:copy path ~/code/copperlight/`) |
-| The Mac | `:lock`, `:sleep`, `:sleep displays`, `:restart`, `:shut down`, `:empty trash` (these three ask first), `:dark`, `:hidden files`, `:volume 30`, `:eject`, `:shortcut name` (your Shortcuts, also the way to Focus modes) |
+| The Mac | `:lock`, `:sleep`, `:sleep displays`, `:restart`, `:shut down`, `:empty trash` (these three ask first), `:dark`, `:wifi`, `:awake`, `:hidden files`, `:eject`, `:shortcut name` (your Shortcuts, also the way to Focus modes). `:dark`, `:wifi` and `:awake` say what Enter does now (Turn Wi-Fi Off) |
+| Sound | `:play` (play or pause), `:next track`, `:previous track`: the keyboard's media keys, so they reach whatever is playing (Music, a browser tab, Spotify). `:mute` (Mute or Unmute), `:volume 30`, `:output airpods` lists the sound outputs, the current one first; Enter switches to it |
 | Shell | `:!git status` (below) |
 | Copperlight | `:config` opens config.toml |
 
@@ -255,7 +273,8 @@ one it can't make cleanly is refused, and the file stays as it was. Edits made b
 
 ## Menu bar
 
-The C, with Settings… (⌘,), Welcome to Copperlight, Launch at Login and Quit. A running pomodoro adds its countdown next to it.
+The C, with Settings… (⌘,), Welcome to Copperlight, Launch at Login and Quit. A running pomodoro adds its countdown next to it,
+and `:awake` a sun while it keeps the Mac awake (click either to stop it). Keeping awake ends when Copperlight quits.
 
 ## Permissions
 
@@ -264,7 +283,7 @@ Otherwise macOS asks when a feature first needs one:
 
 | macOS asks for | When | For |
 |---|---|---|
-| Accessibility | First paste or window command | Pasting (⌘V into your app), window commands, `:window`, `:lock`, menu search |
+| Accessibility | First paste or window command | Pasting (⌘V into your app), window commands, `:window`, `:lock`, menu search, `:play` and the track keys |
 | Automation | First `:empty trash`, `:dark`, `:restart`, `:shut down` | Asking Finder, System Events, loginwindow to do it |
 | Reminders | First `add todo` | Adding reminders (no add-only option exists) |
 | Calendars, add only | First `add event` | Adding events |

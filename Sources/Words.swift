@@ -35,6 +35,8 @@ func formatDefinition(_ entry: String) -> (pronunciation: String, body: String) 
 
 /// `define serendipity`: its dictionary entry in the preview. Enter opens it in Dictionary.
 struct DefineProvider: ResultProvider {
+    var modes: [Mode] { [Mode(prefix: "define ", title: "Define", icon: .symbol("character.book.closed"), hint: "A word")] }
+
     func results(for query: String) -> [LauncherResult] {
         if let start = startRow(query, keyword: "define", title: "Define", hint: "Type a word: define serendipity", symbol: "character.book.closed") {
             return [start]
@@ -57,34 +59,52 @@ struct DefineProvider: ResultProvider {
 
 /// `translate bom dia`, `translate good morning to spanish`: Apple's on-device translation (macOS 26), from the
 /// language it detects to the one named, or else your first language in System Settings that isn't the text's.
+/// With no text (`translate`, `translate to spanish`) it's what's on the clipboard, like the text tools. The language
+/// can come first too (`translate to german hello`): that's its chip, Translate to German.
 /// Enter copies it. A language pair that isn't downloaded yet gets a row that opens where to download it.
 struct TranslateProvider: ResultProvider {
     private static let supported = Mutex<[Locale.Language]?>(nil) // asked once
-    private let english = Locale(identifier: "en")
+    private static let english = Locale(identifier: "en")
+    var clipboard: @Sendable () async -> String? = { await Clip.current(withHTML: false).text }
+    var modes: [Mode] {
+        let icon = LauncherResult.Icon.symbol("character.bubble")
+        let names = Set((Self.supported.withLock { $0 } ?? []).map(Self.shortName)) // English and Chinese come twice
+        return [Mode(prefix: "translate ", title: "Translate", icon: icon, hint: "Text, or nothing for what's copied · to spanish")]
+            + names.sorted().map { Mode(prefix: "translate to \($0.lowercased()) ", title: "Translate to \($0)", icon: icon,
+                                        hint: "Text, or nothing for what's copied") }
+    }
+
+    /// The languages the Mac can translate, asked once (at launch, so their chips are ready). None before macOS 26.
+    static func languages() async -> [Locale.Language] {
+        if let supported = supported.withLock({ $0 }) { return supported }
+        guard #available(macOS 26, *) else { return [] }
+        let languages = await LanguageAvailability().supportedLanguages
+        supported.withLock { $0 = languages }
+        return languages
+    }
 
     func results(for query: String) async -> [LauncherResult] {
-        if let start = startRow(query, keyword: "translate", title: "Translate", hint: "Type text; add “to spanish” for another language",
-                                symbol: "character.bubble") {
-            return [start]
-        }
-        guard query.lowercased().hasPrefix("translate "), #available(macOS 26, *) else { return [] }
-        var text = query.dropFirst(10).trimmingCharacters(in: .whitespaces)
+        let start = startRow(query, keyword: "translate", title: "Translate", hint: "Type text, or copy it; add “to spanish” for another language",
+                             symbol: "character.bubble").map { [$0] } ?? []
+        let lower = query.lowercased()
+        guard lower == "translate" || lower.hasPrefix("translate "), #available(macOS 26, *) else { return start }
+        var text = query.dropFirst(9).trimmingCharacters(in: .whitespaces)
         let availability = LanguageAvailability()
-        var supported = Self.supported.withLock { $0 }
-        if supported == nil {
-            supported = await availability.supportedLanguages
-            Self.supported.withLock { [supported] in $0 = supported }
-        }
+        let supported = await Self.languages()
         var target: Locale.Language?
-        if let named = text.firstMatch(of: #/(?i)^(.+?)\s+(?:to|in|into)\s+([\p{L}-]+)$/#),
-           let language = language(String(named.2), among: supported ?? []) {
-            (text, target) = (String(named.1), language)
+        if let first = text.firstMatch(of: #/(?i)^(?:to|in|into)\s+([\p{L}-]+)\s+(.+)$/#), let language = language(String(first.1), among: supported) {
+            (text, target) = (String(first.2), language) // "to german hello": the language chip, then the text
+        } else if let named = text.firstMatch(of: #/(?i)^(?:(.+?)\s+)?(?:to|in|into)\s+([\p{L}-]+)$/#),
+                  let language = language(String(named.2), among: supported) {
+            (text, target) = (named.1.map(String.init) ?? "", language)
         }
-        guard !text.isEmpty, let source = detectLanguage(text) else { return [] }
+        let fromClipboard = text.isEmpty
+        if fromClipboard { text = await clipboard()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" }
+        guard !text.isEmpty, let source = detectLanguage(text) else { return start }
         let preferred = Locale.preferredLanguages.map(Locale.Language.init(identifier:))
         guard let target = target ?? (preferred + [Locale.Language(identifier: "en")]).first(where: { $0.languageCode != source.languageCode })
         else { return [] }
-        let pair = "\(name(source)) → \(name(target))"
+        let pair = "\(Self.name(source)) → \(Self.name(target))"
         let row = { (title: String, subtitle: String, actionTitle: String, preview: String?, action: @escaping @MainActor @Sendable () -> Void) in
             LauncherResult(id: "translate", title: title, subtitle: subtitle, icon: .symbol("character.bubble"), score: 50,
                            actionTitle: actionTitle, action: action, preview: preview, previewStyle: .prose)
@@ -93,7 +113,7 @@ struct TranslateProvider: ResultProvider {
         case .installed:
             let session = TranslationSession(installedSource: source, target: target)
             guard let translated = try? await session.translate(text).targetText else { return [] }
-            return [row(oneLine(translated), pair, "Copy", translated.count > 60 || translated.contains("\n") ? translated : nil, {
+            return [row(oneLine(translated), pair + (fromClipboard ? " · from the clipboard" : ""), "Copy", translated.count > 60 || translated.contains("\n") ? translated : nil, {
                 copyToClipboard(translated)
             })]
         case .supported:
@@ -112,12 +132,17 @@ struct TranslateProvider: ResultProvider {
         let key = name.lowercased()
         return supported.first { language in
             [language.minimalIdentifier, language.languageCode?.identifier].contains { $0?.lowercased() == key }
-                || self.name(language).lowercased() == key
+                || Self.name(language).lowercased() == key || Self.shortName(language).lowercased() == key
         }
     }
 
-    private func name(_ language: Locale.Language) -> String {
-        language.languageCode.flatMap { english.localizedString(forLanguageCode: $0.identifier) } ?? language.minimalIdentifier
+    /// One word, as a chip and as typed after "to": Norwegian Bokmål is "norwegian".
+    private static func shortName(_ language: Locale.Language) -> String {
+        String(name(language).split(separator: " ").first ?? "")
+    }
+
+    private static func name(_ language: Locale.Language) -> String {
+        language.languageCode.flatMap { Self.english.localizedString(forLanguageCode: $0.identifier) } ?? language.minimalIdentifier
     }
 
     /// The text's language, leaning to the ones in System Settings (short texts are ambiguous).

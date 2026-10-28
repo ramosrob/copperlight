@@ -62,6 +62,7 @@ actor FileSearchProvider: ResultProvider {
     /// Typed first, it searches files only, with more results.
     static let prefix = "f "
     private var settings = Config.Files()
+    nonisolated var modes: [Mode] { [Mode(prefix: Self.prefix, title: "Files", icon: .symbol("doc.text.magnifyingglass"), hint: "A file's name")] }
 
     func setSettings(_ settings: Config.Files) { self.settings = settings }
 

@@ -6,6 +6,7 @@ struct ShellProvider: ResultProvider {
     static let prefix = ":!"
     /// The lines run before are the launcher's frecency entries ("shell:<line>"): no history file of their own.
     let state: StateStore
+    var modes: [Mode] { [Mode(prefix: Self.prefix, title: "Shell", icon: .symbol("terminal"), hint: "A shell line: git status")] }
 
     func results(for query: String) async -> [LauncherResult] {
         let line = query.dropFirst(Self.prefix.count).trimmingCharacters(in: .whitespaces)

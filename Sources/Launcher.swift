@@ -3,6 +3,26 @@ import SwiftUI
 
 protocol ResultProvider: Sendable {
     func results(for query: String) async -> [LauncherResult]
+    /// Names that text after them goes to, and only to this provider once one is a chip.
+    var modes: [Mode] { get }
+    /// The rows for a query in one of this provider's modes, its chip showing: the same as `results` unless being
+    /// asked on purpose changes what it may do (`stock` asks Yahoo Finance only then).
+    func modeResults(for query: String) async -> [LauncherResult]
+}
+
+extension ResultProvider {
+    var modes: [Mode] { [] }
+    func modeResults(for query: String) async -> [LauncherResult] { await results(for: query) }
+}
+
+/// A name that text after it goes to (`translate `, `add todo `, `:quit `). Tab (or Enter on a row that fills it in)
+/// turns it into a chip at the start of the field, the field holds what comes after it, and the query goes to its
+/// provider alone. Typing never does: "stock apple" may be the start of a file's name.
+struct Mode: Sendable {
+    let prefix: String // lowercase, with the space that ends the name
+    let title: String
+    let icon: LauncherResult.Icon
+    var hint = "" // the empty field's placeholder beside the chip
 }
 
 typealias OutputStep = @Sendable (_ progress: @escaping @Sendable (LauncherResult) async -> Void) async -> LauncherResult
@@ -27,8 +47,11 @@ struct LauncherResult: Identifiable, Sendable {
     /// What Enter does, named on the selected row ("Open", "Copy"). Empty: no hint.
     var actionTitle = "Open"
     let action: @MainActor @Sendable () -> Void
-    /// Enter puts this in the search field instead of running anything (`:quit` → ":quit ", to pick an app).
+    /// Tab (or Enter) puts this in the search field instead of running anything (`:quit` → ":quit ", to pick an app);
+    /// a name that takes text becomes its chip.
     var completion: String? = nil
+    /// The key the selected row shows beside what it does.
+    var key: String { completion != nil ? "tab" : "↵" }
     /// Enter runs it, drops the row and keeps the panel open, so several can go in a row (`:delete`).
     var staysOpen = false
     /// Ask first: Enter shows a row with this question, and Enter on that row runs `action`.
@@ -98,7 +121,12 @@ struct Frecency: Codable, Sendable {
 
 @MainActor @Observable
 final class SearchModel {
-    var query = "" { didSet { search() } }
+    var query = "" {
+        didSet {
+            if let mode, !query.lowercased().hasPrefix(mode.prefix) { modeMatch = nil } // replaced, not typed after the chip
+            search()
+        }
+    }
     /// Pinned above the results, whatever the query, until cleared (e.g. a config error).
     var notice: LauncherResult?
     /// A confirmation question that replaces the list until answered (Enter) or dismissed (Esc, typing).
@@ -108,6 +136,11 @@ final class SearchModel {
     @ObservationIgnored private let providers: [any ResultProvider]
     @ObservationIgnored private let searchesEmptyQuery: Bool
     @ObservationIgnored private let exclusive: [String: any ResultProvider]
+    @ObservationIgnored private let modeProviders: [any ResultProvider]
+    /// Asked each time: a provider's names can change (Translate's languages arrive after launch).
+    private var modes: [(mode: Mode, provider: any ResultProvider)] {
+        modeProviders.flatMap { provider in provider.modes.map { ($0, provider) } }
+    }
     @ObservationIgnored private var task: Task<Void, Never>?
     /// A round has started and its rows aren't shown yet: the list still shows the previous query's.
     @ObservationIgnored private(set) var settling = false
@@ -124,6 +157,7 @@ final class SearchModel {
         self.providers = providers
         self.searchesEmptyQuery = searchesEmptyQuery
         self.exclusive = exclusive
+        modeProviders = providers + exclusive.values
         self.state = state
         frecency = state?.get(Frecency.stateSection, as: Frecency.Table.self) ?? [:]
     }
@@ -133,6 +167,74 @@ final class SearchModel {
         guard let state else { return }
         frecency = Frecency.picking(id, in: frecency, at: .now)
         state.set(Frecency.stateSection, frecency)
+    }
+
+    /// The chip showing, and whose: set by Tab or Enter only (`fill`, `complete`), never by typing.
+    private var modeMatch: (mode: Mode, provider: any ResultProvider)?
+
+    var mode: Mode? { modeMatch?.mode }
+
+    /// The longest name `text` starts with (`:force quit ` over `:quit `).
+    private func named(_ text: String) -> (mode: Mode, provider: any ResultProvider)? {
+        let lower = text.lowercased()
+        return modes.filter { lower.hasPrefix($0.mode.prefix) }.max { $0.mode.prefix.count < $1.mode.prefix.count }
+    }
+
+    /// Puts `text` in the field as Tab or Enter fills it in: the name it starts with, if any, becomes its chip.
+    func fill(_ text: String) {
+        modeMatch = named(text)
+        query = text
+    }
+
+    /// The field's text: the query, or what follows the mode's name while its chip shows.
+    var typed: String {
+        get { mode.map { String(query.dropFirst($0.prefix.count).drop(while: \.isWhitespace)) } ?? query }
+        set { query = (mode?.prefix ?? "") + newValue }
+    }
+
+    /// Tab. A name typed with text after it becomes its chip, keeping the text (`stock aapl` → Stock, `aapl`); then, or
+    /// already in a chip, an ending that names a longer one moves into it (`hello world to ger` → Translate to German).
+    /// Otherwise: what the selected row fills in (Translate → "translate "), or the name that starts with what's typed
+    /// (`translate`, with a translation selected). Nothing to fill in: nothing happens.
+    func complete() {
+        let entered = named(query).flatMap { $0.mode.prefix.count > (mode?.prefix.count ?? 0) ? $0 : nil }
+        if let entered {
+            modeMatch = entered
+            search() // the same text, now for its provider alone
+        }
+        if moveEnding() || entered != nil { return }
+        if let row = selected, let completion = row.completion {
+            picked(row.id)
+            return fill(completion)
+        }
+        // The shortest name that starts with it, when every other one goes on from it ("translate " before
+        // "translate to german "); "add" could be several things, so it fills in nothing.
+        let lower = query.lowercased()
+        let names = modes.map(\.mode.prefix).filter { !lower.isEmpty && $0.hasPrefix(lower) && $0 != lower }.sorted { $0.count < $1.count }
+        if let shortest = names.first, names.allSatisfy({ $0.hasPrefix(shortest) }) { fill(shortest) }
+    }
+
+    /// In a chip, the end of the text naming a longer one moves into it, the rest staying in the field. Longest ending
+    /// first; one that fits several names does nothing.
+    private func moveEnding() -> Bool {
+        guard let mode else { return false }
+        let longer = Set(modes.map(\.mode.prefix).filter { $0.hasPrefix(mode.prefix) && $0 != mode.prefix }).map { $0.dropFirst(mode.prefix.count) }
+        let text = typed
+        for start in text.indices where start == text.startIndex || text[text.index(before: start)] == " " {
+            let fits = longer.filter { $0.hasPrefix(text[start...].lowercased()) }
+            if fits.count > 1 { return false }
+            if let extra = fits.first {
+                fill(mode.prefix + extra + text[..<start].trimmingCharacters(in: .whitespaces))
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Delete in the empty field after a chip: the chip turns back into its name, as if the space was deleted (Translate
+    /// to German goes back to Translate, with "to german" in the field).
+    func leaveMode() {
+        if let mode, typed.isEmpty { fill(String(mode.prefix.dropLast())) }
     }
 
     var rows: [LauncherResult] { confirming.map { [$0] } ?? ((notice.map { [$0] } ?? []) + results) }
@@ -158,14 +260,16 @@ final class SearchModel {
         selection = 0
         let query = query.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty || searchesEmptyQuery else { results = []; settling = false; return }
-        // The longest prefix wins: ":!" (shell) over ":" (commands).
-        let providers = exclusive.filter { query.hasPrefix($0.key) }.max { $0.key.count < $1.key.count }.map { [$0.value] } ?? providers
-        let (frecency, now) = (frecency, Date.now)
+        // A chip's provider alone; else the longest prefix wins: ":!" (shell) over ":" (commands).
+        let inMode = modeMatch != nil
+        let providers = modeMatch.map { [$0.provider] }
+            ?? exclusive.filter { query.hasPrefix($0.key) }.max { $0.key.count < $1.key.count }.map { [$0.value] } ?? providers
+        let (frecency, now, typed) = (frecency, Date.now, self.query.lowercased())
         settling = true
         task = Task {
             await withTaskGroup(of: [LauncherResult]?.self) { group in
                 for provider in providers {
-                    group.addTask { await provider.results(for: query) }
+                    group.addTask { inMode ? await provider.modeResults(for: query) : await provider.results(for: query) }
                 }
                 // ponytail: one fixed wait, under what reads as instant; per-provider deadlines if one ever needs more.
                 group.addTask { try? await Task.sleep(for: Self.wait); return nil } // nil: the wait is over
@@ -186,7 +290,8 @@ final class SearchModel {
                     let replaced = Set(merged.compactMap { row in
                         ["command:", "script:"].first { row.id.hasPrefix($0) }.map { "builtin:" + row.id.dropFirst($0.count).lowercased() }
                     })
-                    results = merged.filter { !replaced.contains($0.id) }
+                    // A row whose Enter would type what's already there ("translate " beside its chip) does nothing.
+                    results = merged.filter { !replaced.contains($0.id) && $0.completion?.lowercased() != typed }
                     selection = min(selection, max(0, rows.count - 1))
                     settling = false
                     if pending == 0 { return group.cancelAll() } // ends the wait early
@@ -256,6 +361,12 @@ final class LauncherPanel: NSPanel {
             guard model.confirming != nil else { return orderOut(nil) }
             model.run?.cancel()
             model.confirming = nil
+        case 51 where model.mode != nil && model.typed.isEmpty: model.leaveMode() // Delete
+        case 48: // Tab, never out of the field: fills in a name that takes text, once this query's rows are in
+            if model.settling {
+                return DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) { [weak self] in self?.sendEvent(event) }
+            }
+            model.complete()
         case 125: model.move(1) // ↓
         case 126: model.move(-1) // ↑
         case 36, 76: // Return, keypad Enter. Every action has its own row, so modifiers change nothing.
@@ -266,7 +377,7 @@ final class LauncherPanel: NSPanel {
             }
             guard let result = model.selected else { return }
             if result.confirm == nil { model.picked(result.id) } // a question counts once answered
-            if let completion = result.completion { return model.query = completion }
+            if let completion = result.completion { return model.fill(completion) }
             if let question = result.confirm {
                 model.confirming = LauncherResult(
                     id: result.id, title: question, subtitle: "Esc to cancel", icon: .symbol("exclamationmark.triangle"),
@@ -400,20 +511,38 @@ private struct LauncherView: View {
     let placeholder: String
     @FocusState private var focused: Bool
     @State private var moreBeyond = ScrollEdges()
+    /// The field's text, kept apart from `model.typed`: bound to it directly, the field ignored a change its own typing
+    /// caused, so "translate " stayed in it beside the Translate chip it had become. Such a change is put back in the
+    /// field a turn later, once the field is done with the keystroke.
+    @State private var text = ""
 
     var body: some View {
         VStack(spacing: Self.gap) {
-            TextField(placeholder, text: $model.query)
-                .textFieldStyle(.plain)
-                .font(.system(size: 21))
-                .focused($focused)
-                .padding(.horizontal, 26)
-                .frame(height: Self.fieldHeight)
+            HStack(spacing: 10) {
+                if let mode = model.mode {
+                    ModeChip(mode: mode).transition(.scale(scale: 0.8, anchor: .leading).combined(with: .opacity))
+                }
+                TextField(model.mode?.hint ?? placeholder, text: $text)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 21))
+                    .focused($focused)
+                    .onChange(of: text) {
+                        guard text != model.typed else { return }
+                        model.typed = text
+                        if text != model.typed { Task { text = model.typed } } // a name became its chip: what follows it stays
+                    }
+                    .onChange(of: model.typed) { Task { if text != model.typed { text = model.typed } } } // Tab, Enter, a new show
+            }
+            // A chip sits as far in as it is round, so its curve follows the field's.
+            .padding(.leading, model.mode == nil ? 26 : Self.fieldHeight / 2 - ModeChip.height / 2)
+            .padding(.trailing, 26)
+            .animation(.spring(duration: 0.3, bounce: 0.25), value: model.mode?.prefix)
+            .frame(height: Self.fieldHeight)
                 .modifier(GlassBackground(shape: Capsule(), radius: Self.fieldHeight / 2 - 0.5)) // a mask 2r + 1 tall: exactly the field
                 .overlay(Capsule().strokeBorder(LinearGradient.brand, lineWidth: 1.5))
             if let selected = model.selected {
                 // A list with previews (clipboard) keeps its full height so the preview has room.
-                let hasPreview = model.rows.contains { $0.preview != nil || $0.loadPreview != nil }
+                let hasPreview = model.rows.contains { $0.preview != nil || $0.loadPreview != nil || $0.previewImage != nil }
                 HStack(spacing: Self.cardPadding) {
                     list
                     if hasPreview { PreviewPane(result: selected).frame(width: Self.previewWidth) }
@@ -557,7 +686,7 @@ private struct ResultRow: View {
             if selected, !result.actionTitle.isEmpty {
                 HStack(spacing: 7) {
                     Text(result.actionTitle).font(.system(size: 12)).foregroundStyle(.secondary)
-                    Keycap(label: "↵")
+                    Keycap(label: result.key)
                 }
                 .fixedSize()
             } else if !result.accessory.isEmpty {
@@ -577,6 +706,34 @@ private struct ResultRow: View {
             }
         }
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// A mode's name at the start of the field (`translate ` → Translate), in the selected row's copper.
+private struct ModeChip: View {
+    static let height: CGFloat = 34
+    let mode: Mode
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let dark = scheme == .dark
+        HStack(spacing: 7) {
+            switch mode.icon {
+            case .symbol(let name): Image(systemName: name).font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
+            default: IconView(icon: mode.icon, size: 18)
+            }
+            Text(mode.title).font(.system(size: 15, weight: .medium)).lineLimit(1)
+        }
+        .padding(.horizontal, 13)
+        .frame(height: Self.height)
+        .background {
+            Capsule()
+                .fill(LinearGradient(colors: [.copper.opacity(dark ? 0.24 : 0.13), .copperDeep.opacity(dark ? 0.15 : 0.10)],
+                                     startPoint: .leading, endPoint: .trailing))
+                .strokeBorder(Color.copper.opacity(dark ? 0.35 : 0.22), lineWidth: 0.5)
+        }
+        .fixedSize()
+        .accessibilityLabel(mode.title)
     }
 }
 
@@ -681,4 +838,5 @@ private struct PreviewPane: View {
         .clipShape(.rect(cornerRadius: 16, style: .continuous))
     }
 }
+
 

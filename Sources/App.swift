@@ -132,7 +132,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var model = SearchModel(
         providers: ([(commands, .commands), (ScriptProvider(), .scripts), (snippets, .snippets), (builtins, nil),
                      (EmojiProvider(), .quickTools), (DefineProvider(), .quickTools),
-                     (translate, .quickTools), (meetings, nil), (TextToolProvider(), .quickTools), (capture, .notes), (apps, nil),
+                     (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (TextToolProvider(), .quickTools), (capture, .notes), (apps, nil),
                      (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
                      (TimeZoneProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools), (files, nil),
                      (FileContentProvider(files: files), .fileContent), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
@@ -175,7 +175,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         reloadConfig()
-        if Feature.quickTools.isOn { pomodoro.restore() }
+        if Feature.quickTools.isOn {
+            pomodoro.restore()
+            Task { _ = await TranslateProvider.languages() } // its language chips
+        }
         watcher = DirectoryWatcher(configDir) { [unowned self] in
             reloadConfig()
             notes[""]?.reloadIfChanged()

@@ -45,6 +45,10 @@ struct CaptureProvider: ResultProvider {
         Target(name: "event", title: "Add Calendar Event", icon: "calendar"),
     ]
 
+    var modes: [Mode] {
+        Self.targets.map { Mode(prefix: "add \($0.name) ", title: $0.title, icon: .symbol($0.icon), hint: example($0.name)) }
+    }
+
     func results(for query: String) -> [LauncherResult] {
         if let rest = words(after: "add", in: query) { return addRows(rest) }
         let tools = [("screenshot", "Screenshot", "Screenshot toolbar (⌘⇧5)", "camera.viewfinder", false),

@@ -21,6 +21,8 @@ func emojiMatches(_ words: String, limit: Int = 30) -> [(emoji: String, name: St
 /// `emoji party`: emoji by name. Enter pastes it into the app you were in (copies it without Accessibility).
 /// `emo` alone (from 3 letters) offers to start a search.
 struct EmojiProvider: ResultProvider {
+    var modes: [Mode] { [Mode(prefix: "emoji ", title: "Emoji", icon: .symbol("face.smiling"), hint: "A word for one: party")] }
+
     func results(for query: String) -> [LauncherResult] {
         if let start = startRow(query, keyword: "emoji", title: "Emoji", hint: "Type a word for one: emoji party", symbol: "face.smiling") {
             return [start]

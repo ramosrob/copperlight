@@ -28,14 +28,16 @@
 </p>
 
 Press <kbd>⌥ Space</kbd> anywhere, type, press <kbd>Enter</kbd>. Copperlight opens apps and files, does math and
-currency, converts units and time zones, keeps your clipboard history, moves windows, pastes snippets, opens System
-Settings pages, chooses menu items in the app you're in, and runs your own commands and scripts. One field does it all, and anything that isn't a search is a command typed after a colon
+currency, converts units and time zones, translates, keeps your clipboard history, moves windows, plays and pauses
+your music, pastes snippets, opens System Settings pages, chooses menu items in the app you're in, and runs your own
+commands and scripts. One field does it all, and anything that isn't a search is a command typed after a colon
 (`:left`, `:quit saf`), so there are no shortcuts to learn.
 
 ## Why Copperlight
 
-- **One field for everything.** No modes, no menus. The best match is already selected, and what you pick ranks
-  higher next time.
+- **One field for everything.** No windows to open, no menus. The best match is already selected, and what you pick
+  ranks higher next time. Type a tool's name and press Tab (`tra` ⇥) and it turns into a chip, so you always see
+  where your words are going.
 - **Keyboard first.** Every result and every action is a few keystrokes from <kbd>⌥ Space</kbd>, even the menus of
   the app you're in (`:export pdf`). The mouse is optional.
 - **Yours.** Your settings live in one plain-text file you can read, edit and keep in git. Add your own commands,
@@ -55,12 +57,26 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Quick capture**<br>`add todo`, `add event` | Reminders, calendar events and note lines, with the date read from what you type: `add todo call mom tomorrow 5pm`. |
 | **Snippets**<br>`sig`, `reply Ana` | The text you type over and over, with placeholders for the date, the clipboard or a name. |
 | **Meetings**<br>`meetings` | The rest of today's calendar. Enter joins the video call. |
-| **Dictionary and translation**<br>`define`, `translate` | The Mac's dictionary and on-device translation, without opening an app. |
+| **Dictionary and translation**<br>`define`, `translate` | The Mac's dictionary and on-device translation, without opening an app. Copy something and type `translate`. |
+| **Music and sound**<br>`:play`, `:mute`, `:output` | Play, pause and skip whatever is playing, mute, set the volume, and switch between speakers and headphones. |
+| **Stocks**<br>`stock AAPL` | The price now, today's change and a 7-day chart, beside the results. Enter opens the stock on Yahoo Finance. |
+| **Keep awake**<br>`:awake` | Keeps your Mac and its displays awake until you say so, with a sun in the menu bar while it's on. |
 | **Text tools**<br>`json`, `uuid`, `b64`, `hex` | Format JSON, make a UUID or a password, encode text, convert colors and timestamps. |
 | **Emoji**<br>`emoji party` | Every emoji by name, pasted where you are. |
 | **Screenshots**<br>`screenshot`, `record` | The macOS screenshot toolbar, ready to capture or record. |
 
 ## A closer look
+
+**Press Tab, and it's a tool.** Type the start of a tool's name and press Tab: it turns into a chip, and everything
+you type after it goes there, with nothing else in the way. `translate hello world to ger` ⇥ even moves the language
+into the chip. A space is still only a space, so a search for `stock_Apple.pdf` stays a search.
+
+<p align="center"><img src="docs/media/chips.png" width="600" alt="A Translate to German chip in the field, with hello world after it, translated to Hallo Welt"></p>
+
+**Stocks.** `stock aapl` ⇥: the price, today's change and the last 7 days beside the results, from Yahoo Finance.
+Copperlight asks only when you use the chip.
+
+<p align="center"><img src="docs/media/stocks.png" width="600" alt="The Stock chip with aapl: Apple's price, today's change and a 7-day chart"></p>
 
 **Math and money.** The answer appears as you type: percentages, currencies at today's rate, units and time zones. Enter copies it.
 
@@ -104,6 +120,7 @@ The answer appears as you type; Enter copies it.
 | `25 usd to eur` | The amount in euros, at today's rate |
 | `10 km in mi`, `30c` | `6.21 mi`, `86 °F` |
 | `3pm lisbon in sf`, `now in tokyo` | The time there |
+| `stock AAPL`, `stock MGLU3.SA` | The price now, today's change and the last 7 days as a chart (from Yahoo Finance) |
 
 ### Words
 
@@ -111,6 +128,8 @@ The answer appears as you type; Enter copies it.
 |---|---|
 | `define laconic` | The entry from the Mac's dictionary |
 | `translate bom dia`, `translate thank you to japanese` | The translation, made on your Mac (macOS 26) |
+| `translate`, `translate to spanish` | What you copied, translated |
+| `translate hello world to ger` ⇥ | The language moves into the chip (Translate to German), so the field holds only your text |
 | `emoji party` | Emoji by name; Enter pastes it |
 
 ### Clipboard and text
@@ -131,7 +150,8 @@ The answer appears as you type; Enter copies it.
 | `:window term` | Any window of any app, found by its title |
 | `:export pdf`, `:new tab` | The menus of the app you're in, with their shortcuts |
 | `:quit saf`, `:hide others`, `:relaunch slack` | The apps that are running |
-| `:dark`, `:volume 30`, `:lock`, `:empty trash` | The Mac itself (the ones you can't undo ask first) |
+| `:dark`, `:wifi`, `:awake`, `:lock`, `:empty trash` | The Mac itself; each row says what Enter does (Turn Wi-Fi Off), and the ones you can't undo ask first |
+| `:play`, `:next track`, `:mute`, `:volume 30`, `:output airpods` | What's playing, in any app, and where the sound goes |
 | `:shortcut name` | Your Shortcuts, Focus modes included |
 | `bluetooth`, `displays`, `dark mode` | That page of System Settings |
 
@@ -202,7 +222,7 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 
 | Permission | Turns on |
 |---|---|
-| Accessibility | Pasting into the app you were in (clipboard history, snippets, emoji, paste as Markdown); moving and switching windows; searching menus |
+| Accessibility | Pasting into the app you were in (clipboard history, snippets, emoji, paste as Markdown); moving and switching windows; searching menus; `:play`, `:next track` |
 | Calendars | `meetings` (reads today's events) and `add event` (add-only access is enough for that) |
 | Reminders | `add todo` |
 | Notifications | The end of a pomodoro, shell lines that finish in the background, errors |
@@ -216,6 +236,9 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
   finding apps by what they do, Homebrew's public app list (downloaded whole, weekly, so it doesn't reveal which apps
   you have), each listed app's homepage once, and the App Store's description of apps you got there.
   `[apps] online = false` turns those off. Links and searches open in your browser.
+- **Stock prices only when you ask:** in the Stock chip (`stock aapl`, then Tab), the ticker goes to Yahoo Finance
+  once you pause typing, and nothing else. It's the one request that says what you looked up, so typing alone never
+  sends it.
 - **What it keeps stays on your Mac**, in `~/.config/copperlight/`: your config, notes, state and clipboard history
   (SQLite, readable only by you; deleted items are overwritten). Copies marked as passwords, and copies made in
   password managers, are never recorded.

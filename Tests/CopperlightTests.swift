@@ -1674,3 +1674,244 @@ private let macOS26 = ProcessInfo.processInfo.isOperatingSystemAtLeast(Operating
     #expect(mitLicense.contains("The above copyright notice and this permission notice shall be included"))
     #expect(mitLicense.contains("THE SOFTWARE IS PROVIDED \"AS IS\""))
 }
+
+// MARK: Media and toggles
+
+@Test func togglesSayWhatEnterDoes() async {
+    let verbs = VerbProvider(verbs: [Verb(keyword: "wifi", title: "Toggle Wi-Fi", icon: .symbol("wifi"), showing: { "Turn Wi-Fi Off" }, run: {})])
+    #expect(await verbs.results(for: ":wifi").map(\.title) == ["Turn Wi-Fi Off"])
+    #expect(await verbs.results(for: ":toggle wi").map(\.title) == ["Turn Wi-Fi Off"]) // still found by its title
+}
+
+@Test func mediaAndToggleCommands() async {
+    let launcher = VerbProvider(verbs: Verb.launcher(files: FileSearchProvider()))
+    let first = { (query: String) async in await launcher.results(for: query).max { $0.score < $1.score } } // as the list shows them
+    #expect(await first(":play")?.title == "Play or Pause")
+    #expect(await first(":pause")?.title == "Play or Pause") // another name
+    #expect(Set(await launcher.results(for: ":next").map(\.title)) == ["Next Track", "Move to Next Display"]) // the group
+    #expect(await first(":previous")?.title == "Previous Track")
+    #expect(["Mute", "Unmute"].contains(await first(":mute")?.title ?? ""))
+    #expect(await first(":unmute")?.subtitle == ":mute")
+    #expect(["Turn Wi-Fi On", "Turn Wi-Fi Off"].contains(await first(":wifi")?.title ?? ""))
+    #expect(["Turn Dark Mode On", "Turn Dark Mode Off"].contains(await first(":dark")?.title ?? ""))
+    #expect(await first(":outp")?.completion == ":output ") // Enter lists the Mac's sound outputs
+}
+
+@MainActor @Test func keepAwake() async {
+    let launcher = VerbProvider(verbs: Verb.launcher(files: FileSearchProvider()))
+    #expect(await launcher.results(for: ":awake").first?.title == "Keep Awake")
+    KeepAwake.shared.toggle()
+    #expect(KeepAwake.isOn)
+    #expect(await launcher.results(for: ":awake").first?.title == "Stop Keeping Awake")
+    KeepAwake.shared.toggle()
+    #expect(!KeepAwake.isOn)
+    #expect(await launcher.results(for: ":caffeinate").first?.title == "Keep Awake")
+}
+
+@Test func soundOutputRows() {
+    let outputs = [SoundOutput(id: 1, name: "MacBook Pro Speakers"), SoundOutput(id: 2, name: "AirPods Pro"), SoundOutput(id: 3, name: "U27B3M")]
+    let rows = outputRows("", outputs: outputs, current: 2)
+    #expect(rows.map(\.title) == ["AirPods Pro", "MacBook Pro Speakers", "U27B3M"]) // the one playing now first
+    #expect(rows.map(\.subtitle) == ["Current output", "", ""])
+    #expect(rows.map(\.score) == rows.map(\.score).sorted(by: >))
+    #expect(outputRows("mac", outputs: outputs, current: 2).map(\.title) == ["MacBook Pro Speakers"])
+}
+
+@Test(.enabled(if: macOS26)) func translateTheClipboard() async {
+    let row = await TranslateProvider(clipboard: { "bom dia, tudo bem?" }).results(for: "translate").first
+    #expect(row?.subtitle == "Portuguese → English · from the clipboard" || row?.title == "Download Portuguese → English to translate here")
+    let spanish = await TranslateProvider(clipboard: { "good morning" }).results(for: "translate to spanish").first
+    #expect(spanish?.subtitle == "English → Spanish · from the clipboard" || spanish?.title == "Download English → Spanish to translate here")
+    #expect(await TranslateProvider(clipboard: { nil }).results(for: "translate").first?.completion == "translate ") // nothing copied
+    #expect(await TranslateProvider(clipboard: { "bom dia" }).results(for: "trans").first?.completion == "translate ")
+}
+
+// MARK: Mode chips
+
+private struct Say: ResultProvider {
+    var modes: [Mode] { [Mode(prefix: "say ", title: "Say", icon: .symbol("quote.bubble"), hint: "Something to say")] }
+    func results(for query: String) async -> [LauncherResult] {
+        [LauncherResult(id: "say", title: "said: " + query, icon: .symbol("circle"), score: 1, action: {}),
+         LauncherResult(id: "start", title: "Say", icon: .symbol("circle"), score: 0, action: {}, completion: "say ")]
+    }
+}
+
+private func keyDown(_ code: UInt16, _ characters: String) -> NSEvent {
+    NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0, context: nil,
+                     characters: characters, charactersIgnoringModifiers: characters, isARepeat: false, keyCode: code)!
+}
+
+@MainActor @Test func modeChips() async throws {
+    let model = SearchModel(providers: [Say(), Fixed(rows: [("other", 2)])])
+    let panel = LauncherPanel(model: model, placeholder: "…")
+    model.typed = "say hi" // typed, a name and its space are only text: everything answers, as for "stock_Apple.pdf"
+    try await Task.sleep(for: .milliseconds(200))
+    #expect(model.mode == nil && model.results.map(\.title) == ["other", "said: say hi", "Say"])
+    panel.sendEvent(keyDown(48, "\t")) // Tab: the name becomes the chip, and what follows it stays in the field
+    #expect(model.mode?.title == "Say" && model.typed == "hi" && model.query == "say hi")
+    try await Task.sleep(for: .milliseconds(200))
+    #expect(model.results.map(\.title) == ["said: say hi", "Say"]) // its provider alone
+    model.typed = ""
+    try await Task.sleep(for: .milliseconds(200))
+    #expect(model.results.map(\.title) == ["said: say"]) // not the row whose Enter types what's already there
+    panel.sendEvent(keyDown(51, "\u{7F}"))
+    #expect(model.query == "say" && model.mode == nil) // Delete in the empty field: the chip is its text again
+    model.typed = "say there"
+    #expect(model.mode == nil) // its space typed again doesn't bring it back
+
+    let verbs = VerbProvider(verbs: Verb.launcher(files: FileSearchProvider())).modes.map(\.prefix)
+    #expect(verbs.contains(":quit ") && verbs.contains(":output ") && !verbs.contains(":left ")) // commands that take a name
+    #expect(!verbs.contains(":! ")) // the shell's chip is ShellProvider's (":!")
+    #expect(TranslateProvider().modes.first?.title == "Translate")
+    #expect(CaptureProvider(addToNote: { _ in }).modes.map(\.prefix) == ["add note ", "add todo ", "add event "])
+    #expect(PomodoroProvider(pomodoro: Pomodoro()).modes.map(\.prefix) == ["pomo "])
+}
+
+@MainActor @Test func tabFillsInANameAsAChip() async throws {
+    let tab = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0,
+                                             context: nil, characters: "\t", charactersIgnoringModifiers: "\t", isARepeat: false, keyCode: 48))
+    let translate = SearchModel(providers: [TranslateProvider(clipboard: { nil })])
+    let panel = LauncherPanel(model: translate, placeholder: "…")
+    translate.query = "tra"
+    try await Task.sleep(for: .milliseconds(200))
+    #expect(translate.selected?.key == "tab") // a row that fills in a name says Tab, not ↵
+    panel.sendEvent(tab)
+    #expect(translate.query == "translate " && translate.mode?.title == "Translate")
+
+    let say = SearchModel(providers: [Say()])
+    let sayPanel = LauncherPanel(model: say, placeholder: "…")
+    say.query = "say"
+    try await Task.sleep(for: .milliseconds(200))
+    #expect(say.selected?.title == "said: say" && say.selected?.key == "↵") // the top row runs; its name is typed whole
+    sayPanel.sendEvent(tab)
+    #expect(say.query == "say ") // the mode whose name it is
+    say.query = "zzz"
+    try await Task.sleep(for: .milliseconds(200))
+    sayPanel.sendEvent(tab)
+    #expect(say.query == "zzz") // nothing to fill in
+}
+
+private struct Speak: ResultProvider {
+    var modes: [Mode] {
+        [Mode(prefix: "say ", title: "Say", icon: .symbol("x")), Mode(prefix: "say to bob ", title: "Say to Bob", icon: .symbol("x")),
+         Mode(prefix: "say to ann ", title: "Say to Ann", icon: .symbol("x"))]
+    }
+    func results(for query: String) async -> [LauncherResult] { [] }
+}
+
+@MainActor @Test func tabMovesALongerNameIntoTheChip() async throws {
+    let model = SearchModel(providers: [Speak()])
+    let panel = LauncherPanel(model: model, placeholder: "…")
+    let press = { (query: String) async throws -> String in
+        model.query = query
+        try await Task.sleep(for: .milliseconds(100))
+        panel.sendEvent(keyDown(48, "\t"))
+        return model.query
+    }
+    #expect(try await press("say") == "say " && model.mode?.title == "Say") // the shortest name: the others go on from it
+    #expect(try await press("say to b") == "say to bob ") // the start of a name
+    #expect(model.mode?.title == "Say to Bob" && model.typed.isEmpty)
+    #expect(try await press("say hi there to b") == "say to bob hi there") // its end moves into the chip
+    #expect(model.mode?.title == "Say to Bob" && model.typed == "hi there")
+    #expect(try await press("say hi to bob") == "say to bob hi")
+    #expect(try await press("say hi to") == "say hi to" && model.mode?.title == "Say") // Bob or Ann: the Say chip alone
+    #expect(try await press("say to b") == "say to bob ")
+    model.leaveMode()
+    #expect(model.mode?.title == "Say" && model.typed == "to bob") // Delete takes the longer name apart, a step at a time
+}
+
+@Test(.enabled(if: macOS26)) func translateToALanguageChip() async {
+    _ = await TranslateProvider.languages()
+    let modes = TranslateProvider().modes
+    #expect(modes.first { $0.prefix == "translate to german " }?.title == "Translate to German")
+    #expect(Set(modes.map(\.prefix)).count == modes.count) // English and Chinese once each
+    #expect(modes.contains { $0.prefix == "translate to norwegian " }) // one word, as it's typed
+    let row = await TranslateProvider().results(for: "translate to german hello world").first // the language first
+    #expect(row?.subtitle == "English → German" || row?.title == "Download English → German to translate here")
+}
+
+@MainActor @Test func theFieldFollowsTheChip() async throws {
+    let model = SearchModel(providers: [Say()])
+    let panel = LauncherPanel(model: model, placeholder: "…")
+    // On screen but never key, so keys pressed meanwhile on this Mac stay where they were going.
+    panel.orderFrontRegardless()
+    defer { panel.orderOut(nil) }
+    try await Task.sleep(for: .milliseconds(300))
+    func textField(in view: NSView) -> NSTextField? {
+        view as? NSTextField ?? view.subviews.lazy.compactMap { textField(in: $0) }.first
+    }
+    let input = try #require(panel.contentView.flatMap { textField(in: $0) })
+    panel.makeFirstResponder(input)
+    let field = try #require(panel.firstResponder as? NSTextView) // its field editor, what typing goes through
+    let type = { (text: String) async throws in
+        field.insertText(text, replacementRange: field.selectedRange())
+        try await Task.sleep(for: .milliseconds(100))
+    }
+    try await type("say")
+    try await type(" ")
+    #expect(model.mode == nil && field.string == "say ") // a typed space is only a space
+    try await type("hi")
+    panel.sendEvent(keyDown(48, "\t"))
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(model.mode?.title == "Say" && field.string == "hi") // the name left the field for its chip
+    try await type(" there")
+    #expect(model.query == "say hi there" && field.string == "hi there")
+}
+
+// MARK: Stocks
+
+private let mglu = Data("""
+{"chart":{"result":[{"meta":{"currency":"BRL","symbol":"MGLU3.SA","fullExchangeName":"São Paulo","regularMarketPrice":5.75,
+"regularMarketTime":1793131551,"longName":"Magazine Luiza S.A.","shortName":"MAGAZ LUIZA ON      NM","chartPreviousClose":13.58,
+"previousClose":5.3},"timestamp":[1,2,3,4],"indicators":{"quote":[{"close":[13.46,null,6.1,5.75]}]}}],"error":null}}
+""".utf8)
+private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not Found","description":"No data found, symbol may be delisted"}}}"#.utf8)
+
+@Test func stockSymbols() {
+    #expect(stockSymbol("aapl") == "AAPL")
+    #expect(stockSymbol(" mglu3.sa ") == "MGLU3.SA")
+    for symbol in ["^BVSP", "BRL=X", "BTC-USD"] { #expect(stockSymbol(symbol.lowercased()) == symbol) }
+    for text in ["", "apple inc", "AAPL/", String(repeating: "A", count: 16)] { #expect(stockSymbol(text) == nil, "\(text)") }
+}
+
+@Test func stockQuotes() throws {
+    let quote = try #require(parseStockChart(mglu))
+    #expect(quote.symbol == "MGLU3.SA" && quote.name == "Magazine Luiza S.A." && quote.currency == "BRL")
+    #expect(quote.price == 5.75 && quote.previousClose == 5.3 && quote.closes == [13.46, 6.1, 5.75]) // gaps left out
+    #expect(parseStockChart(unknownTicker) == nil)
+    #expect(parseStockChart(Data("<html>".utf8)) == nil)
+}
+
+@Test func stockRows() async {
+    let fetches = Mutex(0)
+    let provider = StockProvider(pause: .zero, locale: Locale(identifier: "en_US")) { symbol in
+        fetches.withLock { $0 += 1 }
+        return symbol == "MGLU3.SA" ? mglu : symbol == "NOPE" ? unknownTicker : nil
+    }
+    #expect(provider.modes.map(\.prefix) == ["stock "])
+    #expect(await provider.results(for: "sto").first?.completion == "stock ") // Tab: the Stock chip
+    #expect(await provider.results(for: "stock").first?.completion == "stock ")
+    let offer = await provider.results(for: "stock aapl") // typed, not the chip: Yahoo isn't asked, a row offers it
+    #expect(offer.map(\.title) == ["Stock Price of AAPL"] && offer.first?.key == "tab" && offer.first?.completion == "stock aapl")
+    #expect(offer.first.map { $0.score < 0 } == true) // under files ("stock_Apple.pdf"), above Search Google
+    #expect(await provider.results(for: "stock apple inc").isEmpty)
+    #expect(fetches.withLock { $0 } == 0)
+    let row = await provider.modeResults(for: "stock mglu3.sa").first
+    #expect(row?.title == "R$5.75")
+    #expect(row?.subtitle == "MGLU3.SA · Magazine Luiza S.A. · +8.49% today")
+    #expect(row?.details.map(\.0) == ["MGLU3.SA", "Today", "7 days", "Previous close", "Exchange", "Updated"])
+    #expect(row?.details[0].1 == "Magazine Luiza S.A.")
+    #expect(row?.details[2].1 == "-57.28%") // since the chart's first close
+    #expect(row?.previewImage != nil && row?.actionTitle == "Open")
+    _ = await provider.modeResults(for: "stock MGLU3.SA")
+    #expect(fetches.withLock { $0 } == 1) // asked again within a minute: from the cache
+    #expect(await provider.modeResults(for: "stock nope").first?.title == "No stock called NOPE")
+    #expect(await provider.modeResults(for: "stock offl").first?.title == "Couldn't reach Yahoo Finance")
+    #expect(await provider.modeResults(for: "stock apple inc").first?.title == "Type a ticker, like AAPL")
+    #expect(await provider.modeResults(for: "stock ").isEmpty) // the chip's hint says what to type
+}
+
+@MainActor @Test func stockChartImage() {
+    #expect(stockChart([3, 1, 2])?.size == CGSize(width: 330, height: 190))
+    #expect(stockChart([3]) == nil) // one point is no line
+}

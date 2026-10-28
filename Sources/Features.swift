@@ -3,7 +3,7 @@
 enum Feature: CaseIterable {
     case clipboard      // clipboard history and its panel
     case notes          // the floating note, named notes, capture into the note
-    case quickTools     // currency, units, time zones, emoji, define, translate, the text tools, pomodoro
+    case quickTools     // currency, units, time zones, emoji, define, translate, stocks, the text tools, pomodoro
     case snippets
     case scripts        // the scripts folder
     case commands       // your own commands from config.toml: links, apps, files, shell

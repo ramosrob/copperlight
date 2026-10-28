@@ -117,8 +117,9 @@ signed with the same one, or everyone grants Accessibility again after updating.
 Each feature is a type conforming to `ResultProvider` (`Sources/Launcher.swift`): it gets every query and
 returns rows. Add it to the list in `Sources/App.swift`. Providers run at the same time on every keystroke, and
 their rows show together once all have answered or 50 ms have passed; a slower one's rows merge in later, so
-answer well within 50 ms or rank your rows at the bottom. The next keystroke cancels the round. A `:` command is a `Verb`
-(`Sources/Actions.swift`). Every file is listed below.
+answer well within 50 ms or rank your rows at the bottom. The next keystroke cancels the round. A provider that takes
+text after a name (`translate `) lists it in `modes`: typed, the name becomes a chip in the field and the query goes to
+that provider alone. A `:` command is a `Verb` (`Sources/Actions.swift`). Every file is listed below.
 
 - Swift 6 with strict concurrency, no warnings. Match the code around you: its naming, its comment density,
   comments that say why rather than what.
@@ -138,6 +139,8 @@ Sources/
   App.swift                 entry point, menu bar item, hotkey, config loading, built-in rows (Note, Clipboard…)
   Launcher.swift            ResultProvider protocol, SearchModel (concurrent query + merge, frecency), panel + SwiftUI view
   Actions.swift             `:` commands: windows (Accessibility), running apps, files, the Mac
+  Controls.swift            `:play`, `:mute`, `:output`, `:wifi`, `:awake`: media keys, CoreAudio, CoreWLAN, power
+  Stocks.swift              `stock AAPL`: Yahoo Finance's chart data, the price row and the 7-day chart
   Menus.swift               `:export pdf`: the menus of the app in front (Accessibility), their shortcuts
   Config.swift              Config (TOML), hotkey parsing, example config, directory watcher
   StateStore.swift          state.json

@@ -8,12 +8,10 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 - **Snippets that expand anywhere:** type a snippet's keyword in any app and it becomes the text. Needs the Input
   Monitoring permission, so it will be opt-in.
-- **Media and quick toggles:** play/pause, next, what's playing; Wi-Fi, Bluetooth, mute, keep awake; switch the
-  audio output.
+- **Timers:** `timer 10 min tea`, counting down in the menu bar like the pomodoro.
 
 ## Later
 
-- **Timers:** `timer 10 min tea`, counting down in the menu bar like the pomodoro.
 - **Recent queries:** ↑ in an empty field brings back what you typed before.
 - **More window actions:** quarters, nudging a window, and saved multi-window layouts defined in config.toml.
 - **Contacts:** call, FaceTime, message or email someone by name.
@@ -29,6 +27,11 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
+- **v0.3:** music and sound from the field (`:play`, `:next track`, `:mute`, `:output airpods`); `:wifi` and
+  `:awake`, whose rows say what Enter does; `translate` alone translates what you copied; a name that takes text
+  turns into a chip in the field, with Tab (`tra` ⇥ is the Translate chip). What's playing has no public macOS API for
+  apps, and Bluetooth can't be switched on or off without one, so `bluetooth` stays its System Settings page.
+  `stock AAPL`: the price, today's change and a 7-day chart, from Yahoo Finance, only when you ask.
 - **v0.2:** search the menus of the app you're in (`:export pdf`); System Settings pages as rows (`bluetooth`,
   `dark mode`); community script commands work as they are.
 

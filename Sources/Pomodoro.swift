@@ -121,6 +121,7 @@ func countdown(_ seconds: TimeInterval) -> String {
 /// `pomo`, `pomo 50`, `pomo stop` in the launcher.
 struct PomodoroProvider: ResultProvider {
     let pomodoro: Pomodoro
+    var modes: [Mode] { [Mode(prefix: "pomo ", title: "Pomodoro", icon: .symbol("timer"), hint: "Minutes (50), break or stop")] }
 
     func results(for query: String) async -> [LauncherResult] {
         let pomodoro = pomodoro // before the first closure that uses it: Xcode 26 rejects a capture of a later declaration

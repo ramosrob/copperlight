@@ -2,7 +2,9 @@
 
 A minimal macOS launcher, and it stays small: no plugin store, no AI service, no sync, no accounts, no credentials.
 Its only requests are public and say nothing about you: currency rates, and for app search Homebrew's app list, app
-homepages and App Store descriptions, which `[apps] online = false` turns off. On-device models are fine: Apple
+homepages and App Store descriptions, which `[apps] online = false` turns off. The one exception says what you asked
+for, and only when you ask: `stock AAPL` sends that ticker to Yahoo Finance, in the Stock chip only (Tab) and once
+typing pauses, kept a minute (decided 2026-10-28). On-device models are fine: Apple
 Intelligence writes app search words, Vision reads the text in photos (decided 2026-10-15). Projects and the developer
 tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: they belong in another app.
 
@@ -14,7 +16,9 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
 - **Keyboard-only.** Every action is reachable without the mouse.
 - **One hotkey.** Only the launcher has a global hotkey; every other feature is found by typing in it.
   More hotkeys may come later as one polished feature, not one at a time (decided 2026-10-12).
-  No modifier keys in the panel either: any action besides Enter is a command typed after `:`, vim style.
+  No modifier keys in the panel either: any action besides Enter is a command typed after `:`, vim style. Tab only
+  fills in: a name that takes text, which becomes a chip in the field (decided 2026-10-27). Typing never makes a chip,
+  a space being only a space: `stock apple` may be the start of a file's name (decided 2026-10-28).
 - **One symbol.** `:` is the only prefix, and it controls things: the Mac, the window in front, running apps,
   files (`:left`, `:quit saf`, `:lock`; `:!git status` runs a shell line, like vim). Everything else is typed by
   name, and text after a name goes to it (`pomo 50`, `add note buy milk`, `deploy staging`). Capture is one
@@ -30,9 +34,10 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
   command pick another one (decided 2026-10-13).
 - **Its own look, from the icon.** Two floating glass pieces: the search field as a plain pill,
   and the results in a card under it. The icon's copper is the only color (the field's edge,
-  the selection). Glyphs sit in plain rings, with no colored tiles, no kind labels and no footer; the selected
+  the selection, the chip a name that takes text becomes in the field, decided 2026-10-27). Glyphs sit in plain rings, with no colored tiles, no kind labels and no footer; the selected
   row says what Enter does. Its own look, not Spotlight's (decided 2026-10-13).
-- **Instant.** No network on the keystroke path. Anything remote is cached and read from the cache.
+- **Instant.** No network on the keystroke path. Anything remote is cached and read from the cache. The Stock chip
+  alone waits for a pause in typing and then asks Yahoo Finance (decided 2026-10-28).
 - **Plain files.** Config, state and the note are human-readable files in `~/.config/copperlight/`.
 - **Never crash on user input.** Malformed math, currency or config shows nothing (or an error row); it never crashes.
 

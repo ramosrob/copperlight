@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import IOKit.hidsystem
 
 /// A `:` command. Typing `:` lists them all and `:min` narrows them down. One without targets acts
 /// right away (on the window in front); one with targets takes a filter after its keyword
@@ -9,6 +10,7 @@ struct Verb: Sendable {
     let title: String
     let icon: LauncherResult.Icon
     var confirm: String? = nil // ask first (`:shut down`)
+    var showing: (@Sendable () -> String)? = nil // a toggle's row says what Enter does now ("Turn Wi-Fi Off")
     var run: (@MainActor @Sendable () -> Void)? = nil
     var targets: (@Sendable (String) async -> [LauncherResult])? = nil
 }
@@ -19,6 +21,10 @@ struct VerbProvider: ResultProvider {
     let verbs: [Verb]
     /// More rows for what's typed after `:` (the menus of the app in front), after the commands' own.
     var more: @Sendable (String) async -> [LauncherResult] = { _ in [] }
+    /// The commands that take a name (`:quit `); `:!` is the shell's.
+    var modes: [Mode] {
+        verbs.filter { $0.targets != nil && $0.keyword != "!" }.map { Mode(prefix: ":\($0.keyword) ", title: $0.title, icon: $0.icon) }
+    }
 
     func results(for query: String) async -> [LauncherResult] {
         guard query.hasPrefix(Self.prefix) else { return [] }
@@ -45,7 +51,7 @@ struct VerbProvider: ResultProvider {
             // As listed when nothing's typed, 0.01 apart, so the ones you use (frecency, up to 0.5) move up.
             guard let score = text.isEmpty ? -0.01 * Double(index) : match else { return nil }
             return LauncherResult(
-                id: "verb:\(verb.keyword)", title: verb.title, subtitle: ":" + verb.keyword, icon: verb.icon,
+                id: "verb:\(verb.keyword)", title: verb.showing?() ?? verb.title, subtitle: ":" + verb.keyword, icon: verb.icon,
                 score: score, actionTitle: verb.run != nil ? "Run" : "Choose", action: verb.run ?? {},
                 completion: verb.targets != nil ? ":\(verb.keyword) " : nil, confirm: verb.confirm)
         }
@@ -109,12 +115,26 @@ extension Verb {
             Verb(keyword: "empty trash", title: "Empty Trash", icon: .symbol("trash"),
                  confirm: "Empty the Trash? This can't be undone.",
                  run: { osascript(#"tell application "Finder" to empty trash"#, label: "Empty Trash") }),
-            Verb(keyword: "dark", title: "Toggle Dark Mode", icon: .symbol("circle.lefthalf.filled"), run: {
-                osascript(#"tell application "System Events" to tell appearance preferences to set dark mode to not dark mode"#,
-                          label: "Dark Mode")
-            }),
+            Verb(keyword: "dark", title: "Toggle Dark Mode", icon: .symbol("circle.lefthalf.filled"),
+                 showing: { UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark" ? "Turn Dark Mode Off" : "Turn Dark Mode On" },
+                 run: {
+                     osascript(#"tell application "System Events" to tell appearance preferences to set dark mode to not dark mode"#,
+                               label: "Dark Mode")
+                 }),
+            Verb(keyword: "wifi", title: "Toggle Wi-Fi", icon: .symbol("wifi"),
+                 showing: { wifiIsOn() ? "Turn Wi-Fi Off" : "Turn Wi-Fi On" }, run: { toggleWiFi() }),
+            Verb(keyword: "awake", title: "Keep Awake", icon: .symbol("sun.max"),
+                 showing: { KeepAwake.isOn ? "Stop Keeping Awake" : "Keep Awake" }, run: { KeepAwake.shared.toggle() }),
             Verb(keyword: "eject", title: "Eject Disk", icon: .symbol("eject"), targets: { ejectRows($0) }),
+            // Sound
+            Verb(keyword: "play", title: "Play or Pause", icon: .symbol("playpause.fill"), run: { pressMediaKey(NX_KEYTYPE_PLAY) }),
+            Verb(keyword: "next track", title: "Next Track", icon: .symbol("forward.fill"), run: { pressMediaKey(NX_KEYTYPE_NEXT) }),
+            Verb(keyword: "previous track", title: "Previous Track", icon: .symbol("backward.fill"),
+                 run: { pressMediaKey(NX_KEYTYPE_PREVIOUS) }),
             Verb(keyword: "volume", title: "Set Volume", icon: .symbol("speaker.wave.2.fill"), targets: { volumeRows($0) }),
+            Verb(keyword: "mute", title: "Toggle Mute", icon: .symbol("speaker.slash.fill"),
+                 showing: { outputIsMuted() ? "Unmute" : "Mute" }, run: { toggleMute() }),
+            Verb(keyword: "output", title: "Switch Sound Output", icon: .symbol("hifispeaker"), targets: { outputRows($0) }),
             Verb(keyword: "hidden files", title: "Toggle Hidden Files", icon: .symbol("eye"), run: {
                 // Finder reads it at launch, so it restarts (its windows come back).
                 runDetached("/bin/sh", ["-c", """
