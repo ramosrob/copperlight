@@ -17,6 +17,7 @@ struct PersonCard: Sendable {
     var name: String
     var job: String, company: String // either can be empty
     var details: [(String, String)] // each number and email under its label, then their birthday
+    var photo: CGImage? = nil
 }
 
 /// A stock's card, its text ready to show.
@@ -61,16 +62,23 @@ struct PictureTile: View {
     }
 }
 
-/// Their initials in a circle, their name, job and company, and under a rule how to reach them.
+/// Their photo or initials in a circle, their name, job and company, and under a rule how to reach them.
 struct PersonTile: View {
     let card: PersonCard
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         VStack(spacing: 4) {
-            Text(card.initials).font(.system(size: 30, weight: .semibold)).foregroundStyle(scheme == .dark ? Color.copper : Color.copperDeep)
-                .frame(width: 84, height: 84).background(Color.copper.opacity(0.2), in: Circle())
-                .overlay(Circle().strokeBorder(Color.copper.opacity(0.35))).padding(.bottom, 10)
+            Group {
+                if let photo = card.photo {
+                    Image(decorative: photo, scale: 1).resizable().scaledToFill()
+                } else {
+                    Text(card.initials).font(.system(size: 30, weight: .semibold)).foregroundStyle(scheme == .dark ? Color.copper : Color.copperDeep)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.copper.opacity(0.2))
+                }
+            }
+            .frame(width: 84, height: 84).clipShape(Circle())
+            .overlay(Circle().strokeBorder(Color.copper.opacity(0.35))).padding(.bottom, 10)
             Text(card.name).font(.system(size: 20, weight: .semibold)).lineLimit(2).multilineTextAlignment(.center)
             // "Product Designer · Northwind" on a line, else each on its own: never a "·" starting the second line.
             let line = [card.job, card.company].filter { !$0.isEmpty }

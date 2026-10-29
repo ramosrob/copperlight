@@ -2826,6 +2826,9 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(actions.allSatisfy { $0.answer != nil && !$0.hasPreview } && row.answer == nil)
     let company = personCard(Person(id: "4", name: "Northwind", organization: "Northwind")) // a company's own card
     #expect(company.initials == "N" && company.company.isEmpty)
+    // Their photo, when Contacts has one, in place of the initials.
+    #expect(card.photo == nil && personCard(Person(id: "5", name: "Ana Silva", photo: testPNG(width: 4, height: 4))).photo?.width == 4)
+    #expect(personCard(Person(id: "5", name: "Ana Silva", photo: Data("not a picture".utf8))).photo == nil)
     #expect(await ContactsProvider(people: [ana], whatsApp: false).modeResults(for: "contact ana").allSatisfy { $0.title != "WhatsApp" })
     // In the chip: nothing typed lists everyone; a name that fits one person, their actions.
     #expect(await contacts.modeResults(for: "contact").map(\.title) == ["Ana Silva", "Bob Stone", "Carla Dias"])

@@ -241,7 +241,7 @@ files and the text in photos. Everything else on this page is on.
 - **Contacts** (from 2 letters): people whose name, nickname or company has a word starting with each word typed. The
   row shows their number and email; Enter messages them (mobile number, else a number, else their email), or opens
   their card. Tab: the Contact chip, with Message, Call, FaceTime and WhatsApp (when installed) per number, Email per
-  address, Copy for each, and Open in Contacts, beside their card (initials, name, job and company, numbers, emails,
+  address, Copy for each, and Open in Contacts, beside their card (photo or initials, name, job and company, numbers, emails,
   birthday). `contact` ⇥ lists everyone. Access is
   asked from the `contacts` row; read when the launcher opens (at most every 2 minutes), kept in memory only.
 - **Due reminders** (`due`, `overdue`, `todos`): incomplete reminders due today or before, soonest deadline first, with

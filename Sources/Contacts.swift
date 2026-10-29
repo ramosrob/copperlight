@@ -16,6 +16,7 @@ struct Person: Equatable, Sendable {
     var phones: [Handle] = []
     var emails: [Handle] = []
     var birthday: DateComponents? = nil
+    var photo: Data? = nil // read only for the card on show, not kept for everyone
 }
 
 /// A number as links take it: "+351 912 345 678" → "+351912345678".
@@ -45,7 +46,15 @@ func personCard(_ person: Person) -> PersonCard {
     let words = person.name.split(separator: " ")
     let initials = String([words.first?.first, words.count > 1 ? words.last?.first : nil].compactMap(\.self)).uppercased()
     let company = person.organization == person.name ? "" : person.organization // a company's own card
-    return PersonCard(initials: initials, name: person.name, job: person.jobTitle, company: company, details: details)
+    let photo = person.photo.flatMap { NSImage(data: $0)?.cgImage(forProposedRect: nil, context: nil, hints: nil) }
+    return PersonCard(initials: initials, name: person.name, job: person.jobTitle, company: company, details: details, photo: photo)
+}
+
+/// Their photo in Contacts, small. nil: none, or no access.
+private func contactPhoto(_ id: String) -> Data? {
+    guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else { return nil }
+    return try? CNContactStore().unifiedContact(withIdentifier: id, keysToFetch: [CNContactThumbnailImageDataKey as CNKeyDescriptor])
+        .thumbnailImageData
 }
 
 /// Everyone in Contacts, by name. Empty without access.
@@ -159,7 +168,9 @@ actor ContactsProvider: ResultProvider {
 
     /// In the chip: each way to reach them, by number, then by email, then copying them, then their card.
     private func actionRows(_ person: Person) -> [LauncherResult] {
-        let card = personCard(person)
+        var shown = person
+        if shown.photo == nil { shown.photo = contactPhoto(person.id) }
+        let card = personCard(shown)
         var rows: [(title: String, subtitle: String, url: URL?, copy: String?)] = []
         for phone in person.phones {
             let number = dialable(phone.value), subtitle = [phone.value, phone.label].filter { !$0.isEmpty }.joined(separator: " · ")
