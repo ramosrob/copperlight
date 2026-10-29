@@ -84,6 +84,9 @@ struct LauncherResult: Identifiable, Sendable {
     /// there (a shell line's output). Rows it passes to `progress` replace the running one as it goes (output so
     /// far). Esc stops it. If the panel was hidden or moved on by then, a notification says how it ended.
     var output: OutputStep? = nil
+    /// Drawn big in place of the preview pane (a QR code, a stock, a color). Every row of one answer carries it, so it
+    /// stays while you move between them.
+    var answer: Answer? = nil
 }
 
 let configDir = URL.homeDirectory.appending(path: ".config/copperlight")
@@ -329,8 +332,10 @@ final class SearchModel {
     var previewOpen = false
     /// Where reading is the point it's open from the start: clipboard history, a chip, a command's output.
     var previewsByDefault: Bool { searchesEmptyQuery || mode != nil || confirming != nil || stepped != nil }
-    /// Only for a row with something to show: never an empty pane.
-    var showsPreview: Bool { (selected?.hasPreview ?? false) && (previewsByDefault || previewOpen) }
+    /// Only for a row with something to show: never an empty pane, and never beside an answer.
+    var showsPreview: Bool { answer == nil && (selected?.hasPreview ?? false) && (previewsByDefault || previewOpen) }
+    /// The answer of the row you're on, or else of the first row: moving to the search row under a color keeps its band.
+    var answer: Answer? { selected?.answer ?? rows.first?.answer }
     var selected: LauncherResult? { rows.indices.contains(selection) ? rows[selection] : nil }
 
     func move(_ delta: Int) {
@@ -639,6 +644,7 @@ private struct LauncherView: View {
     /// The panel's max height minus the field, the gap between the pieces and the card's padding.
     private static let maxListHeight = LauncherPanel.maxHeight - fieldHeight - gap - 2 * cardPadding
     private static let previewWidth: CGFloat = 360
+    private static let pictureSize: CGFloat = 232, bandHeight: CGFloat = 132
 
     @Bindable var model: SearchModel
     let placeholder: String
@@ -674,14 +680,37 @@ private struct LauncherView: View {
                 .modifier(GlassBackground(shape: Capsule(), radius: Self.fieldHeight / 2 - 0.5)) // a mask 2r + 1 tall: exactly the field
                 .overlay(Capsule().strokeBorder(LinearGradient.brand, lineWidth: 1.5))
             if let selected = model.selected {
-                // With the preview showing, the card takes its full height so the preview has room.
-                let hasPreview = model.showsPreview
-                HStack(spacing: Self.cardPadding) {
-                    list
-                    if hasPreview { PreviewPane(result: selected).frame(width: Self.previewWidth) }
+                Group {
+                    switch model.answer {
+                    case .picture(let image, let kicker, let title, let subtitle)?: // the picture, with its actions beside it
+                        HStack(alignment: .top, spacing: 20) {
+                            PictureTile(image: image).frame(width: Self.pictureSize, height: Self.pictureSize)
+                            VStack(alignment: .leading, spacing: 0) {
+                                AnswerHeading(kicker: kicker, title: title, subtitle: subtitle).padding(.horizontal, 12).padding(.top, 4)
+                                Spacer(minLength: 12)
+                                list.frame(height: listHeight)
+                            }
+                        }
+                        .frame(height: Self.pictureSize)
+                        .padding(14)
+                    case .stock(let card)?: StockCardView(card: card).padding(18) // the whole card: its one row is Enter
+                    case .color(let color)?: // a band over its rows
+                        VStack(spacing: 6) {
+                            ColorBand(color: color).frame(height: Self.bandHeight)
+                            list.frame(height: min(Self.maxListHeight - Self.bandHeight - 6, listHeight))
+                        }
+                        .padding(Self.cardPadding)
+                    case nil:
+                        // With the preview showing, the card takes its full height so the preview has room.
+                        let hasPreview = model.showsPreview
+                        HStack(spacing: Self.cardPadding) {
+                            list
+                            if hasPreview { PreviewPane(result: selected).frame(width: Self.previewWidth) }
+                        }
+                        .frame(height: hasPreview ? Self.maxListHeight : min(Self.maxListHeight, listHeight))
+                        .padding(Self.cardPadding)
+                    }
                 }
-                .frame(height: hasPreview ? Self.maxListHeight : min(Self.maxListHeight, listHeight))
-                .padding(Self.cardPadding)
                 .modifier(Card(radius: Self.cardRadius))
             }
         }

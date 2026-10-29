@@ -69,14 +69,14 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Browser tabs**<br>`tabs`, `inbox` | The tabs open in your browsers, found by their title or address. Enter switches to the tab instead of opening the page again. |
 | **Dictionary and translation**<br>`define`, `translate` | The Mac's dictionary and on-device translation, without opening an app. Copy something and type `translate`. |
 | **Music and sound**<br>`:play`, `:mute`, `:output` | Play, pause and skip whatever is playing, mute, set the volume, and switch between speakers and headphones. |
-| **Stocks**<br>`stock AAPL` | The price now, today's change and a 7-day chart, beside the results. Enter opens the stock on Yahoo Finance. |
+| **Stocks**<br>`stock AAPL` | The price now, today's change and the week's chart across the whole card. Enter opens the stock on Yahoo Finance. |
 | **Lookups**<br>`ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery and its health, free space on each disk, and what's listening on a port, with Enter to end it. |
 | **Speed test**<br>`speed` | Your internet's download and upload speed and its latency, measured by macOS's own tool against Apple's servers, when you press Enter. |
 | **Processes**<br>`cpu`, `memory` | What's using the processor or memory, the busiest first, with each one's app icon. Enter ends a process, or quits an app, after asking. |
 | **Keep awake**<br>`:awake`, `:awake 2h` | Keeps your Mac and its displays awake until you say so, or for a while (`:awake 2h`, `:awake until 18:00`), with a sun in the menu bar while it's on. |
 | **Text tools**<br>`json`, `uuid`, `b64`, `hex` | Format JSON, make a UUID or a password, encode text, convert colors and timestamps. |
-| **Colors**<br>`#c87533`, `pick color`, `colors` | A color in hex, RGB and HSL, with its swatch. Pick one off the screen and its hex is copied; `colors` lists the ones you picked. |
-| **QR codes**<br>`qr` | A QR code of a link or any text, or of what you copied, ready to paste. |
+| **Colors**<br>`#c87533`, `pick color`, `colors` | A color on a band, with how it reads on white and black, in hex, RGB and HSL and a step lighter and darker. Pick one off the screen and its hex is copied; `colors` lists the ones you picked. |
+| **QR codes**<br>`qr` | A QR code of a link or any text, or of what you copied, big, with copy, save to Downloads and copy the link beside it. |
 | **Text from the screen**<br>`copy text` | Drag over anything, a video, a picture, an error you can't select, and its text is copied, read on your Mac. A link in a QR code opens. |
 | **Spelling**<br>`spell definately` | The word spelled right, and the other guesses; a sentence comes back corrected. |
 | **Large Type**<br>`large 555-0100` | Any text across the screen, big enough to read from across the room. |
@@ -102,24 +102,30 @@ you usually open at this time of day, learned on your Mac from what you open wit
 
 <p align="center"><img src="docs/media/waiting.png" width="600" alt="The empty launcher with Design review in 6 minutes, a tea timer, two due reminders and two suggested apps"></p>
 
-**Stocks.** `stock aapl` ⇥: the price, today's change and the last 7 days beside the results, from Yahoo Finance.
-Copperlight asks only when you use the chip.
+**Answers in their own shape.** Most results are rows, with a preview beside them when there's more to read. An
+answer that reads better big takes the card instead, laid out for what it is: a stock across the whole card, a QR
+code beside what you can do with it, a color on a band over its notations.
 
-<p align="center"><img src="docs/media/stocks.png" width="600" alt="The Stock chip with aapl: Apple's price, today's change and a 7-day chart"></p>
+**Stocks.** `stock aapl` ⇥: the price and today's change, the week's chart with yesterday's close dashed across it,
+and the numbers under it, from Yahoo Finance. Copperlight asks only when you use the chip. Enter opens it there.
+
+<p align="center"><img src="docs/media/stocks.png" width="600" alt="The Stock chip with aapl: Apple's price and today's change, the week's chart across the card, the previous close and the 7-day change under it"></p>
+
+**QR codes.** `qr` ⇥ and a link, or nothing for what you copied: the code, big, with what it's of. Enter copies the
+picture; below it, save it to Downloads or copy the link.
+
+<p align="center"><img src="docs/media/qr.png" width="600" alt="The QR Code chip with https://copperlight.app: the code big on the left, and Copy Picture, Save to Downloads and Copy Link beside it"></p>
+
+**Colors.** `#c87533`, `rgb(…)` or `hsl(…)`: the color on a band with how it reads on white and black, and under it
+the other notations and a step lighter and darker, each a row to copy. `pick color` takes one off the screen and
+copies its hex; `colors` lists the ones you picked, the one you're on on the band.
+
+<p align="center"><img src="docs/media/colors.png" width="600" alt="#c87533 typed: the color on a band with its contrast on white and black and four shades, then its RGB, HSL and hex rows and a step lighter and darker"></p>
 
 **Dates, the way you'd ask.** `days until christmas`, `in 3 weeks`, `monday in 3 weeks`, `time in 4 hours`; `dec 25`
 alone says it's a Friday. Before you finish typing, `in 3` already answers in days, weeks, months and hours.
 
 <p align="center"><img src="docs/media/dates.png" width="600" alt="in 3 typed: the dates in 3 days, 3 weeks and 3 months, and the time in 3 hours, each with how far it is"></p>
-
-**Colors.** `#c87533`, `rgb(…)` or `hsl(…)` in the other two, each with its swatch, and Tab shows it big. `pick
-color` takes one off the screen and copies its hex.
-
-<p align="center"><img src="docs/media/colors.png" width="600" alt="#c87533 typed: its RGB, HSL and hex rows with copper swatches, and the color big beside them"></p>
-
-**QR codes.** `qr` ⇥ and a link, or nothing for what you copied: the code is beside the list, and Enter copies it.
-
-<p align="center"><img src="docs/media/qr.png" width="600" alt="The QR Code chip with https://copperlight.app and its QR code beside the list"></p>
 
 **Math and money.** The answer appears as you type: percentages, currencies at today's rate, units and time zones. Enter copies it.
 

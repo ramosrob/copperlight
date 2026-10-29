@@ -145,7 +145,8 @@ Sources/
   Layouts.swift             `:layout save work`, `:layout work`: the windows on screen, kept in state.json and put back
   Lookups.swift             `ip`, `battery`, `disk`, `port 3000`, `cpu`, `memory`, `speed`: getifaddrs, IOKit power sources, volumes, lsof, ps, networkQuality
   Controls.swift            `:play`, `:mute`, `:output`, `:connect`, `:wifi`, `:awake`: media keys, CoreAudio, IOBluetooth, CoreWLAN, power
-  Stocks.swift              `stock AAPL`: Yahoo Finance's chart data, the price row and the 7-day chart
+  Stocks.swift              `stock AAPL`: Yahoo Finance's chart data and the price row, its card
+  Answers.swift             answers drawn big in place of the preview: a picture beside its rows, a stock's card, a color's band
   Menus.swift               `:export pdf`: the menus of the app in front (Accessibility), their shortcuts
   Config.swift              Config (TOML), hotkey parsing, example config, directory watcher
   StateStore.swift          state.json

@@ -14,8 +14,9 @@ func qrCode(_ text: String) -> CGImage? {
     return CIContext().createCGImage(big.composited(over: CIImage(color: .white).cropped(to: framed)), from: framed)
 }
 
-/// `qr https://copperlight.app`: the QR code for what's typed after it, or for what you copied, beside the list in the
-/// QR Code chip (Tab). Enter copies the picture. Made on the Mac: nothing is sent anywhere.
+/// `qr https://copperlight.app`: the QR code for what's typed after it, or for what you copied, big in the QR Code chip
+/// (Tab), with what you can do with it beside it: copy the picture (Enter), save it to Downloads, copy the text. Made on
+/// the Mac: nothing is sent anywhere.
 struct QRCodeProvider: ResultProvider {
     private static let icon = LauncherResult.Icon.symbol("qrcode")
     private let clipboard: @Sendable () async -> String?
@@ -45,9 +46,25 @@ struct QRCodeProvider: ResultProvider {
         }
         guard !text.isEmpty else { return note("Type text or a link", "Or copy some first") }
         guard let code = qrCode(text) else { return note("Too long for a QR code", "It holds about 2,000 characters") }
-        return [LauncherResult(id: "qr", title: oneLine(text), subtitle: "QR code" + (typed.isEmpty ? " · from the clipboard" : ""),
-                               icon: Self.icon, score: 50, actionTitle: "Copy", action: { copyPicture(code) },
-                               previewImage: { roundedPicture(code) })]
+        let answer = Answer.picture(code, kicker: "QR code" + (typed.isEmpty ? " · from the clipboard" : ""), title: oneLine(text),
+                                    subtitle: "Made on your Mac")
+        let link = URL(string: text).map { ["http", "https"].contains($0.scheme?.lowercased() ?? "") && !text.contains(" ") } ?? false
+        let rows: [(id: String, title: String, symbol: String, actionTitle: String, action: @MainActor @Sendable () -> Void)] = [
+            ("qr", "Copy Picture", "doc.on.doc", "Copy", { copyPicture(code) }),
+            ("qr:save", "Save to Downloads", "square.and.arrow.down", "Save", {
+                let stamp = Date.now.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false)).replacing(":", with: ".")
+                let file = URL.downloadsDirectory.appending(path: "QR Code \(stamp).png")
+                do {
+                    try NSBitmapImageRep(cgImage: code).representation(using: .png, properties: [:])?.write(to: file)
+                    NSWorkspace.shared.activateFileViewerSelecting([file])
+                } catch { notify("Couldn't save the QR code", error.localizedDescription) }
+            }),
+            ("qr:text", link ? "Copy Link" : "Copy Text", link ? "link" : "text.alignleft", "Copy", { copyToClipboard(text) }),
+        ]
+        return rows.enumerated().map { index, row in
+            LauncherResult(id: row.id, title: row.title, icon: .symbol(row.symbol), score: 50 - Double(index) / 100, actionTitle: row.actionTitle,
+                           action: row.action, answer: answer)
+        }
     }
 }
 

@@ -21,7 +21,7 @@ files and the text in photos. Everything else on this page is on.
 | `10 km in mi`, `30c` | Units converted | Copies it |
 | `3pm lisbon in sf`, `now in tokyo` | The time there | Copies it |
 | `days until dec 25`, `in 3 weeks`, `dec 25` | How long, which day; a date's weekday and week | Copies it |
-| `stock AAPL`, `stock MGLU3.SA` | The price, today's change, a 7-day chart (Yahoo Finance) | Opens it on Yahoo Finance |
+| `stock AAPL`, `stock MGLU3.SA` | The price, today's change and a 7-day chart across the card (Yahoo Finance) | Opens it on Yahoo Finance |
 | `copperlight git` | Bookmarks and recent pages from your browser | Opens it in its profile |
 | `inbox`, `tabs` ⇥ | The tabs open in your browsers | Switches to it |
 | `ana` | People from Contacts; Tab: every way to reach them | Messages them |
@@ -43,8 +43,8 @@ files and the text in photos. Everything else on this page is on.
 | `:awake 2h`, `:awake until 18:00` | Keeping the Mac awake for a while | Keeps it awake, then lets go by itself |
 | `:!git status` | A shell line | Runs it, shows the output; Enter again copies |
 | `json`, `uuid`, `upper hi`… | Text tools | Copies (or pastes) the result |
-| `#c87533`, `rgb(…)`, `pick color` | The color in the other notations, with its swatch; a color from the screen | Copies it |
-| `qr`, `qr https://…` | A QR code of what you typed or copied, beside the list | Copies the picture |
+| `#c87533`, `rgb(…)`, `pick color` | The color on a band, in the other notations and a step lighter and darker; a color from the screen | Copies it |
+| `qr`, `qr https://…` | A QR code of what you typed or copied, big, its actions beside it | Copies the picture |
 | `copy text` | Drag over any part of the screen | Copies its text (a QR code's link opens) |
 | `large 555-0100`, `large` | The text across the screen | Shows it |
 | `paste plain`, `paste markdown` | The clipboard, cleaned or as Markdown | Pastes it |
@@ -124,6 +124,10 @@ files and the text in photos. Everything else on this page is on.
   (a note, a long snippet) says "Preview ⇥", and Tab opens it beside the list (Tab again closes it; a
   new search starts without it). In clipboard history, in chips and in a command's output it's open from the start.
   It only ever shows for a row with something in it.
+- **Answers in their own shape:** an answer that reads better big takes the card in place of the list and the preview,
+  laid out for what it is. A stock fills it (Enter opens it); a QR code sits big on the left with its actions as rows
+  beside it; a color is a band over its rows. Every row of the answer carries it, so it stays while you move between
+  them, and on to the search row under it.
 - **The look:** two floating glass pieces, a pill search field and a results card
   under it, in the icon's copper. Long lists fade at the edges instead of being cut. Follows light and dark mode.
 
@@ -175,9 +179,9 @@ files and the text in photos. Everything else on this page is on.
   `[currency] default_target`, and that currency itself converts to USD. Math before it works too: `39*8 usd`. ECB
   rates, cached for a day, so it works offline.
 - **Stocks:** `stock AAPL`, `stock MGLU3.SA`, `stock ^BVSP`, `stock BTC-USD` (Yahoo Finance's tickers; `sto` ⇥ is the
-  Stock chip). The row is the price and today's change; the preview pane draws the last 7 days, hourly, in copper,
-  with the change over them, the previous close, the exchange and when it was last traded. Enter opens the stock on
-  Yahoo Finance. The ticker goes to Yahoo only in the Stock chip, once typing pauses (350 ms); an answer is kept a
+  Stock chip). Across the whole card: the ticker and name, the price and today's change (▲ or ▼), when it was last
+  traded and where, the last 7 days drawn hourly in copper with yesterday's close dashed across, and under it the
+  previous close and the change over the 7 days. Enter opens the stock on Yahoo Finance. The ticker goes to Yahoo only in the Stock chip, once typing pauses (350 ms); an answer is kept a
   minute. It's Copperlight's one request that says what you looked up. Typed without the chip, `stock aapl` asks
   nothing: a row under the files offers it (Stock Price of AAPL, Tab).
 
@@ -350,15 +354,19 @@ preview pane. From 3 letters, a name's start finds it too (`pas` → the paste t
 
 ## Colors, QR codes and the screen
 
-- **Colors:** `#c87533`, `#f80`, `rgb(200, 117, 51)` or `hsl(27, 59%, 49%)` shows in the other two notations, each
-  row with the color's swatch, the one you typed last. Tab shows it big. Enter copies it.
+- **Colors:** `#c87533`, `#f80`, `rgb(200, 117, 51)` or `hsl(27, 59%, 49%)`: a band of the color with its hex and
+  its contrast on white and on black (WCAG; 4.5 : 1 reads as text), two steps lighter and two darker beside it; under
+  it the other two notations, the one you typed, then a step lighter and a step darker (a quarter of the way to white
+  or black), each row with its swatch. Enter copies it.
 - **`pick color`** (or `color picker`, `eyedropper`): macOS's magnifier; click anywhere on the screen and its hex is
   copied, and the launcher comes back with it, the other notations a row away.
 - **`colors`** (or `colours`, `my colors`, `recent colors`): the colors you picked, newest first, the last 30, each
-  with its swatch, its RGB and when; Enter copies the hex, Tab shows it big with every notation. None yet: Pick Color.
+  with its swatch, its RGB and when; Enter copies the hex, and the one you're on shows on the band. None yet: Pick
+  Color.
   Kept in `state.json`.
-- **QR codes:** `qr https://copperlight.app` (`qr` ⇥ is the QR Code chip) shows the code beside the list, and `qr`
-  alone makes one of what you copied. Enter copies the picture. Made on your Mac.
+- **QR codes:** `qr https://copperlight.app` (`qr` ⇥ is the QR Code chip) shows the code big, with what it's of,
+  and `qr` alone makes one of what you copied. Beside it: Copy Picture (Enter), Save to Downloads (a PNG, shown in
+  Finder) and Copy Link (Copy Text when it isn't a web address). Made on your Mac.
 - **Text from the screen** (`copy text`, or `ocr`, `scan text`): drag over any part of the screen and its text is
   copied, read on the Mac (Vision). A QR code or barcode there is copied instead, and a link in it comes back in the
   launcher, Enter opening it. Needs Screen Recording, asked the first time; only the part you drag over is read.

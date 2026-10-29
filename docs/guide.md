@@ -44,6 +44,10 @@ everything else. Pick Slack with `ss` typed, and `ss` is Slack from then on: an 
 Case and spaces around it don't matter; text over 15 characters isn't kept. Picking another row for the same text
 takes over, and an abbreviation you stop using fades after a few weeks.
 
+Answers take their own shape: most results are rows, with a preview beside them, but an answer that reads better big
+takes the card instead. A stock fills it, a QR code sits big beside its actions, and a color is a band over its rows.
+The rows under or beside it work as always, and the answer stays while you move between them.
+
 **Commands (`:`):** `:` lists them all, and what you type after it narrows them down (`:min`, `:fq`).
 
 | Command | Does |
@@ -205,15 +209,17 @@ printf 'On-call: %s\n' "$1"
 ```
 
 **Colors:** a color typed as `#c87533`, `#f80`, `rgb(200, 117, 51)` or `hsl(27, 59%, 49%)` (spaces for commas
-too) shows in the other two notations, each row with the color's swatch, the one you typed last. Tab shows it big.
-Enter copies it. `pick color` (also `color picker`, `eyedropper`) opens macOS's magnifier: click anywhere on any
+too) shows on a band with its hex and its contrast on white and on black (4.5 : 1 or more reads well as text),
+two steps lighter and two darker at its end. Under the band: the other two notations, the one you typed, then a step
+lighter and a step darker (a quarter of the way to white or black), each row with its swatch. Enter copies it. `pick color` (also `color picker`, `eyedropper`) opens macOS's magnifier: click anywhere on any
 screen and its hex is copied, and the launcher comes back with that color typed, so the other notations are a row
 away. Esc cancels. Colors are sRGB, what hex codes mean on the web. Every color you pick is kept (the last 30, in
 `state.json`): `colors` (or `my colors`) lists them, newest first, each with its swatch and when you picked it. Enter
-copies its hex; Tab shows it big, in hex, RGB and HSL.
+copies its hex, and the one you're on shows on the band.
 
-**QR codes:** `qr https://copperlight.app` offers the code (Tab or Enter), and in the QR Code chip it shows beside the
-list as you type. `qr` alone makes one of what you copied. Enter copies the picture (PNG). Made on your Mac; up to
+**QR codes:** `qr https://copperlight.app` offers the code (Tab or Enter), and in the QR Code chip it shows big as you
+type, with what it's of. `qr` alone makes one of what you copied. Beside the code: Copy Picture (Enter; PNG), Save to
+Downloads (shown in Finder) and Copy Link, or Copy Text for anything that isn't a web address. Made on your Mac; up to
 about 2,000 characters.
 
 **Text from the screen:** `copy text` (also `ocr`, `scan text`, `grab text`) turns the pointer into the screenshot
@@ -360,8 +366,9 @@ name alone ranks low, under an app with that name. While you type, `in 3` answer
 date: Tab, then the date. Enter copies the answer.
 
 **Stocks:** `stock AAPL`, `stock MGLU3.SA`, `stock ^BVSP`, `stock BTC-USD` (`sto` ⇥ for the Stock chip; tickers as
-Yahoo Finance writes them). The row shows the price and today's change; beside it, the last 7 days drawn hourly, the
-change over them, the previous close, the exchange and when it last traded. Enter opens the stock on Yahoo Finance.
+Yahoo Finance writes them). The answer takes the whole card: the ticker and name, the price and today's change (▲
+or ▼), when it last traded and where, the last 7 days drawn hourly with yesterday's close dashed across, and under it
+the previous close and the change over the 7 days. Enter opens the stock on Yahoo Finance.
 It says what you asked for, so it waits for you: only in the Stock chip, and only once you
 pause typing, does the ticker go to Yahoo; the answer is kept for a minute. Typed without the chip, `stock aapl` asks
 nothing: below the files, a row offers it (Stock Price of AAPL), and Tab or Enter on it makes the chip.

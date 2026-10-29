@@ -27,7 +27,9 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
   something to show opens its preview beside the list, and a file, an app or a clipboard item shows what you can do
   with it, in place of the list, its preview beside it, Esc going back (decided 2026-10-29). In the general search the list keeps its full width until
   then; where reading is the point (clipboard history, a chip, a command's output) the preview is open from the start,
-  and it only ever shows for a row with something in it (decided 2026-10-28). Typing never makes a chip,
+  and it only ever shows for a row with something in it (decided 2026-10-28). An answer that reads better big takes
+  the card in place of the list and preview, laid out for what it is: a stock fills it, a QR code sits beside its
+  actions, a color is a band over its rows (decided 2026-10-29). Typing never makes a chip,
   a space being only a space: `stock apple` may be the start of a file's name (decided 2026-10-28).
 - **One symbol.** `:` is the only prefix, and it controls things: the Mac, the window in front, running apps,
   files (`:left`, `:quit saf`, `:lock`; `:!git status` runs a shell line, like vim). Everything else is typed by

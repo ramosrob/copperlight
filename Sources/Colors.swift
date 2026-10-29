@@ -48,6 +48,33 @@ struct RGBColor: Equatable, Sendable {
     }
 }
 
+extension RGBColor {
+    static let white = RGBColor(red: 255, green: 255, blue: 255), black = RGBColor(red: 0, green: 0, blue: 0)
+
+    /// How light it looks, 0–1 (WCAG's relative luminance).
+    var luminance: Double {
+        let linear = { (channel: Int) in
+            let value = Double(channel) / 255
+            return value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+    }
+
+    /// WCAG's contrast ratio, 1–21: 4.5 or more reads well as text.
+    func contrast(with other: RGBColor) -> Double {
+        let (light, dark) = (max(luminance, other.luminance), min(luminance, other.luminance))
+        return (light + 0.05) / (dark + 0.05)
+    }
+
+    /// Part of the way to white (0.25: a quarter), or to black for a negative amount.
+    func mixed(_ amount: Double) -> RGBColor {
+        let toward = { (channel: Int) in
+            Int((amount >= 0 ? Double(channel) + (255 - Double(channel)) * amount : Double(channel) * (1 + amount)).rounded())
+        }
+        return RGBColor(red: toward(red), green: toward(green), blue: toward(blue))
+    }
+}
+
 enum ColorNotation: CaseIterable { case hex, rgb, hsl }
 
 /// "#ff8800", "#f80", "rgb(255, 136, 0)", "hsl(32, 100%, 50%)" (spaces for commas too): the color, and how it was
@@ -86,8 +113,8 @@ struct PickedColor: Codable, Equatable, Sendable {
     store.set(PickedColor.stateSection, Array(([PickedColor(hex: color.hex, at: date)] + kept.filter { $0.hex != color.hex }).prefix(PickedColor.limit)))
 }
 
-/// A color typed in one notation (`#c87533`, `rgb(…)`, `hsl(…)`) in the others, each row with its swatch; Enter
-/// copies. `pick color` picks one off the screen with macOS's magnifier: its hex is copied and the launcher comes back
+/// A color typed in one notation (`#c87533`, `rgb(…)`, `hsl(…)`) in the others and a step lighter and darker, under a
+/// band of the color with its contrast on white and black; Enter copies. `pick color` picks one off the screen with macOS's magnifier: its hex is copied and the launcher comes back
 /// showing it, so the other notations are a row away. Picked colors are kept: `colors` lists them, newest first.
 struct ColorProvider: ResultProvider {
     /// Opens the launcher with this typed in.
@@ -99,6 +126,11 @@ struct ColorProvider: ResultProvider {
         if let (color, typed) = parseColor(query) {
             let notations = ColorNotation.allCases.filter { $0 != typed } + [typed]
             return notations.enumerated().map { index, notation in row(color, notation, score: 50 - Double(index) / 10) }
+                + [(0.25, "A step lighter"), (-0.25, "A step darker")].enumerated().map { index, step in
+                    let shade = color.mixed(step.0)
+                    return LauncherResult(id: "color:\(step.1)", title: shade.hex, subtitle: step.1, icon: .color(shade), score: 49.6 - Double(index) / 10,
+                                          actionTitle: "Copy", action: { copyToClipboard(shade.hex) }, answer: .color(color))
+                }
         }
         let lower = query.lowercased().trimmingCharacters(in: .whitespaces)
         if lower == "colors" || lower == "colours" || otherNameScore(lower, "Your Colors") != nil { return await keptRows() }
@@ -121,8 +153,8 @@ struct ColorProvider: ResultProvider {
         })
     }
 
-    /// `colors`: the colors you picked, newest first, each with its swatch and when; Enter copies its hex, Tab shows it
-    /// big in each notation. None yet: Pick Color.
+    /// `colors`: the colors you picked, newest first, each with its swatch and when; Enter copies its hex, and the one
+    /// you're on shows on a band over the list. None yet: Pick Color.
     private func keptRows() async -> [LauncherResult] {
         let kept = await MainActor.run { [store] in store?.get(PickedColor.stateSection, as: [PickedColor].self) ?? [] }
         let now = Date.now
@@ -130,7 +162,7 @@ struct ColorProvider: ResultProvider {
             guard let color = parseColor(picked.hex)?.color else { return nil }
             return LauncherResult(id: "color:kept:\(picked.hex)", title: picked.hex, subtitle: color.rgb, accessory: shortAge(picked.at, now: now),
                                   icon: .color(color), score: 50 - Double(index) / 1000, actionTitle: "Copy", action: { copyToClipboard(picked.hex) },
-                                  previewImage: { swatch(color) }, details: [("Hex", color.hex), ("RGB", color.rgb), ("HSL", color.hsl)])
+                                  answer: .color(color))
         }
         return rows.isEmpty ? [pickRow(subtitle: "Your colors show here once you’ve picked some", score: 50)] : rows
     }
@@ -138,16 +170,6 @@ struct ColorProvider: ResultProvider {
     private func row(_ color: RGBColor, _ notation: ColorNotation, score: Double) -> LauncherResult {
         let text = switch notation { case .hex: color.hex; case .rgb: color.rgb; case .hsl: color.hsl }
         return LauncherResult(id: "color:\(notation)", title: text, accessory: notation == .hex ? "Hex" : "\(notation)".uppercased(),
-                              icon: .color(color), score: score, actionTitle: "Copy", action: { copyToClipboard(text) },
-                              previewImage: { swatch(color) }, details: [("Hex", color.hex), ("RGB", color.rgb), ("HSL", color.hsl)])
-    }
-}
-
-/// The color, big, for the preview pane.
-@MainActor func swatch(_ color: RGBColor, size: CGSize = CGSize(width: 330, height: 190)) -> NSImage {
-    NSImage(size: size, flipped: false) { rect in
-        NSColor(srgbRed: CGFloat(color.red) / 255, green: CGFloat(color.green) / 255, blue: CGFloat(color.blue) / 255, alpha: 1).setFill()
-        NSBezierPath(roundedRect: rect, xRadius: 10, yRadius: 10).fill()
-        return true
+                              icon: .color(color), score: score, actionTitle: "Copy", action: { copyToClipboard(text) }, answer: .color(color))
     }
 }

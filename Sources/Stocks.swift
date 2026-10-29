@@ -57,34 +57,7 @@ func fetchStockChart(_ symbol: String) async -> Data? {
     return data
 }
 
-/// The 7 days as a line in the icon's copper, over a fade of it, for the preview pane. nil for fewer than 2 points.
-@MainActor func stockChart(_ closes: [Double], size: CGSize = CGSize(width: 330, height: 190)) -> NSImage? {
-    guard closes.count > 1, let low = closes.min(), let high = closes.max() else { return nil }
-    let copper = NSColor(red: 222 / 255, green: 151 / 255, blue: 96 / 255, alpha: 1)
-    return NSImage(size: size, flipped: false) { rect in
-        let plot = rect.insetBy(dx: 2, dy: 8)
-        let span = high - low == 0 ? 1 : high - low
-        let points = closes.enumerated().map { index, close in
-            CGPoint(x: plot.minX + plot.width * CGFloat(index) / CGFloat(closes.count - 1),
-                    y: plot.minY + plot.height * CGFloat((close - low) / span))
-        }
-        let line = NSBezierPath()
-        line.move(to: points[0])
-        points.dropFirst().forEach(line.line(to:))
-        let area = line.copy() as! NSBezierPath
-        area.line(to: CGPoint(x: plot.maxX, y: rect.minY))
-        area.line(to: CGPoint(x: plot.minX, y: rect.minY))
-        area.close()
-        NSGradient(starting: copper.withAlphaComponent(0.28), ending: copper.withAlphaComponent(0))?.draw(in: area, angle: -90)
-        copper.setStroke()
-        line.lineWidth = 2
-        line.lineJoinStyle = .round
-        line.stroke()
-        return true
-    }
-}
-
-/// `stock AAPL`, `stock MGLU3.SA`: the price now, today's change, and the last 7 days in the preview pane. Enter opens
+/// `stock AAPL`, `stock MGLU3.SA`: the price now, today's change and the last 7 days, across the whole card. Enter opens
 /// the stock on Yahoo Finance. Only in the Stock chip (Tab), and only once typing pauses, does the ticker go to Yahoo;
 /// an answer is kept for a minute. Typed without the chip, "stock apple" may be a file's name: a row offers the chip.
 struct StockProvider: ResultProvider {
@@ -130,17 +103,18 @@ struct StockProvider: ResultProvider {
         }
         let today = quote.previousClose.map(change)
         let url = URL(string: "https://finance.yahoo.com/quote/\(quote.symbol)")
-        let details: [(String, String?)] = [
-            (quote.symbol, quote.name), // the row is too narrow for its subtitle beside the chart
-            ("Today", today), ("7 days", quote.closes.first.map(change)), ("Previous close", quote.previousClose.map(money)),
-            ("Exchange", quote.exchange.isEmpty ? nil : quote.exchange),
-            ("Updated", quote.time?.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(locale))),
-        ]
-        let closes = quote.closes
+        let up = quote.previousClose.map { quote.price >= $0 } ?? true
+        let facts: [(String, String?)] = [("Previous close", quote.previousClose.map(money)), ("7 days", quote.closes.first.map(change))]
+        let card = StockCard(
+            kicker: "\(quote.symbol) · \(quote.name)", price: money(quote.price),
+            change: today.map { "\(up ? "▲" : "▼") \($0.trimmingPrefix(/[+\-−]/)) today" } ?? "", up: up,
+            corner: [quote.time?.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(locale)), quote.exchange.isEmpty ? nil : quote.exchange]
+                .compactMap(\.self).joined(separator: " · "),
+            closes: quote.closes, previousClose: quote.previousClose,
+            facts: facts.compactMap { label, value in value.map { (label, $0) } }, action: "Open in Yahoo Finance")
         return LauncherResult(
             id: "stock:\(quote.symbol)", title: money(quote.price),
             subtitle: [quote.symbol, quote.name, today.map { "\($0) today" }].compactMap(\.self).joined(separator: " · "),
-            icon: .symbol(Self.icon), score: 50, actionTitle: "Open", action: { if let url { NSWorkspace.shared.open(url) } },
-            previewImage: { stockChart(closes) }, details: details.compactMap { label, value in value.map { (label, $0) } })
+            icon: .symbol(Self.icon), score: 50, actionTitle: "Open", action: { if let url { NSWorkspace.shared.open(url) } }, answer: .stock(card))
     }
 }

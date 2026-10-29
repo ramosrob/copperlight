@@ -1175,11 +1175,13 @@ private func testPNG(width: Int, height: Int, red: CGFloat = 1) -> Data {
     #expect(orange.hex == "#ff8800" && orange.rgb == "rgb(255, 136, 0)" && orange.hsl == "hsl(32, 100%, 50%)")
     #expect(RGBColor(red: 128, green: 128, blue: 128).hsl == "hsl(0, 0%, 50%)")
 
-    // The other notations first, then the one typed (its swatch, at least); Enter copies.
+    // The other notations first, then the one typed, then a step lighter and darker; Enter copies. The color itself is
+    // a band over them all.
     let provider = ColorProvider()
     let rows = await provider.results(for: "#ff8800")
-    #expect(rows.map(\.title) == ["rgb(255, 136, 0)", "hsl(32, 100%, 50%)", "#ff8800"])
-    #expect(rows.map(\.accessory) == ["RGB", "HSL", "Hex"] && rows.allSatisfy { $0.actionTitle == "Copy" && $0.previewImage != nil })
+    #expect(rows.map(\.title) == ["rgb(255, 136, 0)", "hsl(32, 100%, 50%)", "#ff8800", "#ffa640", "#bf6600"])
+    #expect(rows.map(\.accessory) == ["RGB", "HSL", "Hex", "", ""] && rows.suffix(2).map(\.subtitle) == ["A step lighter", "A step darker"])
+    #expect(rows.allSatisfy { $0.actionTitle == "Copy" && answerColor($0) == orange })
     #expect(await provider.results(for: "rgb(255, 136, 0)").first?.title == "#ff8800")
     #expect(await provider.results(for: "hello").isEmpty)
 
@@ -1187,6 +1189,34 @@ private func testPNG(width: Int, height: Int, red: CGFloat = 1) -> Data {
     for query in ["pick", "pick color", "color picker", "eyedropper"] {
         #expect(await provider.results(for: query).first?.title == "Pick Color", "\(query)")
     }
+}
+
+/// The color a row shows on its band, if it has one.
+func answerColor(_ result: LauncherResult?) -> Copperlight.RGBColor? {
+    if case .color(let color)? = result?.answer { color } else { nil }
+}
+
+@MainActor @Test func answersDrawnBig() async throws {
+    let copper = RGBColor(red: 200, green: 117, blue: 51)
+    #expect(copper.mixed(0.25).hex == "#d69866" && copper.mixed(-0.25).hex == "#965826")
+    #expect(String(format: "%.1f", copper.contrast(with: .white)) == "3.5" && String(format: "%.1f", copper.contrast(with: .black)) == "6.0")
+    #expect(RGBColor.white.contrast(with: .black) == 21)
+
+    // The launcher draws the answer of the row you're on, or of the first, in place of the preview pane.
+    struct Rows: ResultProvider {
+        func results(for query: String) async -> [LauncherResult] {
+            [LauncherResult(id: "a", title: "#c87533", icon: .color(copper), score: 2, action: {}, preview: "text", answer: .color(copper)),
+             LauncherResult(id: "b", title: "Search", icon: .symbol("magnifyingglass"), score: 1, action: {})]
+        }
+        let copper: Copperlight.RGBColor
+    }
+    let model = SearchModel(providers: [Rows(copper: copper)])
+    model.query = "#c8"
+    try await Task.sleep(for: .milliseconds(100))
+    model.previewOpen = true
+    #expect(answerColor(model.selected) == copper && !model.showsPreview)
+    model.move(1)
+    if case .color(let shown)? = model.answer { #expect(shown == copper) } else { Issue.record("the band went away") }
 }
 
 // MARK: Date math
@@ -1264,16 +1294,21 @@ private func testPNG(width: Int, height: Int, red: CGFloat = 1) -> Data {
     #expect(await provider.results(for: "qrs").isEmpty)
     #expect(await provider.results(for: "q").isEmpty)
 
-    // In the chip: the code for the text, or for what you copied; Enter copies the picture.
+    // In the chip: the code for the text, or for what you copied, big, with what you can do with it beside it: Enter
+    // copies the picture.
     let typed = await provider.modeResults(for: "qr hello world")
-    #expect(typed.map(\.title) == ["hello world"] && typed[0].subtitle == "QR code" && typed[0].previewImage != nil
-            && typed[0].actionTitle == "Copy")
+    #expect(typed.map(\.title) == ["Copy Picture", "Save to Downloads", "Copy Text"] && typed[0].actionTitle == "Copy")
+    guard case .picture(_, let kicker, let title, _)? = typed.first?.answer else { Issue.record("no QR code"); return }
+    #expect(kicker == "QR code" && title == "hello world")
+    #expect(typed.allSatisfy { $0.answer != nil }) // it stays while you move
     let copied = await provider.modeResults(for: "qr")
-    #expect(copied.first?.title == "https://copperlight.app" && copied.first?.subtitle == "QR code · from the clipboard")
+    #expect(copied.last?.title == "Copy Link") // a web address
+    guard case .picture(_, let fromClipboard, let link, _)? = copied.first?.answer else { Issue.record("no QR code"); return }
+    #expect(fromClipboard == "QR code · from the clipboard" && link == "https://copperlight.app")
     let nothing = await QRCodeProvider(clipboard: { nil }).modeResults(for: "qr")
-    #expect(nothing.first?.title == "Type text or a link" && nothing.first?.previewImage == nil)
+    #expect(nothing.first?.title == "Type text or a link" && nothing.first?.answer == nil)
     let long = await provider.modeResults(for: "qr " + String(repeating: "x", count: 5000))
-    #expect(long.first?.title == "Too long for a QR code" && long.first?.previewImage == nil)
+    #expect(long.first?.title == "Too long for a QR code" && long.first?.answer == nil)
 }
 
 // MARK: Capture
@@ -2563,21 +2598,18 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     let row = await provider.modeResults(for: "stock mglu3.sa").first
     #expect(row?.title == "R$5.75")
     #expect(row?.subtitle == "MGLU3.SA · Magazine Luiza S.A. · +8.49% today")
-    #expect(row?.details.map(\.0) == ["MGLU3.SA", "Today", "7 days", "Previous close", "Exchange", "Updated"])
-    #expect(row?.details[0].1 == "Magazine Luiza S.A.")
-    #expect(row?.details[2].1 == "-57.28%") // since the chart's first close
-    #expect(row?.previewImage != nil && row?.actionTitle == "Open")
+    #expect(row?.actionTitle == "Open")
+    // Across the whole card: the price, today's change, the 7 days' chart and the numbers under it.
+    guard case .stock(let card)? = row?.answer else { Issue.record("no stock card"); return }
+    #expect(card.kicker == "MGLU3.SA · Magazine Luiza S.A." && card.price == "R$5.75" && card.change == "▲ 8.49% today" && card.up)
+    #expect(card.facts.map(\.0) == ["Previous close", "7 days"] && card.facts[1].1 == "-57.28%") // since the chart's first close
+    #expect(card.closes.count > 1 && card.previousClose != nil && card.action == "Open in Yahoo Finance")
     _ = await provider.modeResults(for: "stock MGLU3.SA")
     #expect(fetches.withLock { $0 } == 1) // asked again within a minute: from the cache
     #expect(await provider.modeResults(for: "stock nope").first?.title == "No stock called NOPE")
     #expect(await provider.modeResults(for: "stock offl").first?.title == "Couldn't reach Yahoo Finance")
     #expect(await provider.modeResults(for: "stock apple inc").first?.title == "Type a ticker, like AAPL")
     #expect(await provider.modeResults(for: "stock ").isEmpty) // the chip's hint says what to type
-}
-
-@MainActor @Test func stockChartImage() {
-    #expect(stockChart([3, 1, 2])?.size == CGSize(width: 330, height: 190))
-    #expect(stockChart([3]) == nil) // one point is no line
 }
 
 // MARK: Timers
@@ -3161,7 +3193,7 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     let rows = await colors.results(for: "colors")
     #expect(rows.map(\.title) == ["#c87533", "#000000"]) // newest first
     #expect(rows[0].subtitle == "rgb(200, 117, 51)" && rows[0].accessory == "now" && rows[0].actionTitle == "Copy")
-    #expect(rows[0].previewImage != nil && rows[0].details.map(\.0) == ["Hex", "RGB", "HSL"]) // Tab: big, in each notation
+    #expect(answerColor(rows[0]) == RGBColor(red: 200, green: 117, blue: 51)) // the one you're on, on a band over the list
     #expect(await colors.results(for: "colours").count == 2)
     #expect(await colors.results(for: "my colors").count == 2)
     for gray in 0..<40 { rememberColor(RGBColor(red: gray, green: gray, blue: gray), in: store, at: now) }
