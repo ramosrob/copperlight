@@ -320,6 +320,14 @@ actor ClipboardProvider: ResultProvider {
                 details += [("Characters", "\(item.length)"), ("Lines", more > 0 ? "\(lines)+" : "\(lines)")]
             }
             details.append(("Copied", item.copiedAt.formatted(.relative(presentation: .named))))
+            let shown = image != nil ? "" : more > 0 ? item.text + "\n\n… \(more) more characters" : item.text
+            var actions: (@Sendable () async -> [LauncherResult])?
+            if mode == .paste {
+                let (id, picture, itemDetails) = (item.id, image, details)
+                actions = { [self] in
+                    await actionRows(id, pasteTitle: actionTitle, trusted: trusted, preview: shown, image: picture, details: itemDetails)
+                }
+            }
             return LauncherResult(
                 id: "clipboard:\(item.id)", title: String(oneLine(item.text).prefix(200)),
                 accessory: shortAge(item.copiedAt, now: now),
@@ -327,11 +335,54 @@ actor ClipboardProvider: ResultProvider {
                 score: Double(items.count - index), // keep the store's order
                 actionTitle: actionTitle,
                 action: action(mode, item.id),
+                actions: actions,
                 staysOpen: mode == .delete,
                 section: query.isEmpty ? clipboardSection(item.copiedAt, now: now) : nil, // filtered: not in date order
-                preview: image != nil ? "" : more > 0 ? item.text + "\n\n… \(more) more characters" : item.text,
+                preview: shown,
                 previewImage: image,
                 details: details)
+        }
+    }
+
+    /// Tab on an item: paste it, or only copy it; text that's a link opens, shows in Large Type, or as a QR code beside
+    /// the list (Enter copies the picture); a picture opens in Preview or goes to Downloads; and deleting it.
+    private func actionRows(_ id: Int64, pasteTitle: String, trusted: Bool, preview: String,
+                            image: (@MainActor @Sendable () -> NSImage?)?, details: [(String, String)]) -> [LauncherResult] {
+        guard let content = try? store.content(id) else { return [] }
+        let (paste, copy, store) = (paste, copy, store)
+        var rows: [(title: String, symbol: String, actionTitle: String, picture: CGImage?, action: @MainActor @Sendable () -> Void)] = [
+            (pasteTitle, "doc.on.clipboard", pasteTitle, nil, { paste(content) }),
+        ]
+        if trusted { rows.append(("Copy Without Pasting", "doc.on.doc", "Copy", nil, { copy(content) })) } // else Enter copies already
+        switch content {
+        case .text(let text):
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let url = URL(string: trimmed), ["http", "https"].contains(url.scheme?.lowercased() ?? ""), !trimmed.contains(" ") {
+                rows.append(("Open Link", "safari", "Open", nil, { NSWorkspace.shared.open(url) }))
+            }
+            rows.append(("Large Type", "textformat.size", "Show", nil, { showLargeType(text) }))
+            if let code = qrCode(trimmed) { rows.append(("QR Code", "qrcode", "Copy", code, { copyPicture(code) })) }
+        case .image(let png):
+            let save: @MainActor @Sendable (URL) -> URL? = { folder in
+                let stamp = Date.now.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false)).replacing(":", with: ".")
+                let file = folder.appending(path: "Clipboard \(stamp).png")
+                do { try png.write(to: file) } catch { notify("Couldn't save the picture", error.localizedDescription); return nil }
+                return file
+            }
+            rows.append(("Open in Preview", "eye", "Open", nil, {
+                if let file = save(FileManager.default.temporaryDirectory) { NSWorkspace.shared.open(file) }
+            }))
+            rows.append(("Save to Downloads", "square.and.arrow.down", "Save", nil, {
+                if let file = save(.downloadsDirectory) { NSWorkspace.shared.activateFileViewerSelecting([file]) }
+            }))
+        }
+        rows.append(("Delete from History", "trash", "Delete", nil, { try? store.delete(id) }))
+        return rows.enumerated().map { index, row in
+            var shown = image
+            if let code = row.picture { shown = { roundedPicture(code) } } // the QR code beside the list
+            return LauncherResult(id: "clipboard-action:\(row.title)", title: row.title, icon: .symbol(row.symbol), score: 50 - Double(index) / 100,
+                                  actionTitle: row.actionTitle, action: row.action, preview: row.picture == nil ? preview : "",
+                                  previewImage: shown, details: row.picture == nil ? details : [])
         }
     }
 

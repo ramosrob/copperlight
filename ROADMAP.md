@@ -26,8 +26,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   the links pulled out of text; the colors you picked, kept (`colors`).
 - **Windows:** sixths, fourths, the full height or width, `:size 1280x800`, gaps between windows; layouts that open
   their apps too.
-- **Files and apps:** `:move to`, `:rename`, `:duplicate`, `:compress`, AirDrop and `:info` on a file; Tab on a file,
-  an app or a clipboard item for its actions as rows (open with, reveal, copy path, trash); the files selected in
+- **Files and apps:** `:move to`, `:rename`, `:duplicate`, `:compress`, AirDrop and `:info` on a file; the files selected in
   Finder as what the hotkey acts on; `:uninstall` (asks first); installing an app you don't have with Homebrew, from
   its row, and `:upgrade`; volume per app.
 - **Your day:** meetings beyond today, free slots to copy, and the next meeting in the menu bar; lists, priorities and
@@ -48,7 +47,9 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
-- **Next release:** what you picked for what you typed comes first the next time you type it (`ss` → Slack).
+- **Next release:** what you picked for what you typed comes first the next time you type it (`ss` → Slack); Tab on a
+  file, an app or a clipboard item for what you can do with it (open with, reveal, copy the path or the file, trash;
+  hide, quit, relaunch; open a link, Large Type, a QR code), its preview beside it.
 - **v0.9:** colors by their shape (`#c87533`, `rgb(…)`, `hsl(…)`) with a swatch, and `pick color`; `qr`
   codes; date math (`days until dec 25`, `in 3 weeks`, a date's weekday and week), answered before you finish typing;
   `{cursor}` in snippets; currency after math (`39*8 usd`); contacts (Enter messages, Tab for call, FaceTime, WhatsApp,

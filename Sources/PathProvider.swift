@@ -54,6 +54,8 @@ func pathEntries(_ query: PathQuery, limit: Int = 200) -> [PathEntry]? {
 /// come here alone.
 struct PathProvider: ResultProvider {
     static let prefixes = ["~", "/"]
+    /// Where a file's Open in Terminal goes (`[files] terminal`); nil: Terminal.
+    var terminal: @Sendable () async -> String? = { nil }
 
     func results(for query: String) -> [LauncherResult] {
         guard let path = pathQuery(query) else { return [] }
@@ -68,10 +70,20 @@ struct PathProvider: ResultProvider {
                                        subtitle: path.folder, icon: .file(folder.path), score: 100, actionTitle: "Open in Finder",
                                        action: { NSWorkspace.shared.open(folder) }))
         }
+        let terminal = terminal
         return rows + entries.enumerated().map { index, entry in
-            LauncherResult(id: "file:\(entry.path)", title: entry.name, icon: .file(entry.path), score: 50 - Double(index) / 1000,
-                           actionTitle: entry.isFolder ? "Browse" : "Open", action: { NSWorkspace.shared.open(URL(filePath: entry.path)) },
-                           completion: entry.isFolder ? entry.shown + "/" : nil)
+            let path = entry.path
+            // Tab goes into a folder; on a file, it shows what you can do with it.
+            var actions: (@Sendable () async -> [LauncherResult])?
+            if !entry.isFolder {
+                actions = { @Sendable in
+                    let app = await terminal()
+                    return fileActionRows(path, terminal: app)
+                }
+            }
+            return LauncherResult(id: "file:\(path)", title: entry.name, icon: .file(path), score: 50 - Double(index) / 1000,
+                                  actionTitle: entry.isFolder ? "Browse" : "Open", action: { NSWorkspace.shared.open(URL(filePath: path)) },
+                                  completion: entry.isFolder ? entry.shown + "/" : nil, actions: actions)
         }
     }
 }

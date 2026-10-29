@@ -93,7 +93,8 @@ actor AppProvider: ResultProvider {
                 id: path, title: app.name,
                 subtitle: [app.running ? "Running" : nil, described?.term].compactMap { $0 }.joined(separator: " · "),
                 icon: .file(path), score: match + (app.running ? 0.3 : 0),
-                action: { NSWorkspace.shared.openApplication(at: URL(filePath: path), configuration: .init()) })
+                action: { NSWorkspace.shared.openApplication(at: URL(filePath: path), configuration: .init()) },
+                actions: { await MainActor.run { appActionRows(path) } })
         }
     }
 }

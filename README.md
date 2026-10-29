@@ -145,6 +145,7 @@ A taste of what the field understands. Enter does the obvious thing: opens, copi
 | Type | You get |
 |---|---|
 | `saf` | Safari; Enter opens it |
+| `invoice` ⇥, `saf` ⇥ | What you can do with it: open with, reveal, copy the path or the file itself, trash; hide, quit or relaunch an app. Its preview beside, Esc goes back |
 | `invoice` | Files and folders, from Spotlight's index (`f invoice`: files only) |
 | `~/Downloads`, `/Applications` | That folder's contents, to go into or open |
 | `copperlight git` | Bookmarks and recent pages from your browser, opened in their profile |
@@ -183,7 +184,7 @@ The answer appears as you type; Enter copies it.
 
 | Type | You get |
 |---|---|
-| `clip` | Everything you copied, text and images, searchable; Enter pastes it into the app you were in |
+| `clip` | Everything you copied, text and images, searchable; Enter pastes it into the app you were in, Tab shows the rest: open a link, Large Type, a QR code, save a picture |
 | `paste plain`, `paste markdown` | The clipboard without its formatting, or as Markdown (from web pages, Google Docs, Slack) |
 | `json`, `upper`, `snake`, `b64`, `sha256` | The clipboard formatted, converted or hashed; or type the text after it: `upper hello` |
 | `uuid`, `password 32`, `lorem 3` | A UUID, a password, placeholder text |

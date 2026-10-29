@@ -171,6 +171,7 @@ Sources/
   Words.swift               define (Dictionary Services), spell (NSSpellChecker), translate (Translation)
   Tools.swift               running command-line tools with a timeout and cancel (:! lines, scripts)
   PathProvider.swift        `~/…` and `/…`: list a folder, go into it, open what's in it
+  ItemActions.swift         what Tab shows for a file and an app (clipboard items' are in Clipboard.swift), with their previews
   Capture.swift             add note/todo/event (EventKit, date reading), screenshot and record
   TextTools.swift           text tools (json, b64, case…), paste as plain text or Markdown (HTML → Markdown)
   Colors.swift              `#c87533`, `rgb(…)`, `hsl(…)` in the other notations, `pick color` (NSColorSampler)

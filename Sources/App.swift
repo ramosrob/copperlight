@@ -202,13 +202,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                      (FileContentProvider(files: files), .fileContent), (tabs, nil), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
             .compactMap { $0.1?.isOn == false ? nil : $0.0 } + (photoText.map { [PhotoTextProvider(store: $0)] } ?? []),
         exclusive: [FileSearchProvider.prefix: files, VerbProvider.prefix: verbs,
-                    ShellProvider.prefix: ShellProvider(state: .shared), "~": PathProvider(), "/": PathProvider()],
+                    ShellProvider.prefix: ShellProvider(state: .shared),
+                    "~": PathProvider(terminal: Self.terminal(files)), "/": PathProvider(terminal: Self.terminal(files))],
         frecency: .shared, idle: Self.upNext(meetings, reminders, clocks: { [unowned self] in
             runningClocks(pomodoro: pomodoro, timer: countdown, stopwatch: stopwatch)
                 + (suggestsApps ? suggestionRows(StateStore.shared.get(AppOpen.stateSection, as: [AppOpen].self) ?? []) : [])
         }))
     private var suggestsApps = true
     private lazy var panel: LauncherPanel = LauncherPanel(model: model, placeholder: "Type anything")
+
+    /// `[files] terminal`, asked when a file's Open in Terminal row is made.
+    nonisolated private static func terminal(_ files: FileSearchProvider) -> @Sendable () async -> String? { { await files.terminalApp() } }
 
     /// What the empty launcher shows: the meeting to join, a few minutes before it starts, what's counting, reminders
     /// that are due, and the apps you open around now.

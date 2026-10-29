@@ -80,6 +80,16 @@ files and the text in photos. Everything else on this page is on.
   (Settings › Files › Apps) turns them off.
 - **Tab steps into some rows** while Enter still runs them, and the selected row names both: on a person, Actions ⇥
   (Message ↵); on a calculation, Keep Going ⇥ puts the result in the field (Copy ↵).
+- **Tab on a file, an app or a clipboard item: what you can do with it,** in place of the list under its name, with
+  its preview beside it; Esc goes back to the list, typing searches again.
+  - A file: Open (in its app), Open With… (fills in `:open with`), Reveal in Finder, Copy Path, Copy File (to paste
+    in Finder or an email), Open in Terminal, Move to Trash (asks first). Beside them: a text file's start, a picture
+    or a PDF's first page, and where it is, its kind, size and when it changed.
+  - An app: Open, and while it runs Hide, Quit, Force Quit (asks first) and Relaunch; Reveal in Finder, Copy Path.
+    Beside them: its icon, version and where it is.
+  - A clipboard item: Paste (or Copy without Accessibility), Copy Without Pasting; for text, Open Link (a web
+    address), Large Type and QR Code (the code beside the list, Enter copies it); for a picture, Open in Preview and
+    Save to Downloads; Delete from History.
 - **↑ in the empty field brings back what you ran,** the last 50 queries, newest first; ↑ again (on the top row)
   goes further back. Each comes back as it was run: in its chip, or typed. Kept in `state.json`.
 - **It never takes focus** from the app you were in, so window commands and pastes act on that app.
@@ -106,7 +116,7 @@ files and the text in photos. Everything else on this page is on.
 - **Ranking:** an exact command alias first, then Copperlight's own features typed by name, then apps, commands, math
   and currency by how well they match, then files, and the search row last.
 - **The preview beside the list:** in the general search the list keeps its full width; a row with something to show
-  (a note, a file's text, a long snippet) says "Preview ⇥", and Tab opens it beside the list (Tab again closes it; a
+  (a note, a long snippet) says "Preview ⇥", and Tab opens it beside the list (Tab again closes it; a
   new search starts without it). In clipboard history, in chips and in a command's output it's open from the start.
   It only ever shows for a row with something in it.
 - **The look:** two floating glass pieces, a pill search field and a results card
@@ -123,7 +133,7 @@ files and the text in photos. Everything else on this page is on.
   background, then only new and updated apps. `[apps] online = false` keeps it on the Mac.
 - **Files:** after 2 letters, names in the `[files]` scopes with a word starting with each word you type
   (`inv 2026`). Uses the Spotlight index. `exclude` hides paths like `node_modules`. Start with `f ` for files
-  only, and more of them.
+  only, and more of them. Tab on one: what you can do with it.
 - **Text inside files and pictures** (from 3 letters): documents, PDFs, screenshots and images whose text has
   the words, below the name matches, marked "Text inside" or "Text in image". The preview shows the picture or the
   matching lines. Spotlight reads images when the Mac is idle, so a brand-new one may take a while.
@@ -367,7 +377,8 @@ The row shows the title and date Copperlight read before you press Enter; a noti
   text.
 - **Clipboard history** (`clip`): text and images you copy, newest first under Today, Yesterday, Earlier,
   with a preview and details. Typing filters (`image` lists images). Enter pastes into the app you were in.
-  Its own `:` commands: `:copy` (copy without pasting), `:delete`, `:clear` (asks first). Skips copies marked
+  Tab on an item: what you can do with it (above). Its own `:` commands: `:copy` (copy without pasting), `:delete`,
+  `:clear` (asks first). Skips copies marked
   as passwords and copies made in `ignore_apps` (password managers by default). Keeps 1000 items or 90 days by
   default.
 - **Welcome** (`welcome`): opens by itself on first launch. Shows the hotkey and checks it off once you've

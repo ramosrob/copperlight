@@ -2954,3 +2954,68 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     let live = readProcesses() // from ps, Copperlight (which runs these tests) left out
     #expect(!live.isEmpty && !live.contains { $0.pid == getpid() })
 }
+
+// MARK: Tab actions
+
+@MainActor @Test func tabStepsIntoWhatYouCanDoWithARow() async throws {
+    struct Item: ResultProvider {
+        func results(for query: String) async -> [LauncherResult] {
+            [LauncherResult(id: "file", title: "report.pdf", icon: .symbol("doc"), score: 2, action: {}, actions: {
+                [LauncherResult(id: "file:open", title: "Open", icon: .symbol("doc"), score: 0, action: {}),
+                 LauncherResult(id: "file:reveal", title: "Reveal in Finder", icon: .symbol("folder"), score: 0, action: {})]
+            }),
+             LauncherResult(id: "other", title: "Other", icon: .symbol("circle"), score: 1, action: {})]
+        }
+    }
+    let model = SearchModel(providers: [Item()])
+    model.query = "rep"
+    try await Task.sleep(for: .milliseconds(100))
+    model.complete() // Tab: what you can do with it, in place of the list, under its name
+    try await Task.sleep(for: .milliseconds(50))
+    #expect(model.rows.map(\.title) == ["Open", "Reveal in Finder"] && model.rows.allSatisfy { $0.section == "report.pdf" })
+    #expect(model.previewsByDefault && model.query == "rep") // the field keeps what you typed
+    model.move(1)
+    #expect(model.stepOut()) // Esc: back to the list, the item still selected
+    #expect(model.rows.map(\.title) == ["report.pdf", "Other"] && model.selected?.id == "file")
+    #expect(!model.stepOut()) // nothing to back out of: Esc hides
+    model.complete()
+    try await Task.sleep(for: .milliseconds(50))
+    model.query = "repo" // typing searches again
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(model.rows.first?.title == "report.pdf")
+}
+
+@MainActor @Test func fileAppAndClipboardActions() async throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: "copperlight-actions-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let file = folder.appending(path: "notes.txt")
+    try "first line\nsecond".write(to: file, atomically: true, encoding: .utf8)
+
+    let rows = fileActionRows(file.path, terminal: nil)
+    #expect(rows.map(\.title) == ["Open", "Open With…", "Reveal in Finder", "Copy Path", "Copy File", "Open in Terminal", "Move to Trash"])
+    #expect(rows[1].completion == ":open with \(file.path) " && rows.last?.confirm == "Move “notes.txt” to the Trash?")
+    #expect(rows.allSatisfy { $0.details.map(\.0) == ["Where", "Kind", "Size", "Modified"] })
+    #expect(await rows[0].loadPreview?() == "first line\nsecond") // a text file's text beside them
+    // A folder's listing has them on each file (Tab on a folder still goes into it).
+    let listed = await PathProvider().results(for: folder.path + "/").first { $0.title == "notes.txt" }
+    #expect(listed?.actions != nil)
+
+    // An app: what you can do depends on whether it's running.
+    #expect(appActionRows("/System/Applications/Chess.app").map(\.title) == ["Open", "Reveal in Finder", "Copy Path"])
+    #expect(appActionRows(Bundle.main.bundlePath).map(\.title) // these tests run inside Copperlight
+        == ["Open", "Hide", "Quit", "Force Quit", "Relaunch", "Reveal in Finder", "Copy Path"])
+    let apps = AppProvider(index: nil)
+    await apps.rescan()
+    let found = await apps.results(for: "chess")
+    #expect(!found.isEmpty && found.allSatisfy { $0.actions != nil })
+
+    // A clipboard item: paste or copy it, and for text a link to open, Large Type, a QR code beside the list.
+    let store = try ClipboardStore()
+    try store.record("https://copperlight.app", app: nil, at: .now)
+    let clipboard = ClipboardProvider(store: store, paste: { _ in }, copy: { _ in })
+    let item = try #require(await clipboard.results(for: "").first)
+    let actions = try #require(await item.actions?()).map(\.title)
+    #expect(Array(actions.suffix(4)) == ["Open Link", "Large Type", "QR Code", "Delete from History"])
+    #expect(actions.contains("Copy Without Pasting") == AXIsProcessTrusted()) // without Accessibility, Enter copies already
+}

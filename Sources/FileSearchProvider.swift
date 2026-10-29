@@ -93,6 +93,7 @@ actor FileSearchProvider: ResultProvider {
                 accessory: inside ? (hit.image ? "Text in image" : "Text inside") : "", // says why, as long names hide the subtitle
                 icon: .file(path), score: (inside ? -2 : -1) - Double(index) / 1000,
                 action: { _ = NSWorkspace.shared.open(URL(filePath: path)) },
+                actions: { [self] in fileActionRows(path, terminal: await terminalApp()) },
                 preview: inside && hit.image ? "" : nil, // the picture, so you see where the text is
                 previewStyle: .prose,
                 loadPreview: inside && !hit.image ? { @Sendable in matchingLines(path, query: text) ?? "" } : nil,

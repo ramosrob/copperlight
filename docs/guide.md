@@ -12,7 +12,7 @@ config.toml.
 | ⌥Space | Show / hide the launcher. With text selected in the app you're in, it opens with that text typed and selected |
 | ↑ ↓ | Move selection. ↑ in the empty field: the last query you ran (↑ again for the one before) |
 | Enter | Run: open app or file, copy a calculator, currency or text tool result, run command, open URL, search the web. Clipboard: paste the item |
-| Tab | Fill in: on a row that says Tab (Translate, Quit Application, a folder), or with a name typed whole (`translate`), it types the name, which becomes a chip. On a row that names what Tab does beside Enter, it steps into it: a person's Actions, a calculation's Keep Going. On a row with something to show (a note, a file's text, a snippet), it opens its preview beside the list, and Tab again closes it. In clipboard history and in chips the preview is open already |
+| Tab | Fill in: on a row that says Tab (Translate, Quit Application, a folder), or with a name typed whole (`translate`), it types the name, which becomes a chip. On a row that names what Tab does beside Enter, it steps into it: a person's Actions, a calculation's Keep Going, and on a file, an app or a clipboard item what you can do with it (Esc goes back). On a row with something to show (a note, a snippet), it opens its preview beside the list, and Tab again closes it. In clipboard history and in chips the preview is open already |
 | `:` (typed first) | Commands: the window in front, running apps, files, the Mac. Clipboard history has its own |
 | Esc, or click elsewhere | Hide (or back out of a confirmation) |
 
@@ -277,7 +277,8 @@ list moves it to the top. Typing filters: items containing the text, then items 
 fuzzily ("gco" → "git checkout origin"). Not recorded: copies marked concealed/transient/auto-generated
 (password managers mark theirs), copies made while an `ignore_apps` app is in front, and the items you
 paste from the list itself. Enter pastes into the app you were in, which needs Accessibility (see Signing).
-Without it, Enter copies only and the panel shows a row that takes you to the setting.
+Without it, Enter copies only and the panel shows a row that takes you to the setting. Tab on an item shows what
+else you can do with it: open a link, Large Type, a QR code, save a picture, delete it.
 
 **File search:** after 2 letters, files and folders in the `[files]` scopes whose name has a word starting with
 what you typed (each word, any order of words: `inv 2026`). Uses the Spotlight index, so anything Spotlight
@@ -285,6 +286,17 @@ skips (System Settings → Spotlight → Privacy) is skipped too. Files always r
 math and currency, and arrive a moment later (150 ms after you stop typing). Order: exact name, then name
 starts with it, then a later word does; within that, most recently opened first, then the shallowest path.
 Start with `f ` for files only, with up to 60 results instead of 20.
+
+**What you can do with it (Tab):** on a file, an app or a clipboard item, Tab puts what you can do with it in place
+of the list, under its name, with its preview beside it. Esc goes back to the list, the item still selected; typing
+searches again. A file (in a search, or a folder's listing): Open (the row says in which app), Open With… (fills in
+`:open with`, to pick the app), Reveal in Finder, Copy Path, Copy File (the file itself, to paste in Finder, an email
+or a chat), Open in Terminal (its folder, in `[files] terminal`), Move to Trash (asks first); beside them a text
+file's start, a picture or a PDF's first page, and where it is, its kind, size and when it changed. An app: Open, and
+while it runs Hide, Quit, Force Quit (asks first) and Relaunch; Reveal in Finder, Copy Path; beside them its icon,
+version and where it is. A clipboard item: Paste (Copy, without Accessibility), Copy Without Pasting; for text, Open
+Link if it's a web address, Large Type, and QR Code, the code beside the list (Enter copies the picture); for a
+picture, Open in Preview and Save to Downloads; and Delete from History.
 
 **Inside files and pictures:** from 3 letters, files in the same folders with the words in their text, below the
 ones found by name ("Text inside", or "Text in image"). Spotlight reads documents, PDFs, and the text in images and

@@ -55,6 +55,9 @@ struct LauncherResult: Identifiable, Sendable {
     /// Tab goes a step into the row while Enter still runs `action`: this goes in the field, its name becoming a chip
     /// (a person's ways to reach them). The selected row names it beside what Enter does.
     var more: (label: String, fill: String)? = nil
+    /// Tab: what you can do with it (a file: open with, reveal, trash…), as rows in place of the list, under its title,
+    /// the preview beside them. Esc goes back to the list; typing searches again.
+    var actions: (@Sendable () async -> [LauncherResult])? = nil
     /// Something for the pane beside the list: text, text to load, or a picture.
     var hasPreview: Bool { preview != nil || loadPreview != nil || previewImage != nil }
     /// Enter runs it, drops the row and keeps the panel open, so several can go in a row (`:delete`).
@@ -150,6 +153,8 @@ final class SearchModel {
     var notice: LauncherResult?
     /// A confirmation question that replaces the list until answered (Enter) or dismissed (Esc, typing).
     var confirming: LauncherResult? { didSet { selection = 0 } }
+    /// What you can do with the row Tab stepped into, in place of the list, and where that row was (Esc goes back to it).
+    private(set) var stepped: (rows: [LauncherResult], from: Int)?
     private(set) var results: [LauncherResult] = []
     private(set) var selection = 0
     @ObservationIgnored private let providers: [any ResultProvider]
@@ -268,6 +273,16 @@ final class SearchModel {
             picked(row.id)
             return self.fill(fill)
         }
+        if stepped == nil, let row = selected, let actions = row.actions {
+            let from = selection
+            Task {
+                let rows = await actions().map { var action = $0; action.section = row.title; return action }
+                guard self.selected?.id == row.id, !rows.isEmpty else { return } // typed on, or moved, meanwhile
+                stepped = (rows, from)
+                selection = 0
+            }
+            return
+        }
         // A row with something to show: Tab opens it beside the list (and closes it again).
         if let row = selected, row.hasPreview, !previewsByDefault { return previewOpen.toggle() }
         // The shortest name that starts with it, when every other one goes on from it ("translate " before
@@ -300,12 +315,20 @@ final class SearchModel {
         if let mode, typed.isEmpty { fill(String(mode.prefix.dropLast())) }
     }
 
-    var rows: [LauncherResult] { confirming.map { [$0] } ?? ((notice.map { [$0] } ?? []) + results) }
+    var rows: [LauncherResult] { confirming.map { [$0] } ?? stepped?.rows ?? ((notice.map { [$0] } ?? []) + results) }
+
+    /// Esc after Tab stepped into a row: back to the list, that row selected. false: there's nothing to back out of.
+    func stepOut() -> Bool {
+        guard let stepped else { return false }
+        self.stepped = nil
+        selection = min(stepped.from, max(0, rows.count - 1))
+        return true
+    }
 
     /// The preview beside the list, opened with Tab in the general search, for the selected row, until the query changes.
     var previewOpen = false
     /// Where reading is the point it's open from the start: clipboard history, a chip, a command's output.
-    var previewsByDefault: Bool { searchesEmptyQuery || mode != nil || confirming != nil }
+    var previewsByDefault: Bool { searchesEmptyQuery || mode != nil || confirming != nil || stepped != nil }
     /// Only for a row with something to show: never an empty pane.
     var showsPreview: Bool { (selected?.hasPreview ?? false) && (previewsByDefault || previewOpen) }
     var selected: LauncherResult? { rows.indices.contains(selection) ? rows[selection] : nil }
@@ -327,6 +350,7 @@ final class SearchModel {
     private func search() {
         task?.cancel()
         confirming = nil
+        stepped = nil
         previewOpen = false
         selection = 0
         let query = query.trimmingCharacters(in: .whitespaces)
@@ -464,8 +488,8 @@ final class LauncherPanel: NSPanel {
     override func sendEvent(_ event: NSEvent) {
         guard event.type == .keyDown else { return super.sendEvent(event) }
         switch event.keyCode {
-        case 53: // Esc: stop what's running and back out of it (or of a question), else hide
-            guard model.confirming != nil else { return orderOut(nil) }
+        case 53: // Esc: stop what's running and back out of it (or of a question, or of a row's actions), else hide
+            guard model.confirming != nil else { return model.stepOut() ? () : orderOut(nil) }
             model.run?.cancel()
             model.confirming = nil
         case 51 where model.mode != nil && model.typed.isEmpty: model.leaveMode() // Delete
@@ -690,7 +714,8 @@ private struct LauncherView: View {
                             }
                             let selected = index == model.selection
                             ResultRow(result: result, selected: selected,
-                                      offersPreview: selected && result.hasPreview && result.completion == nil && result.more == nil && !model.showsPreview)
+                                      offersPreview: selected && result.hasPreview && result.completion == nil && result.more == nil
+                                          && result.actions == nil && !model.showsPreview)
                         }
                         .id(result.id)
                     }
@@ -804,9 +829,9 @@ private struct ResultRow: View {
                 }
             }
             Spacer(minLength: 8)
-            if selected, !result.actionTitle.isEmpty || offersPreview || result.more != nil {
+            if selected, !result.actionTitle.isEmpty || offersPreview || result.more != nil || result.actions != nil {
                 HStack(spacing: 7) {
-                    if let tab = offersPreview ? "Preview" : result.more?.label {
+                    if let tab = offersPreview ? "Preview" : result.more?.label ?? (result.actions != nil && result.completion == nil ? "Actions" : nil) {
                         Text(tab).font(.system(size: 12)).foregroundStyle(.secondary)
                         Keycap(label: "tab").padding(.trailing, 6)
                     }
