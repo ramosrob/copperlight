@@ -62,21 +62,37 @@ func convertBase(_ query: String, ans: Double? = nil) -> String? {
     }
 }
 
-/// The result, Enter copying it; Tab puts it in the field instead, to keep calculating with it.
+/// What a percentage hid: `150 + 20%` → "20% of 150 is 30", `20% off 80` → "You save 16". nil for any other shape.
+func percentNote(_ query: String, ans: Double? = nil) -> String? {
+    let text = query.trimmingCharacters(in: .whitespaces)
+    let value = { (part: Substring) in Double(part) ?? calculate(String(part), ans: ans) }
+    if let off = text.wholeMatch(of: #/(\d+(?:\.\d+)?)\s*%\s+off\s+(.+)/#), let base = value(off.2), let percent = Double(off.1) {
+        return "You save " + formatNumber(base * percent / 100)
+    }
+    // The shapes `calculate` reads first: "20% of 150 + 10%" is 20% of 165.
+    guard !text.contains(#/%\s+of\s/#), !text.contains(#/(?i)\bwhat\s*(?:%|percent)/#),
+          let change = text.wholeMatch(of: #/(.+?)\s*[+-]\s*(\d+(?:\.\d+)?)\s*%/#), let base = value(change.1), let percent = Double(change.2)
+    else { return nil }
+    return "\(change.2)% of \(formatNumber(base)) is \(formatNumber(base * percent / 100))"
+}
+
+/// The result on a band, what was typed = the answer; its row copies it with Enter, and Tab puts it in the field
+/// instead, to keep calculating with it.
 struct CalculatorProvider: ResultProvider {
     func results(for query: String) async -> [LauncherResult] {
-        let ans = lastAnswer.withLock { $0 }
+        let ans = lastAnswer.withLock { $0 }, typed = query.trimmingCharacters(in: .whitespaces)
         if let converted = convertBase(query, ans: ans) {
-            return [LauncherResult(id: "calculator", title: converted, subtitle: query, icon: .symbol("number"), score: 10,
-                                   actionTitle: "Copy", action: { copyToClipboard(converted) }, more: ("Keep Going", converted))]
+            return [LauncherResult(id: "calculator", title: "Copy " + converted, icon: .symbol("number"), score: 10,
+                                   actionTitle: "Copy", action: { copyToClipboard(converted) }, more: ("Keep Going", converted),
+                                   answer: .calculation(typed, result: converted, note: nil))]
         }
         guard let value = calculate(query, ans: ans) else { return [] }
         let text = formatNumber(value)
         let percent = query.contains(#/(?i)\bwhat\s*(?:%|percent)/#) ? "%" : "" // "30 is what % of 150": 20%
-        return [LauncherResult(id: "calculator", title: text + percent, subtitle: query, icon: .symbol("equal"), score: 10, actionTitle: "Copy",
+        return [LauncherResult(id: "calculator", title: "Copy " + text + percent, icon: .symbol("equal"), score: 10, actionTitle: "Copy",
                                action: {
                                    lastAnswer.withLock { $0 = value }
                                    copyToClipboard(text + percent)
-                               }, more: ("Keep Going", text))]
+                               }, more: ("Keep Going", text), answer: .calculation(typed, result: text + percent, note: percentNote(query, ans: ans)))]
     }
 }

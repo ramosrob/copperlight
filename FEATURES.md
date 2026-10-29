@@ -167,7 +167,9 @@ files and the text in photos. Everything else on this page is on.
 
 ## Math and money
 
-- **Calculator:** `+ - * / ^`, parentheses, `sqrt(2)`, `pi` and the usual math functions. Enter copies the result.
+- **Calculator:** `+ - * / ^`, parentheses, `sqrt(2)`, `pi` and the usual math functions. On a band over its row:
+  what you typed = the answer, big, and what a percentage hid (`150 + 20%`: "20% of 150 is 30"; `20% off 80`: "You
+  save 16"). Enter copies the result.
   - Percentages: `20% of 150` (30), `150 + 20%` (180), `150 - 20%` (120), `20% off 80` (64), `30 is what % of 150`
     (20%). `%` elsewhere is the remainder (`10 % 3`).
   - `k` for thousands, in math: `10k * 3` (30000), `2.5k + 1`. Alone, `10k` is left to the search.

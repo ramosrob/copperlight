@@ -3003,10 +3003,20 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(calculate("0x10 + 1") == 17) // hex keeps its letters
 
     let calculator = CalculatorProvider()
-    #expect(await calculator.results(for: "30 is what % of 150").first?.title == "20%")
+    #expect(await calculator.results(for: "30 is what % of 150").first?.title == "Copy 20%")
     // Tab puts the result in the field, to keep calculating with it; Enter still copies it.
     let row = try #require(await calculator.results(for: "20% off 80").first)
-    #expect(row.title == "64" && row.actionTitle == "Copy" && row.more?.fill == "64" && row.more?.label == "Keep Going")
+    #expect(row.title == "Copy 64" && row.actionTitle == "Copy" && row.more?.fill == "64" && row.more?.label == "Keep Going")
+
+    // On a band: what was typed = the answer, and what a percentage hid beside it.
+    guard case .calculation(let typed, let result, let note)? = row.answer else { Issue.record("no band"); return }
+    #expect(typed == "20% off 80" && result == "64" && note == "You save 16")
+    #expect(percentNote("150 + 20%") == "20% of 150 is 30" && percentNote("150 - 20%") == "20% of 150 is 30")
+    #expect(percentNote("(100 + 50) + 10%") == "10% of 150 is 15")
+    #expect(percentNote("2 + 3") == nil && percentNote("20% of 150") == nil && percentNote("20% of 150 + 10%") == nil)
+    let hex = try #require(await calculator.results(for: "255 in hex").first)
+    guard case .calculation(let typed, let result, let note)? = hex.answer else { Issue.record("no band"); return }
+    #expect(typed == "255 in hex" && result == "0xFF" && note == nil && hex.title == "Copy 0xFF")
 }
 
 // MARK: Script filters

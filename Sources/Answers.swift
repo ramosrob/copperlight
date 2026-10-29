@@ -9,6 +9,7 @@ enum Answer: Sendable {
     case speed(SpeedTest, tested: Date)
     case entry(DictionaryEntry)
     case person(PersonCard)
+    case calculation(String, result: String, note: String?)
 }
 
 /// A person's card, its text ready to show.
@@ -219,6 +220,50 @@ struct DictionaryCardView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// What was typed = the answer, big, on one line, and what a percentage hid at the end of it; on two lines when it
+/// doesn't fit.
+struct CalculationBand: View {
+    let typed: String, result: String, note: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Kicker(text: "Calculator")
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
+                    expression
+                    answer
+                    Spacer(minLength: 16)
+                    if let note { Text(note).font(.system(size: 13)).foregroundStyle(.secondary) }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    expression
+                    HStack(alignment: .firstTextBaseline, spacing: 16) {
+                        answer.minimumScaleFactor(0.5)
+                        Spacer(minLength: 0)
+                        if let note { Text(note).font(.system(size: 13)).foregroundStyle(.secondary) }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var expression: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 14) {
+            Text(typed).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
+            Text("=").foregroundStyle(Color.copper)
+        }
+        .font(.system(size: 28)).monospacedDigit()
+    }
+
+    private var answer: some View {
+        Text(result).font(.system(size: 56, weight: .semibold)).monospacedDigit().lineLimit(1)
     }
 }
 
