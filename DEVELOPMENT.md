@@ -139,7 +139,7 @@ that provider alone. A `:` command is a `Verb` (`Sources/Actions.swift`). Every 
 ```
 Sources/
   App.swift                 entry point, menu bar item, hotkey, config loading, built-in rows (Note, Clipboard…)
-  Launcher.swift            ResultProvider protocol, SearchModel (concurrent query + merge, frecency, recent queries for ↑),
+  Launcher.swift            ResultProvider protocol, SearchModel (concurrent query + merge, frecency, what was picked for what was typed, recent queries for ↑),
                             panel + SwiftUI view, opening with the selected text
   Actions.swift             `:` commands: windows (Accessibility), running apps, files, the Mac; the selected text
   Layouts.swift             `:layout save work`, `:layout work`: the windows on screen, kept in state.json and put back

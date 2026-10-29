@@ -18,8 +18,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Finding:** `:look` for a full-size preview; kinds, dates and tags in the files chip (`f pdf invoice`, `f last
   week`); folders listed newest first; symbols by name (→, ⌘, ™) and a default emoji skin tone; songs, albums and
   playlists from your Music library; Safari's Reading List and iCloud Tabs; recent files, and an app's recent documents
-  a Tab away from its row; what you picked for an abbreviation first the next time you type it (`ss` → Slack); the
-  text inside files back, as its own chip.
+  a Tab away from its row; the text inside files back, as its own chip.
 - **Clipboard:** pin items; copied files; copied images found by their text, and QR codes read from them; `:plain` and
   `:clear 15 min` in clipboard history; save an item as a snippet; paste in sequence, one older item each time.
 - **Text:** more placeholders (`{uuid}`, `{clipboard 1}`, a snippet inside another) with modifiers (`|upper`), and
@@ -49,6 +48,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
+- **Next release:** what you picked for what you typed comes first the next time you type it (`ss` → Slack).
 - **v0.9:** colors by their shape (`#c87533`, `rgb(…)`, `hsl(…)`) with a swatch, and `pick color`; `qr`
   codes; date math (`days until dec 25`, `in 3 weeks`, a date's weekday and week), answered before you finish typing;
   `{cursor}` in snippets; currency after math (`39*8 usd`); contacts (Enter messages, Tab for call, FaceTime, WhatsApp,

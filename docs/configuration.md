@@ -151,8 +151,9 @@ Everything lives in `~/.config/copperlight/`:
   quits. Edits made elsewhere are picked up while the note doesn't have focus.
 - `notes/`: the other notes, one text file each, named by when they were made (a note's title is its first line),
   saved the same way. Edits made elsewhere show the next time the note opens. Delete a file to delete that note.
-- `state.json`: app state, one top-level section per feature (`frecency`, `windows`, `pomodoro`, `opened`: the apps you
-  opened from the launcher and when, the last 500, for suggestions). Written by the app
+- `state.json`: app state, one top-level section per feature (`frecency`, `learned`: the row picked for each
+  text typed, `windows`, `pomodoro`, `opened`: the apps you opened from the launcher and when, the last 500, for
+  suggestions). Written by the app
   (debounced, atomic). Sections it doesn't know are kept. If the file is unreadable it's moved to
   `state.json.bad` and the app starts fresh.
 - `rates.json`: Frankfurter/ECB rates, raw API response. Refreshed in the background when over 24 h old,

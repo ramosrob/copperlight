@@ -95,6 +95,9 @@ files and the text in photos. Everything else on this page is on.
   field turns the chip back into the text.
 - **What you pick rises (frecency):** every Enter makes that row rank higher next time, fading over a few weeks.
   No aliases or numbers to set up.
+- **What you picked for what you typed comes first:** Enter on Slack with `ss` typed, and next time `ss` puts Slack
+  on top, above everything else, an exact alias included. Only for that text (case and spaces aside, up to 15
+  characters); picking another row for it takes over, and it fades like frecency.
 - **Other names work too:** Copperlight's own things and the Mac's apps answer to the words people also use for them,
   from 3 letters: `:turn off` finds Shut Down, `:reboot` Restart, `:kill slack` force quits Slack, `:sound 30` sets the
   volume, "task manager" Activity Monitor, "control panel" System Settings, "paste history" Clipboard History,
@@ -424,7 +427,7 @@ first time per launch; after that, a notification says where it is.
 ## Where things live
 
 All in `~/.config/copperlight/`: `config.toml` (your settings, hot reloaded; a mistake shows as an error row),
-`note.txt`, `notes/` (the other notes), `state.json` (frecency, recent queries, saved layouts, the timer, the apps you opened and when), `clipboard.sqlite` (history, readable only
+`note.txt`, `notes/` (the other notes), `state.json` (frecency, what you picked for what you typed, recent queries, saved layouts, the timer, the apps you opened and when), `clipboard.sqlite` (history, readable only
 by you), `rates.json` (currency rates), `apps.json` (what each app does) and `homebrew-apps.json` (Homebrew's list,
 trimmed), `photos.sqlite` (the text in your photos), `scripts/` (on the shell's PATH).
 

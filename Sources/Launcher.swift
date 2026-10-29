@@ -167,6 +167,10 @@ final class SearchModel {
     @ObservationIgnored var run: Task<Void, Never>?
     @ObservationIgnored private let state: StateStore?
     @ObservationIgnored private var frecency: Frecency.Table
+    /// What was picked for what: "ss\t/Applications/Slack.app" → its picks, fading like frecency. That row comes first
+    /// for that text next time, over anything else, so a few letters you use become an abbreviation with no setup.
+    @ObservationIgnored private var learned: Frecency.Table
+    static let learnedSection = "learned"
     @ObservationIgnored private var recent: [RecentQuery]
     /// What the empty field shows (the next meeting, a few minutes before it starts); nothing once you type.
     @ObservationIgnored private let idle: (@Sendable () async -> [LauncherResult])?
@@ -185,6 +189,7 @@ final class SearchModel {
         modeProviders = providers + exclusive.values
         self.state = state
         frecency = state?.get(Frecency.stateSection, as: Frecency.Table.self) ?? [:]
+        learned = state?.get(Self.learnedSection, as: Frecency.Table.self) ?? [:]
         recent = state?.get(RecentQuery.stateSection, as: [RecentQuery].self) ?? []
     }
 
@@ -209,12 +214,17 @@ final class SearchModel {
         return true
     }
 
-    /// Enter on a row: count it, so it ranks higher next time. An app's (its id is its path) is kept with the time
-    /// too, for the empty launcher's suggestions.
+    /// Enter on a row: count it, so it ranks higher next time, and first for what's typed. An app's (its id is its
+    /// path) is kept with the time too, for the empty launcher's suggestions.
     func picked(_ id: String) {
         guard let state else { return }
         frecency = Frecency.picking(id, in: frecency, at: .now)
         state.set(Frecency.stateSection, frecency)
+        // A few letters, not a sentence to translate: those would never come back the same.
+        if case let typed = Self.learnedKey(query), !typed.isEmpty, typed.count <= 15 {
+            learned = Frecency.picking("\(typed)\t\(id)", in: learned, at: .now)
+            state.set(Self.learnedSection, learned)
+        }
         guard id.hasPrefix("/"), id.hasSuffix(".app") else { return }
         let opens = (state.get(AppOpen.stateSection, as: [AppOpen].self) ?? []) + [AppOpen(app: id, at: .now)]
         state.set(AppOpen.stateSection, Array(opens.suffix(AppOpen.limit)))
@@ -329,7 +339,8 @@ final class SearchModel {
         let inMode = modeMatch != nil
         let providers = modeMatch.map { [$0.provider] }
             ?? exclusive.filter { query.hasPrefix($0.key) }.max { $0.key.count < $1.key.count }.map { [$0.value] } ?? providers
-        let (frecency, now, typed) = (frecency, Date.now, self.query.lowercased())
+        let (frecency, learned, now, typed) = (frecency, learned, Date.now, self.query.lowercased())
+        let learnedKey = Self.learnedKey(self.query)
         settling = true
         task = Task {
             await withTaskGroup(of: [LauncherResult]?.self) { group in
@@ -344,7 +355,11 @@ final class SearchModel {
                     guard !Task.isCancelled else { return }
                     if let batch {
                         pending -= 1
-                        let boosted = batch.map { var row = $0; row.score += Frecency.bonus(frecency, row.id, at: now); return row }
+                        let boosted = batch.map { row in
+                            var row = row
+                            row.score += Frecency.bonus(frecency, row.id, at: now) + Self.learnedBonus(learned, learnedKey, row.id, at: now)
+                            return row
+                        }
                         merged = (merged + boosted).sorted { $0.score > $1.score }
                     } else {
                         waiting = false
@@ -366,6 +381,15 @@ final class SearchModel {
     }
 
     static let wait = Duration.milliseconds(50)
+
+    /// The text as learned: lowercased, its spaces trimmed.
+    private static func learnedKey(_ query: String) -> String { query.lowercased().trimmingCharacters(in: .whitespaces) }
+
+    /// Above everything for the text it was picked for (an exact alias is 100), the most picked first.
+    private static func learnedBonus(_ learned: Frecency.Table, _ typed: String, _ id: String, at now: Date) -> Double {
+        let picks = learned["\(typed)\t\(id)"]?.decayed(at: now) ?? 0
+        return picks > 0 ? 100 + picks : 0
+    }
 }
 
 final class LauncherPanel: NSPanel {

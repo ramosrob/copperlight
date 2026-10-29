@@ -201,6 +201,31 @@ private struct Fixed: ResultProvider {
     #expect(clipboard.results.map(\.id) == ["a", "b"])
 }
 
+@MainActor @Test func learnedAbbreviations() async throws {
+    let store = StateStore(file: try tempStateFile())
+    let rows = Fixed(rows: [("ss-alias", 100), ("Safari", 1), ("Slack", 0.6)])
+    let search = { (model: SearchModel, query: String) in
+        model.query = query
+        try await Task.sleep(for: .milliseconds(100))
+        return model.results.map(\.id)
+    }
+    let model = SearchModel(providers: [rows], frecency: store)
+    #expect(try await search(model, "ss").first == "ss-alias")
+    model.picked("Slack") // Enter on Slack, with "ss" typed
+    // Next time, what you picked for "ss" comes first, even over an exact alias; only for that text.
+    #expect(try await search(model, "ss").first == "Slack")
+    #expect(try await search(model, "s").first == "ss-alias")
+    // Kept in state.json: another launcher knows it, whatever the case and the spaces.
+    let again = SearchModel(providers: [rows], frecency: store)
+    #expect(try await search(again, " SS ").first == "Slack")
+    // Picking another for the same text takes over; long text isn't an abbreviation.
+    again.picked("Safari")
+    #expect(try await search(again, "ss").first == "Safari")
+    _ = try await search(again, "a sentence to translate, much too long")
+    again.picked("Slack")
+    #expect(store.get(SearchModel.learnedSection, as: Frecency.Table.self)?.keys.sorted() == ["ss\tSafari", "ss\tSlack"])
+}
+
 @Test func frecencyDecaysAndForgets() {
     let now = Date(timeIntervalSinceReferenceDate: 1_000_000), week: TimeInterval = 7 * 24 * 3600
     let table: Frecency.Table = ["old": Frecency(score: 1, updated: now - 5 * week), "recent": Frecency(score: 2, updated: now - week)]

@@ -35,8 +35,8 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
 - **Commands grouped by what they act on.** Related commands share their first word (`:left`, `:left third`,
   `:left two thirds`), and typing that word lists the group. As commands grow, a person remembers a handful of
   words, not a long flat list (decided 2026-10-13).
-- **Use decides the order.** The rows you pick most rise to the top (frecency), so there are no aliases or
-  numbers to set up.
+- **Use decides the order.** The rows you pick most rise to the top (frecency), and the row you picked for some
+  text comes first for that text next time, so there are no aliases or numbers to set up (decided 2026-10-29).
 - **Any browser.** Nothing assumes Chrome. Links open in the default browser; `browser` and `profile` on a
   command pick another one (decided 2026-10-13).
 - **Its own look, from the icon.** Two floating glass pieces: the search field as a plain pill,

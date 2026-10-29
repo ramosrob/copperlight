@@ -35,8 +35,9 @@ commands and scripts. One field does it all, and anything that isn't a search is
 
 ## Why Copperlight
 
-- **One field for everything.** No windows to open, no menus. The best match is already selected, and what you pick
-  ranks higher next time. Type a tool's name and press Tab (`tra` ⇥) and it turns into a chip, so you always see
+- **One field for everything.** No windows to open, no menus. The best match is already selected, what you pick
+  ranks higher next time, and what you picked for a few letters comes first for them: `ss` ↵ Slack once, and `ss` is
+  Slack from then on. Type a tool's name and press Tab (`tra` ⇥) and it turns into a chip, so you always see
   where your words are going.
 - **Keyboard first.** Every result and every action is a few keystrokes from <kbd>⌥ Space</kbd>, even the menus of
   the app you're in (`:export pdf`). Select text anywhere first and it's already typed; <kbd>↑</kbd> in the empty

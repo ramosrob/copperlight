@@ -39,6 +39,11 @@ into text.
 What you pick rises: every row you press Enter on (an app, a command, a file, a `:` command) ranks higher next
 time, fading over a few weeks. So `s` + Enter opens Safari once you use it, and `:` lists your usual commands first.
 
+What you typed counts too: the row you picked for some text comes first the next time you type exactly that, above
+everything else. Pick Slack with `ss` typed, and `ss` is Slack from then on: an abbreviation, with nothing to set up.
+Case and spaces around it don't matter; text over 15 characters isn't kept. Picking another row for the same text
+takes over, and an abbreviation you stop using fades after a few weeks.
+
 **Commands (`:`):** `:` lists them all, and what you type after it narrows them down (`:min`, `:fq`).
 
 | Command | Does |
