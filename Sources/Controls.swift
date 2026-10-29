@@ -1,6 +1,8 @@
 import AppKit
 import CoreAudio
+import CoreBluetooth
 import CoreWLAN
+import IOBluetooth
 import IOKit.hidsystem
 import IOKit.pwr_mgt
 import Synchronization
@@ -69,6 +71,80 @@ func outputRows(_ filter: String, outputs: [SoundOutput] = soundOutputs(), curre
         return LauncherResult(id: "output:\(output.name)", title: output.name, subtitle: id == current ? "Current output" : "",
                               icon: .symbol("hifispeaker"), score: score, actionTitle: "Switch", action: {
             if !setAudioProperty(system, kAudioHardwarePropertyDefaultOutputDevice, id) { NSSound.beep() }
+        })
+    }
+}
+
+// MARK: Bluetooth
+
+/// A device paired with this Mac, as `:connect` lists it.
+struct PairedDevice: Equatable, Sendable {
+    var address: String
+    var name: String
+    var connected: Bool
+    var symbol: String
+}
+
+/// The devices paired with this Mac, the most recently used first. Needs Bluetooth access.
+func pairedDevices() -> [PairedDevice] {
+    (IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] ?? [])
+        .sorted { ($0.recentAccessDate() ?? .distantPast) > ($1.recentAccessDate() ?? .distantPast) }
+        .map { device in
+            let symbol = switch (Int(device.deviceClassMajor), Int(device.deviceClassMinor) & 0x30) {
+            case (kBluetoothDeviceClassMajorAudio, _): "headphones"
+            case (kBluetoothDeviceClassMajorPeripheral, 0x10): "keyboard"
+            case (kBluetoothDeviceClassMajorPeripheral, 0x20): "computermouse"
+            case (kBluetoothDeviceClassMajorPhone, _): "iphone"
+            case (kBluetoothDeviceClassMajorComputer, _): "laptopcomputer"
+            default: "antenna.radiowaves.left.and.right"
+            }
+            return PairedDevice(address: device.addressString ?? "", name: device.nameOrAddress ?? "", connected: device.isConnected(),
+                                symbol: symbol)
+        }
+}
+
+/// Kept so the question about Bluetooth stays up until it's answered.
+@MainActor private var bluetoothQuestion: CBCentralManager?
+
+/// `:connect air`: a row per paired Bluetooth device, the ones to connect first. Enter connects it (it takes a few
+/// seconds, and the row says how it went) or disconnects one that's connected. Bluetooth access is asked for on
+/// Enter, never as you type.
+func connectRows(_ filter: String, access: CBManagerAuthorization = CBManager.authorization,
+                 devices: @autoclosure () -> [PairedDevice] = pairedDevices()) -> [LauncherResult] {
+    let bluetooth = LauncherResult.Icon.symbol("antenna.radiowaves.left.and.right")
+    switch access {
+    case .allowedAlways: break
+    case .notDetermined:
+        return [LauncherResult(id: "bluetooth:allow", title: "Connect Bluetooth Devices", subtitle: "Asks to use Bluetooth, once", icon: bluetooth,
+                               score: 50, actionTitle: "Allow", action: { bluetoothQuestion = CBCentralManager() })]
+    default:
+        return [LauncherResult(id: "bluetooth:allow", title: "Allow Copperlight to use Bluetooth", subtitle: "Privacy & Security → Bluetooth",
+                               icon: bluetooth, score: 50, actionTitle: "Open System Settings", action: {
+            settingsPage("com.apple.preference.security?Privacy_Bluetooth")
+        })]
+    }
+    let all = devices()
+    guard !all.isEmpty else {
+        return [LauncherResult(id: "bluetooth:none", title: "No paired Bluetooth devices", subtitle: "Pair one in System Settings", icon: bluetooth,
+                               score: 50, actionTitle: "Open System Settings", action: { settingsPage("com.apple.BluetoothSettings") })]
+    }
+    return (all.filter { !$0.connected } + all.filter(\.connected)).enumerated().compactMap { index, device -> LauncherResult? in
+        // Close matches only: "air" is AirPods, not m-A-g-I-c keyboa-R-d.
+        guard let score = filter.isEmpty ? -0.01 * Double(index) : fuzzyScore(filter, device.name).flatMap({ $0 >= 0.5 ? $0 : nil })
+        else { return nil }
+        let (id, address, name, icon) = ("bluetooth:\(device.address)", device.address, device.name, LauncherResult.Icon.symbol(device.symbol))
+        guard !device.connected else {
+            return LauncherResult(id: id, title: name, subtitle: "Connected", icon: icon, score: score, actionTitle: "Disconnect", action: {
+                if IOBluetoothDevice(addressString: address)?.closeConnection() != kIOReturnSuccess { NSSound.beep() }
+            })
+        }
+        return LauncherResult(id: id, title: name, icon: icon, score: score, actionTitle: "Connect", action: {}, output: { _ in
+            // It waits for the device to answer, so not on the main thread.
+            let status = await Task.detached { IOBluetoothDevice(addressString: address)?.openConnection() ?? -1 }.value
+            return status == kIOReturnSuccess
+                ? LauncherResult(id: id, title: "\(name) is connected", icon: icon, score: .infinity, actionTitle: "", action: {})
+                : LauncherResult(id: id, title: "Couldn’t connect \(name)", subtitle: "Is it on, nearby, and free of another device?",
+                                 icon: .symbol("exclamationmark.triangle"), score: .infinity, actionTitle: "", action: {})
         })
     }
 }

@@ -30,7 +30,7 @@ name (`invoice`), text inside a file or a picture (`29.99`), an app by what it d
 searches the web), `~/code/copperlight` or `/Applications` (lists the folder), `:` (every command), `:min`, `:quit saf`, `:window term`, `:!git status`. The selected row says what Enter does.
 
 **Chips:** a name that takes text (`translate `, `define `, `spell `, `emoji `, `stock `, `qr `, `large `, `contact `, `tabs `, `pomo `, `timer `, `port `, `note `, `add todo `, `add event `, `add note `,
-`:quit `, `:window `, `:output `, `:!`, `f `, `cpu `, `memory `, and your script filters' names) turns into a copper chip at the start of the field when you press Tab:
+`:quit `, `:window `, `:output `, `:connect `, `:!`, `f `, `cpu `, `memory `, and your script filters' names) turns into a copper chip at the start of the field when you press Tab:
 `tra` Tab is the Translate chip, and `stock aapl` Tab is the Stock chip with `aapl` after it. Typing never makes one,
 so `stock apple` still finds `stock_Apple.pdf`. The field then holds what follows, with a hint while it's empty, and
 only that feature answers, so there's no search row in the way. Delete in the empty field turns the chip back
@@ -74,6 +74,7 @@ takes over, and an abbreviation you stop using fades after a few weeks.
 | `:mute`, `:volume 30` | Mute or unmute (the row says which), set the output volume (0–100, unmutes). A display's speakers can't be muted from the Mac: a beep says so |
 | `:mute mic` | Mute or unmute the microphone (Mute Microphone, Unmute Microphone). One without a mute control gets its input level set to 0, and back |
 | `:output airpods` | Switch the sound output: lists speakers, headphones, displays and AirPlay, the current one first |
+| `:connect airpods` | Connect a paired Bluetooth device, or disconnect one that's connected (`:disconnect`, `:bluetooth` too). Lists the devices paired with this Mac, the ones to connect first, the most recently used first; connecting takes a few seconds and the row says whether it worked. The first time, the row is Allow: Enter asks for Bluetooth (typing never does). Pairing and switching Bluetooth off stay in System Settings (`bluetooth`) |
 | `:eject` | Eject a disk (lists external drives and disk images) |
 | `:shortcut name` | Run one of your Shortcuts. That's also the way to Focus modes: make a Shortcut that sets one. Text after the name (`:shortcut log water 500 ml`) is its input, as a text file |
 | `:!git status` | Run a shell line (below) |

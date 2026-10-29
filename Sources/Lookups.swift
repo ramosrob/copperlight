@@ -384,6 +384,6 @@ struct LookupProvider: ResultProvider {
     }
 }
 
-@MainActor private func settingsPage(_ id: String) {
+@MainActor func settingsPage(_ id: String) {
     NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:\(id)")!)
 }

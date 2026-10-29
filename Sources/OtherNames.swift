@@ -23,6 +23,7 @@ let otherNames: [String: [String]] = [
     "Next Track": ["skip", "next song"],
     "Previous Track": ["previous song", "last song"],
     "Switch Sound Output": ["speakers", "headphones", "audio output", "sound output"],
+    "Connect Bluetooth Device": ["disconnect", "bluetooth"],
     "Toggle Wi-Fi": ["wi-fi", "wireless", "internet"],
     "Keep Awake": ["caffeinate", "no sleep", "stay awake", "insomnia"],
     "Eject Disk": ["unmount", "usb", "drive"],

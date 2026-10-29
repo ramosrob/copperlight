@@ -170,6 +170,8 @@ extension Verb {
             Verb(keyword: "mute mic", title: "Toggle Microphone", icon: .symbol("mic.slash.fill"),
                  showing: { micIsMuted() ? "Unmute Microphone" : "Mute Microphone" }, run: { toggleMicMute() }),
             Verb(keyword: "output", title: "Switch Sound Output", icon: .symbol("hifispeaker"), targets: { outputRows($0) }),
+            Verb(keyword: "connect", title: "Connect Bluetooth Device", icon: .symbol("antenna.radiowaves.left.and.right"),
+                 targets: { connectRows($0) }),
             Verb(keyword: "hidden files", title: "Toggle Hidden Files", icon: .symbol("eye"), run: {
                 // Finder reads it at launch, so it restarts (its windows come back).
                 runDetached("/bin/sh", ["-c", """

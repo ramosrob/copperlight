@@ -39,6 +39,7 @@ files and the text in photos. Everything else on this page is on.
 | `:` | Commands for windows, apps, files, the Mac | Runs it |
 | `:export pdf`, `:new tab` | The menus of the app you were in | Chooses that menu item |
 | `:play`, `:mute`, `:wifi`, `:awake`, `:output` | What's playing, the sound, Wi-Fi, keeping the Mac awake | Toggles it, or switches to that output |
+| `:connect` | Paired Bluetooth devices | Connects or disconnects it |
 | `:awake 2h`, `:awake until 18:00` | Keeping the Mac awake for a while | Keeps it awake, then lets go by itself |
 | `:!git status` | A shell line | Runs it, shows the output; Enter again copies |
 | `json`, `uuid`, `upper hi`… | Text tools | Copies (or pastes) the result |
@@ -317,6 +318,7 @@ The row shows its first line, and long ones show whole in the preview pane.
 | Files | `:reveal readme`, `:copy path readme`, `:trash readme` (asks first), `:terminal readme` (its folder, in `[files] terminal`: Terminal unless you pick another in Settings › Files) (file search, or a path: `:copy path ~/code/copperlight/`). `:open with readme` lists files; Tab on one, then the apps that open it, its default first (`:open with ~/x/readme.md code`) |
 | The Mac | `:lock`, `:sleep`, `:sleep displays`, `:restart`, `:shut down`, `:log out`, `:empty trash` (these four ask first), `:screen saver`, `:show desktop` (hides every app; `:unhide all` brings them back), `:open trash`, `:dark`, `:wifi`, `:awake`, `:hidden files`, `:eject`, `:shortcut name` (your Shortcuts, also the way to Focus modes; `:shortcut name some text` gives it the text as input). `:dark`, `:wifi` and `:awake` say what Enter does now (Turn Wi-Fi Off). `:awake 2h`, `:awake 90 min`, `:awake until 18:00` keep it awake for a while; `:awake` alone also offers an hour or two |
 | Sound | `:play` (play or pause), `:next track`, `:previous track`: the keyboard's media keys, so they reach whatever is playing (Music, a browser tab, Spotify). `:mute` (Mute or Unmute), `:mute mic` (the microphone: its mute, or for one without, its level to 0 and back), `:volume 30`, `:output airpods` lists the sound outputs, the current one first; Enter switches to it |
+| Bluetooth | `:connect airpods` (also `:disconnect`, `:bluetooth`): the devices paired with this Mac, the ones to connect first, the most recently used first. Enter connects one (a few seconds; the row says whether it worked) or disconnects one that's connected. Typing asks for nothing: the first time, Enter on Allow asks for Bluetooth. Pairing a new device and switching Bluetooth on or off stay in System Settings |
 | Notes | `:delete note milk` (by its title or what's in it; to the Trash, asks first) |
 | Shell | `:!git status` (below) |
 | Copperlight | `:config` opens config.toml |
@@ -444,6 +446,7 @@ Otherwise macOS asks when a feature first needs one:
 | Reminders | First `add todo`, or `due`'s Allow row | Adding reminders (no add-only option exists), and the ones that are due |
 | Contacts | `contacts`, from its Allow row | Finding people as you type |
 | Screen Recording | First `copy text` | Reading the part of the screen you drag over |
+| Bluetooth | `:connect`, from its Allow row | Listing, connecting and disconnecting paired devices |
 | Calendars, add only | First `add event` | Adding events |
 | Calendars, full access | `meetings`, from its Allow row | Reading today's events |
 | Full Disk Access (by hand) | Only for Safari | Reading Safari's bookmarks and history |

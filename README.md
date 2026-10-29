@@ -210,6 +210,7 @@ The answer appears as you type; Enter copies it.
 | `:awake 2h`, `:awake until 18:00` | Your Mac kept awake for a while, then it lets go by itself; the time left ticks in the empty launcher |
 | `:dark`, `:wifi`, `:awake`, `:lock`, `:show desktop`, `:log out`, `:empty trash` | The Mac itself; each row says what Enter does (Turn Wi-Fi Off), and the ones you can't undo ask first |
 | `:play`, `:next track`, `:mute`, `:mute mic`, `:volume 30`, `:output airpods` | What's playing, in any app, where the sound goes, and your microphone |
+| `:connect airpods` | Your paired Bluetooth devices: Enter connects one, or disconnects it if it's connected |
 | `:shortcut name`, `:shortcut name some text` | Your Shortcuts, Focus modes included; text after the name is its input |
 | `bluetooth`, `displays`, `dark mode` | That page of System Settings |
 | `ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery, free space, and what's listening on a port (Enter ends it) |
@@ -293,6 +294,7 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 | Reminders | `add todo`, and reminders that are due |
 | Contacts | People as you type their name |
 | Screen Recording | `copy text` (only the part you drag over is read) |
+| Bluetooth | `:connect` (connecting and disconnecting your paired devices) |
 | Notifications | The end of a pomodoro or a timer, shell lines that finish in the background, errors |
 | Automation | Your browser's open tabs (asked once per browser, from `tabs` ⇥); `:empty trash`, `:dark`, `:restart`, `:shut down`, `:log out` (asking Finder, System Events or loginwindow) |
 | Full Disk Access, by hand | Safari's bookmarks and history only |

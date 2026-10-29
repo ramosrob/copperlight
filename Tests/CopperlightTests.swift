@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import CoreBluetooth
 import Foundation
 import SwiftUI
 import Testing
@@ -1990,6 +1991,24 @@ private let macOS26 = ProcessInfo.processInfo.isOperatingSystemAtLeast(Operating
     #expect(rows.map(\.subtitle) == ["Current output", "", ""])
     #expect(rows.map(\.score) == rows.map(\.score).sorted(by: >))
     #expect(outputRows("mac", outputs: outputs, current: 2).map(\.title) == ["MacBook Pro Speakers"])
+}
+
+@Test func connectBluetoothDevices() {
+    let devices = [PairedDevice(address: "aa-01", name: "AirPods Pro", connected: false, symbol: "headphones"),
+                   PairedDevice(address: "aa-02", name: "Magic Keyboard", connected: true, symbol: "keyboard"),
+                   PairedDevice(address: "aa-03", name: "Desk Speaker", connected: false, symbol: "hifispeaker")]
+    let rows = connectRows("", access: .allowedAlways, devices: devices)
+    #expect(rows.map(\.title) == ["AirPods Pro", "Desk Speaker", "Magic Keyboard"]) // the ones to connect first
+    #expect(rows.map(\.actionTitle) == ["Connect", "Connect", "Disconnect"])
+    #expect(rows.map(\.subtitle) == ["", "", "Connected"])
+    #expect(rows[0].output != nil && rows[2].output == nil) // connecting takes a few seconds, and says how it went
+    #expect(rows.map(\.score) == rows.map(\.score).sorted(by: >))
+    #expect(connectRows("air", access: .allowedAlways, devices: devices).map(\.title) == ["AirPods Pro"])
+    #expect(connectRows("", access: .allowedAlways, devices: []).map(\.title) == ["No paired Bluetooth devices"])
+    // Typing never asks for Bluetooth: Enter does.
+    #expect(connectRows("", access: .notDetermined, devices: devices).map { [$0.title, $0.actionTitle] } == [["Connect Bluetooth Devices", "Allow"]])
+    #expect(connectRows("", access: .denied, devices: devices).map { [$0.title, $0.actionTitle] }
+        == [["Allow Copperlight to use Bluetooth", "Open System Settings"]])
 }
 
 @Test(.enabled(if: macOS26)) func translateTheClipboard() async {
