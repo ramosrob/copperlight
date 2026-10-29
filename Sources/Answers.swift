@@ -6,7 +6,7 @@ enum Answer: Sendable {
     case picture(CGImage, kicker: String, title: String, subtitle: String)
     case stock(StockCard)
     case color(RGBColor)
-    case speed(SpeedTest, tested: Date)
+    case speed(SpeedTest, tested: Date, running: Int? = nil) // running: the seconds so far, the speeds still climbing
     case entry(DictionaryEntry)
     case person(PersonCard)
     case calculation(String, result: String, note: String?)
@@ -181,11 +181,12 @@ private struct Fact: View {
 /// What Enter does, in a card's corner.
 private struct EnterHint: View {
     let action: String
+    var key = "↵"
 
     var body: some View {
         HStack(spacing: 7) {
             Text(action).font(.system(size: 12)).foregroundStyle(.secondary)
-            Keycap(label: "↵")
+            Keycap(label: key)
         }
     }
 }
@@ -342,17 +343,28 @@ private struct BandFlags: View {
     }
 }
 
-/// Download and upload big, side by side; the latency, idle and under load, along the bottom.
+/// Download and upload big, side by side; the latency, idle and under load, along the bottom. While it runs, the
+/// speeds so far, a spinner and the seconds.
 struct SpeedCardView: View {
     let test: SpeedTest
     let tested: Date
+    var running: Int? = nil
 
     var body: some View {
+        let ms = { (value: Double) in value > 0 ? "\(Int(value.rounded())) ms" : "…" }
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Kicker(text: "Internet speed · \(test.connection)")
+                Kicker(text: running == nil ? "Internet speed · \(test.connection)" : "Testing internet speed")
                 Spacer()
-                Text("Apple’s servers · \(tested.formatted(date: .omitted, time: .shortened))").font(.system(size: 12)).foregroundStyle(.secondary)
+                if let running {
+                    HStack(spacing: 7) {
+                        ProgressView().controlSize(.small).scaleEffect(0.8)
+                        Text("\(running) s").monospacedDigit()
+                    }
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                } else {
+                    Text("Apple’s servers · \(tested.formatted(date: .omitted, time: .shortened))").font(.system(size: 12)).foregroundStyle(.secondary)
+                }
             }
             HStack(spacing: 14) {
                 SpeedTile(label: "Download", symbol: "arrow.down", bitsPerSecond: test.down)
@@ -360,10 +372,10 @@ struct SpeedCardView: View {
             }
             Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
             HStack(alignment: .bottom, spacing: 32) {
-                Fact(label: "Latency", value: "\(Int(test.idle.rounded())) ms")
-                Fact(label: "Under load", value: "\(Int(test.loaded.rounded())) ms")
+                Fact(label: "Latency", value: ms(test.idle))
+                Fact(label: "Under load", value: ms(test.loaded))
                 Spacer()
-                EnterHint(action: "Copy")
+                if running == nil { EnterHint(action: "Copy") } else { EnterHint(action: "Stop", key: "esc") }
             }
         }
     }

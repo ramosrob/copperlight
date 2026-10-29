@@ -3218,12 +3218,31 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     let tested = Date(timeIntervalSince1970: 1_793_203_080)
     let result = speedResult(test, at: tested)
     #expect(result.title == "328 Mbps down · 253 Mbps up" && result.actionTitle == "Copy")
-    guard case .speed(let shown, let at)? = result.answer else { Issue.record("no speed card"); return }
-    #expect(shown == test && at == tested)
+    guard case .speed(let shown, let at, let running)? = result.answer else { Issue.record("no speed card"); return }
+    #expect(shown == test && at == tested && running == nil)
+
+    // While it runs: the card already, with the speeds so far, as networkQuality shows them to a terminal.
+    let live = "\r\u{1B}[2K\rDownlink: 14.669 Mbps, 0 RPM - Uplink: 33.076 Mbps, 0 RPM\r\u{1B}[2K\rDownlink: 216.861 Mbps, 552 RPM - Uplink: 1.2 Gbps, 552 RPM"
+    let soFar = try #require(parseSpeedProgress(live))
+    #expect(abs(soFar.down - 216_861_000) < 1 && abs(soFar.up - 1_200_000_000) < 1 && soFar.loaded == 60_000 / 552.0 && soFar.idle == 0)
+    #expect(parseSpeedProgress("") == nil && parseSpeedProgress("Downlink: 0.000 Mbps, 0 RPM - Uplink: 0.000 Mbps, 0 RPM")?.loaded == 0)
+    let testing = speedTestingRow(soFar, seconds: 3)
+    #expect(testing.title == "Testing internet speed…" && testing.subtitle == "3 s · Esc stops it")
+    guard case .speed(let climbing, _, let seconds)? = testing.answer else { Issue.record("no card while testing"); return }
+    #expect(climbing == soFar && seconds == 3)
+    guard case .speed(let none, _, 0)? = speedTestingRow(nil, seconds: 0).answer else { Issue.record("no card before the first speeds"); return }
+    #expect(none.down == 0 && none.up == 0)
 
     let row = try #require(await LookupProvider().results(for: "speed").first)
     #expect(row.title == "Test Internet Speed" && row.actionTitle == "Test" && row.output != nil) // runs on Enter only
     #expect(await LookupProvider().results(for: "speedtest").first?.title == "Test Internet Speed")
+}
+
+@Test func toolInATerminal() async {
+    // Some tools only show their progress to a terminal: there, they see one.
+    let check = ["-c", "if [ -t 1 ]; then echo terminal; else echo file; fi"]
+    #expect(await runTool(URL(filePath: "/bin/sh"), check, terminal: true).output.trimmingCharacters(in: .whitespacesAndNewlines) == "terminal")
+    #expect(await runTool(URL(filePath: "/bin/sh"), check).output.trimmingCharacters(in: .whitespacesAndNewlines) == "file")
 }
 
 // MARK: Keep awake for a while

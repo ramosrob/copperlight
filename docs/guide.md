@@ -394,8 +394,9 @@ narrows them by name; `cpu` ⇥ or `memory` ⇥, the chip, lists every one. Ente
 `kill process` and `processes` find it too. Copperlight and another user's processes aren't listed.
 
 **Speed test:** `speed` (also `speedtest`, `internet speed`) offers Test Internet Speed. Enter runs macOS's own
-`networkQuality`, which measures your connection against Apple's servers for about 20 seconds, the time so far ticking
-on the row; Esc stops it. Then the result takes the card: the download and upload speed big ("322 Mbps", "243
+`networkQuality`, which measures your connection against Apple's servers for about 20 seconds. Its card shows at
+once, the download and upload speeds climbing as they're measured, with the seconds so far; Esc stops it. Then the
+result settles on the card: the download and upload speed big ("322 Mbps", "243
 Mbps"), the latency when the line is idle and when it's busy (what calls and games feel), whether it's Wi-Fi, Ethernet
 or cellular, and when it was tested. Enter copies it ("322 Mbps down · 243 Mbps up · …"). Typing `speed` sends nothing.
 

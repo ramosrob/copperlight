@@ -218,8 +218,8 @@ files and the text in photos. Everything else on this page is on.
   them by name. Enter ends a process after asking (SIGTERM), or quits an app, which can ask to save. Copperlight and
   other users' processes aren't listed.
 - **`speed`** (also `speedtest`, `internet speed`, `bandwidth`): Enter runs macOS's own `networkQuality` against
-  Apple's servers, about 20 seconds, the time so far ticking on the row (Esc stops it). Then the result takes the
-  card: download and upload big ("322 Mbps", "243 Mbps"), the latency idle and under load, how you're connected and
+  Apple's servers, about 20 seconds: its card shows at once, download and upload climbing as they're measured, a
+  spinner and the seconds so far (Esc stops it). Then the result settles on the card: download and upload big ("322 Mbps", "243 Mbps"), the latency idle and under load, how you're connected and
   when it was tested; Enter copies it.
   Nothing is sent until Enter.
 

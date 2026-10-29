@@ -109,6 +109,23 @@ func parseSpeedTest(_ json: String) -> SpeedTest? {
     return SpeedTest(down: down, up: up, idle: idle, loaded: 60_000 / rpm, connection: connection)
 }
 
+/// The speeds so far in what `networkQuality` shows a terminal while it runs ("Downlink: 216.861 Mbps, 552 RPM -
+/// Uplink: 70.732 Mbps, 552 RPM"): the last of them, the latency under load from the RPM once there is one.
+func parseSpeedProgress(_ text: String) -> SpeedTest? {
+    guard let last = text.matches(of: #/Downlink: ([\d.]+) ([KMG])bps, (\d+) RPM - Uplink: ([\d.]+) ([KMG])bps/#).last,
+          let down = Double(last.1), let rpm = Double(last.3), let up = Double(last.4)
+    else { return nil }
+    let scale = { (unit: Substring) in unit == "G" ? 1e9 : unit == "M" ? 1e6 : 1e3 }
+    return SpeedTest(down: down * scale(last.2), up: up * scale(last.5), idle: 0, loaded: rpm > 0 ? 60_000 / rpm : 0, connection: "")
+}
+
+/// The test running: its card already, with the speeds so far (none yet: zeros), the seconds ticking.
+func speedTestingRow(_ soFar: SpeedTest?, seconds: Int) -> LauncherResult {
+    LauncherResult(id: "speed", title: "Testing internet speed…", subtitle: "\(seconds) s · Esc stops it", icon: .symbol("speedometer"),
+                   score: .infinity, actionTitle: "", action: {},
+                   answer: .speed(soFar ?? SpeedTest(down: 0, up: 0, idle: 0, loaded: 0, connection: ""), tested: .now, running: seconds))
+}
+
 /// "328 Mbps", "1.25 Gbps", "850 Kbps", "4.2 Mbps".
 func speedText(_ bitsPerSecond: Double) -> String {
     let (value, unit) = speedParts(bitsPerSecond)
@@ -301,23 +318,21 @@ struct LookupProvider: ResultProvider {
         return local + [lookUp]
     }
 
-    /// `speed`: Enter runs macOS's own `networkQuality` (about 20 seconds, against Apple's servers), the time so far
-    /// ticking on the row; Esc stops it. Then download, upload and latency, idle and under load; Enter copies them.
+    /// `speed`: Enter runs macOS's own `networkQuality` (about 20 seconds, against Apple's servers), its card showing
+    /// the speeds so far as they're measured; Esc stops it. Then download, upload and latency, idle and under load;
+    /// Enter copies them.
     private func speedRow(_ score: Double) -> LauncherResult {
         LauncherResult(id: "speed", title: "Test Internet Speed", subtitle: "Download, upload and latency, with Apple’s servers",
                        icon: .symbol("speedometer"), score: score, actionTitle: "Test", action: {}, output: { progress in
             let started = Date.now
-            let ticker = Task {
-                while !Task.isCancelled {
-                    await progress(LauncherResult(id: "speed", title: "Testing internet speed…", subtitle: "\(Int(Date.now.timeIntervalSince(started))) s · Esc stops it",
-                                                  icon: .symbol("speedometer"), score: .infinity, actionTitle: "", action: {}))
-                    try? await Task.sleep(for: .seconds(1))
-                }
+            await progress(speedTestingRow(nil, seconds: 0))
+            // A terminal sees the speeds as they're measured (a few times a second); the result goes to a file.
+            let file = FileManager.default.temporaryDirectory.appending(path: "copperlight-speed-\(UUID().uuidString).json")
+            defer { try? FileManager.default.removeItem(at: file) }
+            _ = await runTool(URL(filePath: "/usr/bin/networkQuality"), ["-c" + file.path], timeout: 90, terminal: true) { shown in
+                await progress(speedTestingRow(parseSpeedProgress(shown), seconds: Int(Date.now.timeIntervalSince(started))))
             }
-            let run = await runTool(URL(filePath: "/usr/bin/networkQuality"), ["-c"], timeout: 90)
-            ticker.cancel()
-            await ticker.value // its last "Testing…" lands before the result, not over it
-            guard let test = parseSpeedTest(run.output) else {
+            guard let json = try? String(contentsOf: file, encoding: .utf8), let test = parseSpeedTest(json) else {
                 return LauncherResult(id: "speed", title: "Couldn’t test the speed", subtitle: "Offline, or Apple’s servers didn’t answer",
                                       icon: .symbol("exclamationmark.triangle"), score: .infinity, actionTitle: "", action: {})
             }
