@@ -103,8 +103,8 @@ you usually open at this time of day, learned on your Mac from what you open wit
 <p align="center"><img src="docs/media/waiting.png" width="600" alt="The empty launcher with Design review in 6 minutes, a tea timer, two due reminders and two suggested apps"></p>
 
 **Answers in their own shape.** Most results are rows, with a preview beside them when there's more to read. An
-answer that reads better big takes the card instead, laid out for what it is: a stock across the whole card, a QR
-code beside what you can do with it, a color on a band over its notations.
+answer that reads better big takes the card instead, laid out for what it is: a stock or your internet speed across
+the whole card, a QR code beside what you can do with it, a color on a band over its notations.
 
 **Stocks.** `stock aapl` ⇥: the price and today's change, the week's chart with yesterday's close dashed across it,
 and the numbers under it, from Yahoo Finance. Copperlight asks only when you use the chip. Enter opens it there.
@@ -220,7 +220,7 @@ The answer appears as you type; Enter copies it.
 | `:shortcut name`, `:shortcut name some text` | Your Shortcuts, Focus modes included; text after the name is its input |
 | `bluetooth`, `displays`, `dark mode` | That page of System Settings |
 | `ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery, free space, and what's listening on a port (Enter ends it) |
-| `speed` | Your internet speed: download, upload and latency, about 20 seconds after Enter |
+| `speed` | Your internet speed: download and upload big, and the latency, about 20 seconds after Enter |
 | `cpu`, `memory`, `cpu chrome` | Your processes, the busiest first; Enter ends one (an app quits), after asking. Tab lists them all |
 
 ### Your day

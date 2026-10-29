@@ -111,9 +111,22 @@ func parseSpeedTest(_ json: String) -> SpeedTest? {
 
 /// "328 Mbps", "1.25 Gbps", "850 Kbps", "4.2 Mbps".
 func speedText(_ bitsPerSecond: Double) -> String {
-    if bitsPerSecond >= 1e9 { return formatNumber(bitsPerSecond / 1e9, decimals: 0...2) + " Gbps" }
-    if bitsPerSecond >= 1e6 { return formatNumber(bitsPerSecond / 1e6, decimals: bitsPerSecond < 1e7 ? 0...1 : 0...0) + " Mbps" }
-    return formatNumber(bitsPerSecond / 1e3, decimals: 0...0) + " Kbps"
+    let (value, unit) = speedParts(bitsPerSecond)
+    return value + " " + unit
+}
+
+/// The number and its unit apart, for the card: ("328", "Mbps").
+func speedParts(_ bitsPerSecond: Double) -> (value: String, unit: String) {
+    if bitsPerSecond >= 1e9 { return (formatNumber(bitsPerSecond / 1e9, decimals: 0...2), "Gbps") }
+    if bitsPerSecond >= 1e6 { return (formatNumber(bitsPerSecond / 1e6, decimals: bitsPerSecond < 1e7 ? 0...1 : 0...0), "Mbps") }
+    return (formatNumber(bitsPerSecond / 1e3, decimals: 0...0), "Kbps")
+}
+
+/// The test's result: the whole card, download and upload big; Enter copies it.
+func speedResult(_ test: SpeedTest, at date: Date = .now) -> LauncherResult {
+    let (title, subtitle) = speedSummary(test)
+    return LauncherResult(id: "speed", title: title, subtitle: subtitle, icon: .symbol("speedometer"), score: .infinity,
+                          actionTitle: "Copy", action: { copyToClipboard("\(title) · \(subtitle)") }, answer: .speed(test, tested: date))
 }
 
 /// The result row's title and subtitle.
@@ -308,9 +321,7 @@ struct LookupProvider: ResultProvider {
                 return LauncherResult(id: "speed", title: "Couldn’t test the speed", subtitle: "Offline, or Apple’s servers didn’t answer",
                                       icon: .symbol("exclamationmark.triangle"), score: .infinity, actionTitle: "", action: {})
             }
-            let (title, subtitle) = speedSummary(test)
-            return LauncherResult(id: "speed", title: title, subtitle: subtitle, icon: .symbol("speedometer"), score: .infinity,
-                                  actionTitle: "Copy", action: { copyToClipboard("\(title) · \(subtitle)") })
+            return speedResult(test)
         })
     }
 

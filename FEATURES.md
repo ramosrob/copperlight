@@ -125,8 +125,8 @@ files and the text in photos. Everything else on this page is on.
   new search starts without it). In clipboard history, in chips and in a command's output it's open from the start.
   It only ever shows for a row with something in it.
 - **Answers in their own shape:** an answer that reads better big takes the card in place of the list and the preview,
-  laid out for what it is. A stock fills it (Enter opens it); a QR code sits big on the left with its actions as rows
-  beside it; a color is a band over its rows. Every row of the answer carries it, so it stays while you move between
+  laid out for what it is. A stock and the speed test's result fill it (Enter opens or copies it); a QR code sits big
+  on the left with its actions as rows beside it; a color is a band over its rows. Every row of the answer carries it, so it stays while you move between
   them, and on to the search row under it.
 - **The look:** two floating glass pieces, a pill search field and a results card
   under it, in the icon's copper. Long lists fade at the edges instead of being cut. Follows light and dark mode.
@@ -214,8 +214,9 @@ files and the text in photos. Everything else on this page is on.
   them by name. Enter ends a process after asking (SIGTERM), or quits an app, which can ask to save. Copperlight and
   other users' processes aren't listed.
 - **`speed`** (also `speedtest`, `internet speed`, `bandwidth`): Enter runs macOS's own `networkQuality` against
-  Apple's servers, about 20 seconds, the time so far ticking on the row (Esc stops it). Then download and upload
-  ("322 Mbps down · 243 Mbps up"), the latency idle and under load, and how you're connected; Enter copies it.
+  Apple's servers, about 20 seconds, the time so far ticking on the row (Esc stops it). Then the result takes the
+  card: download and upload big ("322 Mbps", "243 Mbps"), the latency idle and under load, how you're connected and
+  when it was tested; Enter copies it.
   Nothing is sent until Enter.
 
 ## Your browser

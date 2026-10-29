@@ -3144,6 +3144,14 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     let (title, subtitle) = speedSummary(test)
     #expect(title == "328 Mbps down · 253 Mbps up" && subtitle == "Latency 50 ms, 308 ms under load · Wi-Fi")
     #expect(parseSpeedTest("") == nil && parseSpeedTest("{}") == nil)
+    #expect(speedParts(327_886_304) == ("328", "Mbps") && speedParts(1_250_000_000) == ("1.25", "Gbps"))
+
+    // The result, big: download and upload, the latency, how it was connected and when; Enter copies it.
+    let tested = Date(timeIntervalSince1970: 1_793_203_080)
+    let result = speedResult(test, at: tested)
+    #expect(result.title == "328 Mbps down · 253 Mbps up" && result.actionTitle == "Copy")
+    guard case .speed(let shown, let at)? = result.answer else { Issue.record("no speed card"); return }
+    #expect(shown == test && at == tested)
 
     let row = try #require(await LookupProvider().results(for: "speed").first)
     #expect(row.title == "Test Internet Speed" && row.actionTitle == "Test" && row.output != nil) // runs on Enter only

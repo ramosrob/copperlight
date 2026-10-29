@@ -6,6 +6,7 @@ enum Answer: Sendable {
     case picture(CGImage, kicker: String, title: String, subtitle: String)
     case stock(StockCard)
     case color(RGBColor)
+    case speed(SpeedTest, tested: Date)
 }
 
 /// A stock's card, its text ready to show.
@@ -92,19 +93,84 @@ struct StockCardView: View {
             StockChart(closes: card.closes, previousClose: card.previousClose).frame(height: 150)
             Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
             HStack(alignment: .bottom, spacing: 32) {
-                ForEach(Array(card.facts.enumerated()), id: \.offset) { _, fact in
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(fact.0).font(.system(size: 11.5)).foregroundStyle(.secondary)
-                        Text(fact.1).font(.system(size: 15)).monospacedDigit()
-                    }
-                }
+                ForEach(Array(card.facts.enumerated()), id: \.offset) { _, fact in Fact(label: fact.0, value: fact.1) }
                 Spacer()
-                HStack(spacing: 7) {
-                    Text(card.action).font(.system(size: 12)).foregroundStyle(.secondary)
-                    Keycap(label: "↵")
-                }
+                EnterHint(action: card.action)
             }
         }
+    }
+}
+
+/// A number under its name, along a card's bottom edge.
+private struct Fact: View {
+    let label: String, value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(.system(size: 11.5)).foregroundStyle(.secondary)
+            Text(value).font(.system(size: 15)).monospacedDigit()
+        }
+    }
+}
+
+/// What Enter does, in a card's corner.
+private struct EnterHint: View {
+    let action: String
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Text(action).font(.system(size: 12)).foregroundStyle(.secondary)
+            Keycap(label: "↵")
+        }
+    }
+}
+
+/// Download and upload big, side by side; the latency, idle and under load, along the bottom.
+struct SpeedCardView: View {
+    let test: SpeedTest
+    let tested: Date
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                Kicker(text: "Internet speed · \(test.connection)")
+                Spacer()
+                Text("Apple’s servers · \(tested.formatted(date: .omitted, time: .shortened))").font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+            HStack(spacing: 14) {
+                SpeedTile(label: "Download", symbol: "arrow.down", bitsPerSecond: test.down)
+                SpeedTile(label: "Upload", symbol: "arrow.up", bitsPerSecond: test.up)
+            }
+            Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
+            HStack(alignment: .bottom, spacing: 32) {
+                Fact(label: "Latency", value: "\(Int(test.idle.rounded())) ms")
+                Fact(label: "Under load", value: "\(Int(test.loaded.rounded())) ms")
+                Spacer()
+                EnterHint(action: "Copy")
+            }
+        }
+    }
+}
+
+private struct SpeedTile: View {
+    let label: String, symbol: String
+    let bitsPerSecond: Double
+
+    var body: some View {
+        let (value, unit) = speedParts(bitsPerSecond)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol).font(.system(size: 12, weight: .bold)).foregroundStyle(Color.copper)
+                Text(label).font(.system(size: 13)).foregroundStyle(.secondary)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(value).font(.system(size: 54, weight: .semibold)).monospacedDigit()
+                Text(unit).font(.system(size: 17)).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 20).padding(.vertical, 18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16, style: .continuous))
     }
 }
 

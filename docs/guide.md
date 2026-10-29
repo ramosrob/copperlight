@@ -45,7 +45,8 @@ Case and spaces around it don't matter; text over 15 characters isn't kept. Pick
 takes over, and an abbreviation you stop using fades after a few weeks.
 
 Answers take their own shape: most results are rows, with a preview beside them, but an answer that reads better big
-takes the card instead. A stock fills it, a QR code sits big beside its actions, and a color is a band over its rows.
+takes the card instead. A stock and the speed test's result fill it, a QR code sits big beside its actions, and a
+color is a band over its rows.
 The rows under or beside it work as always, and the answer stays while you move between them.
 
 **Commands (`:`):** `:` lists them all, and what you type after it narrows them down (`:min`, `:fq`).
@@ -388,9 +389,9 @@ narrows them by name; `cpu` ⇥ or `memory` ⇥, the chip, lists every one. Ente
 
 **Speed test:** `speed` (also `speedtest`, `internet speed`) offers Test Internet Speed. Enter runs macOS's own
 `networkQuality`, which measures your connection against Apple's servers for about 20 seconds, the time so far ticking
-on the row; Esc stops it. Then the row says the download and upload speed ("322 Mbps down · 243 Mbps up"), the
-latency when the line is idle and when it's busy (what calls and games feel), and whether it's Wi-Fi, Ethernet or
-cellular. Enter copies it. Typing `speed` sends nothing.
+on the row; Esc stops it. Then the result takes the card: the download and upload speed big ("322 Mbps", "243
+Mbps"), the latency when the line is idle and when it's busy (what calls and games feel), whether it's Wi-Fi, Ethernet
+or cellular, and when it was tested. Enter copies it ("322 Mbps down · 243 Mbps up · …"). Typing `speed` sends nothing.
 
 **Bookmarks and history:** from 2 letters, pages from your browser where each word you typed starts a word of
 the title or the address (`copperlight git`; `30c` doesn't match inside "HP30138C"): up to 4 bookmarks, then the 4 most
