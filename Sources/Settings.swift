@@ -353,7 +353,7 @@ private struct FilesPane: View {
             Toggle("Suggest apps when the launcher opens", isOn: model.binding(\.apps.suggestions, "apps", "suggestions") { .bool($0) })
             Toggle("Look up app descriptions online", isOn: model.binding(\.apps.online, "apps", "online") { .bool($0) })
         } header: { Text("Apps") } footer: {
-            Note("Suggestions: the apps you open around this time of day on most days wait in the empty launcher, learned from what you open with it, on this Mac. Apps are found by what they do too: “draw”, “noise”. Copperlight indexes each app's category and the files it opens, and with Apple Intelligence on, the Mac's own model adds words. Online, it adds Homebrew's public description (the whole list is downloaded, so nothing about your apps is sent) and the App Store's for apps you got there.")
+            Note("Suggestions: the apps you open around this time of day on most days wait in the empty launcher, learned from what you open with it, on this Mac. Apps are found by what they do too: “draw”, “noise”. Copperlight indexes each app's category and the files it opens, and with Apple Intelligence on, the Mac's own model adds words. Online, it adds Homebrew's public description (the whole list is downloaded, so nothing about your apps is sent) and the App Store's for apps you got there; with Homebrew installed, an app you don't have offers to install itself.")
         }
     }
 }

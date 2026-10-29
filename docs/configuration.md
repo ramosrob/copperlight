@@ -33,7 +33,8 @@ terminal = "Ghostty"           # optional: where :terminal opens a folder (an ap
 
 [apps]
 online = true                  # default: app descriptions from Homebrew's public list and the App Store, to find apps
-                               # by what they do. false keeps it all on this Mac. Settings › Files › Apps.
+                               # by what they do, and with Homebrew installed, apps you don't have to install from
+                               # their row. false keeps it all on this Mac. Settings › Files › Apps.
 suggestions = true             # default: the apps you open around this time of day (on 3 days or more of the last 4
                                # weeks) wait in the empty launcher, learned from what you open with it.
 

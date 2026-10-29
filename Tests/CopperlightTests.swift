@@ -1608,7 +1608,7 @@ private struct Sized: ResultProvider {
 
     let casks = #"[{"token":"krisp","desc":"Noise cancelling application","artifacts":[{"app":["Krisp.app"]},{"zap":[]}]},"#
         + #"{"token":"x","desc":null,"artifacts":[{"app":["X.app"]}]}]"#
-    let krisp = HomebrewApp(desc: "Noise cancelling application", homepage: nil)
+    let krisp = HomebrewApp(desc: "Noise cancelling application", homepage: nil, token: "krisp", name: "Krisp")
     #expect(homebrewDescriptions(caskJSON: Data(casks.utf8)) == ["krisp.app": krisp])
     let pkg = #"[{"token":"krisp","name":["Krisp"],"desc":"Noise cancelling application","artifacts":"#
         + #"[{"uninstall":[{"quit":"ai.krisp.krispMac"}]},{"pkg":["Krisp.pkg"]}]}]"# // installed by a .pkg: no .app named
@@ -1620,6 +1620,27 @@ private struct Sized: ResultProvider {
 
     let calculator = appFacts("/System/Applications/Calculator.app")
     #expect(!calculator.version.isEmpty)
+}
+
+@Test func installAppsYouDontHave() async throws {
+    let quillmark = HomebrewApp(desc: "Markdown editor", homepage: nil, token: "quillmark", name: "Quillmark")
+    let casks = ["quillmark.app": quillmark, "id:com.example.quillmark": quillmark,
+                 "quillmark sync.app": HomebrewApp(desc: "Syncs a Markdown editor", homepage: nil, token: "quillmark-sync", name: "Quillmark Sync"),
+                 "chess clock.app": HomebrewApp(desc: "A clock for two players", homepage: nil, token: "chess-clock", name: "Chess Clock")]
+    let apps = AppProvider(index: nil, brew: "/opt/homebrew/bin/brew")
+    await apps.rescan()
+    await apps.setCasks(casks)
+    let found = await apps.results(for: "quillm")
+    #expect(found.map(\.title) == ["Install Quillmark", "Install Quillmark Sync"]) // once each, the closest name first
+    #expect(found.first?.id == "install:quillmark")
+    #expect(found.first?.subtitle == "With Homebrew · Markdown editor")
+    #expect(found.allSatisfy { $0.output != nil && $0.score < 0 }) // below apps you have; Enter runs brew
+    #expect(!(await apps.results(for: "chess")).contains { $0.id.hasPrefix("install:") }) // you have an app by that name
+    #expect(await apps.results(for: "qu").allSatisfy { !$0.id.hasPrefix("install:") }) // from 3 letters
+
+    let withoutBrew = AppProvider(index: nil, brew: nil)
+    await withoutBrew.setCasks(casks)
+    #expect(await withoutBrew.results(for: "quillmark").isEmpty)
 }
 
 // MARK: Photo text

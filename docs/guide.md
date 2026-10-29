@@ -320,6 +320,14 @@ is, what people do with it, other words for it). New and updated apps are indexe
 how often a background app may use the model, so the first run takes a few minutes. `[apps] online = false` keeps it
 all on this Mac.
 
+**Installing an app:** with Homebrew installed, typing an app you don't have (`figma`, from 3 letters, when it isn't
+the start of an app you have) offers Install Figma, with Homebrew's description, below everything else; two at most,
+the closest name first. Enter runs `brew install --cask figma` with its output beside the row; Enter again hides the
+launcher and lets it finish, and a notification says how it ended. Once it's installed, Enter opens it. An app that
+needs your password to install (a .pkg) can't ask for it in the launcher: the row says so, and Enter copies the
+command to paste in a terminal. The list is Homebrew's, the one app search already downloads, so `[apps] online =
+false` turns this off too.
+
 **Web:** text that looks like a URL (`github.com/x`, `https://…`, `localhost:3000`) gets an "Open" row.
 A bare `name.tld` counts only for common TLDs (com, org, net, io, dev, app, co…), so file
 names like `readme.md` don't. The last row is always "Search Google for …", so Enter on a query that matches

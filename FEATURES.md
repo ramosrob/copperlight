@@ -133,6 +133,12 @@ files and the text in photos. Everything else on this page is on.
   publisher and the documents it opens; online, Homebrew's description and the homepage's summary, or the App
   Store's for App Store apps; with Apple Intelligence on, words from the Mac's on-device model. Built in the
   background, then only new and updated apps. `[apps] online = false` keeps it on the Mac.
+- **Apps you don't have**, with Homebrew installed (from 3 letters): when what you type isn't the start of an app you
+  have, Homebrew's apps whose name starts with it, two at most, below everything else: "Install Figma", with its
+  description. Enter runs `brew install --cask figma`, its output beside the row; Enter again hides the launcher and a
+  notification says when it's done. Then Enter opens it. An app that needs your password to install can't ask here:
+  the row says so, and Enter copies the command for a terminal. From the same Homebrew list, so `[apps] online = false`
+  turns it off.
 - **Files:** after 2 letters, names in the `[files]` scopes with a word starting with each word you type
   (`inv 2026`). Uses the Spotlight index. `exclude` hides paths like `node_modules`. Start with `f ` for files
   only, and more of them. Tab on one: what you can do with it.
@@ -451,7 +457,7 @@ first time per launch; after that, a notification says where it is.
 All in `~/.config/copperlight/`: `config.toml` (your settings, hot reloaded; a mistake shows as an error row),
 `note.txt`, `notes/` (the other notes), `state.json` (frecency, what you picked for what you typed, recent queries, saved layouts, the timer, the apps you opened and when, the colors you picked), `clipboard.sqlite` (history, readable only
 by you), `rates.json` (currency rates), `apps.json` (what each app does) and `homebrew-apps.json` (Homebrew's list,
-trimmed), `photos.sqlite` (the text in your photos), `scripts/` (on the shell's PATH).
+trimmed: names, descriptions, homepages), `photos.sqlite` (the text in your photos), `scripts/` (on the shell's PATH).
 
 ## Not here on purpose
 

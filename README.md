@@ -147,6 +147,7 @@ A taste of what the field understands. Enter does the obvious thing: opens, copi
 |---|---|
 | `saf` | Safari; Enter opens it |
 | `invoice` ⇥, `saf` ⇥ | What you can do with it: open with, reveal, copy the path or the file itself, trash; hide, quit or relaunch an app. Its preview beside, Esc goes back |
+| `figma`, an app you don't have | Install Figma with Homebrew, its output beside the row; then Enter opens it |
 | `invoice` | Files and folders, from Spotlight's index (`f invoice`: files only) |
 | `~/Downloads`, `/Applications` | That folder's contents, to go into or open |
 | `copperlight git` | Bookmarks and recent pages from your browser, opened in their profile |
@@ -305,8 +306,8 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
   `[apps] online = false` turns those off. Links and searches open in your browser.
 - **Stock prices only when you ask:** in the Stock chip (`stock aapl`, then Tab), the ticker goes to Yahoo Finance
   once you pause typing, and nothing else. Typing alone never sends it. Likewise your public IP: the `ip` row asks
-  api.ipify.org only when you press Enter on Public IP, and `speed` tests against Apple's servers only when you press
-  Enter on it.
+  api.ipify.org only when you press Enter on Public IP, `speed` tests against Apple's servers only when you press
+  Enter on it, and Homebrew downloads an app only when you press Enter on Install.
 - **What it keeps stays on your Mac**, in `~/.config/copperlight/`: your config, notes, state and clipboard history
   (SQLite, readable only by you; deleted items are overwritten). Copies marked as passwords, and copies made in
   password managers, are never recorded.

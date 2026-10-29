@@ -87,6 +87,8 @@ func isFromAppStore(_ path: String) -> Bool {
 struct HomebrewApp: Codable, Equatable, Sendable {
     let desc: String
     let homepage: String?
+    var token: String? = nil // what `brew install --cask` takes
+    var name: String? = nil // its .app's name, else the cask's
 }
 
 /// App file name, lowercased ("krisp.app") → Homebrew's description and homepage, from the public cask list
@@ -95,7 +97,8 @@ struct HomebrewApp: Codable, Equatable, Sendable {
 func homebrewDescriptions(cache: URL = configDir.appending(path: "homebrew-apps.json")) async -> [String: HomebrewApp] {
     let saved = (try? Data(contentsOf: cache)).flatMap { try? JSONDecoder().decode([String: HomebrewApp].self, from: $0) }
     let age = (try? cache.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate.map { -$0.timeIntervalSinceNow }
-    if let saved, let age, age < 7 * 24 * 3600 { return saved }
+    // A list saved before installing from a row (no tokens) is downloaded again.
+    if let saved, let age, age < 7 * 24 * 3600, saved.values.contains(where: { $0.token != nil }) { return saved }
     guard let (data, response) = try? await URLSession.shared.data(from: URL(string: "https://formulae.brew.sh/api/cask.json")!),
           (response as? HTTPURLResponse)?.statusCode == 200
     else { return saved ?? [:] }
@@ -114,9 +117,12 @@ func homebrewDescriptions(caskJSON: Data) -> [String: HomebrewApp] {
     let strings = { (value: Any?) in (value as? [Any] ?? [value as Any]).compactMap { $0 as? String } }
     for cask in casks {
         guard let desc = cask["desc"] as? String, !desc.isEmpty else { continue }
-        let entry = HomebrewApp(desc: desc, homepage: cask["homepage"] as? String)
-        for artifact in cask["artifacts"] as? [[String: Any]] ?? [] {
-            for name in strings(artifact["app"]) { apps[name.lowercased()] = entry }
+        let artifacts = cask["artifacts"] as? [[String: Any]] ?? []
+        let installs = artifacts.flatMap { strings($0["app"]) }
+        let entry = HomebrewApp(desc: desc, homepage: cask["homepage"] as? String, token: cask["token"] as? String,
+                                name: installs.first.map { $0.replacing(#/\.app$/#, with: "") } ?? strings(cask["name"]).first)
+        for name in installs { apps[name.lowercased()] = entry }
+        for artifact in artifacts {
             for uninstall in artifact["uninstall"] as? [[String: Any]] ?? [] {
                 for id in strings(uninstall["quit"]) { ids["id:" + id.lowercased()] = entry }
             }

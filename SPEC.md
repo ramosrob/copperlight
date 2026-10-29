@@ -5,7 +5,8 @@ Its only requests are public and say nothing about you: currency rates, and for 
 homepages and App Store descriptions, which `[apps] online = false` turns off. The exceptions say what you asked
 for, and only when you ask: `stock AAPL` sends that ticker to Yahoo Finance, in the Stock chip only (Tab) and once
 typing pauses, kept a minute; Enter on the Public IP row (`ip`) asks api.ipify.org (decided 2026-10-28); Enter on `speed` runs macOS's
-`networkQuality` against Apple's servers (decided 2026-10-29). On-device models are fine: Apple
+`networkQuality` against Apple's servers (decided 2026-10-29); Enter on Install runs `brew install --cask`, with Homebrew
+installed (decided 2026-10-29). On-device models are fine: Apple
 Intelligence writes app search words, Vision reads the text in photos (decided 2026-10-15) and in the part of the
 screen you drag over with `copy text` (decided 2026-10-29). Projects and the developer
 tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: they belong in another app.

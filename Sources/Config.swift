@@ -276,7 +276,8 @@ struct Config: Decodable, Equatable {
         # Apps are found by what they do too ("draw", "noise"), from an index of each app's category, the files it
         # opens and, with Apple Intelligence on, words from the Mac's on-device model. Online, it adds a description:
         # Homebrew's public app list (downloaded whole, so it says nothing about your apps) and, for apps from the
-        # App Store, the App Store's. Set false to keep it all on this Mac.
+        # App Store, the App Store's; with Homebrew installed, it offers apps you don't have, to install from their
+        # row. Set false to keep it all on this Mac.
         online = true
         suggestions = true             # the apps you often open around this time wait in the empty launcher,
                                        # learned from what you open with it, on this Mac
