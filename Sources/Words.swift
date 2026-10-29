@@ -33,7 +33,59 @@ func formatDefinition(_ entry: String) -> (pronunciation: String, body: String) 
     return (pronunciation, laidOut.trimmingCharacters(in: .whitespacesAndNewlines))
 }
 
-/// `define serendipity`: its dictionary entry in the preview. Enter opens it in Dictionary.
+/// A word's entry, tidied for its card.
+struct DictionaryEntry: Equatable, Sendable {
+    struct Sense: Equatable, Sendable {
+        var meaning: String
+        var example: String?
+    }
+    struct Part: Equatable, Sendable {
+        var name: String // "noun"
+        var senses: [Sense]
+    }
+    var word: String
+    var pronunciation: String
+    var parts: [Part]
+    var origin: String?
+}
+
+private let partsOfSpeech = ["noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "exclamation"]
+
+/// The entry for its card: the first two parts of speech, three meanings of the first and one of the next, each with
+/// its first example, and where the word comes from. Its forms ("(runs)"), grammar labels ("[no object]") and the
+/// notes after a meaning are left out: Dictionary has the whole entry.
+func parseDefinition(_ entry: String, word: String) -> DictionaryEntry {
+    let (pronunciation, body) = formatDefinition(entry)
+    var parts: [DictionaryEntry.Part] = [], origin: String?, meanings = true
+    for paragraph in body.components(separatedBy: "\n\n") {
+        if paragraph.hasPrefix("ORIGIN ") { origin = String(paragraph.dropFirst(7)); continue }
+        // After the meanings: phrases with the word and words made from it, each with a part of speech of its own.
+        if ["PHRASES", "PHRASAL VERBS", "DERIVATIVES", "USAGE"].contains(where: paragraph.hasPrefix) { meanings = false }
+        guard meanings, parts.count < 2, let name = partsOfSpeech.first(where: { paragraph.hasPrefix($0 + " ") }) else { continue }
+        var text = String(paragraph.dropFirst(name.count + 1))
+        if let first = text.firstMatch(of: #/(?:^| )1 /#) { text = String(text[first.range.upperBound...]) } // its forms come before
+        // ponytail: "2 " after a word or a period starts the next meaning; a number in the text like that would too.
+        let pieces = text.replacing(#/([\w.)\]’']) [2-9] (?=\S)/#) { "\($0.1)\n• " }.components(separatedBy: "\n• ")
+        let senses = pieces.compactMap(sense).prefix(parts.isEmpty ? 3 : 1)
+        if !senses.isEmpty { parts.append(.init(name: name, senses: Array(senses))) }
+    }
+    return DictionaryEntry(word: word, pronunciation: pronunciation, parts: parts, origin: origin)
+}
+
+/// "[no object] move fast: she ran | he ran." → "move fast", "she ran".
+private func sense(_ text: String) -> DictionaryEntry.Sense? {
+    let clean = text.replacing(#/\[[^\]]*\]\s*:?\s*/#, with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+    let halves = clean.split(separator: ": ", maxSplits: 1).map(String.init)
+    let trim = { (text: String) in text.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: ".")) }
+    let sentences = halves.first?.split(separator: ". ", maxSplits: 1) ?? []
+    let meaning = trim(String(sentences.first ?? "")) // the notes after it left out
+    guard !meaning.isEmpty else { return nil }
+    // After a note, what follows the colon is the note's: "Genus Pyrus, family Rosaceae: many kinds".
+    let example = halves.count > 1 && sentences.count == 1 ? halves[1].components(separatedBy: " | ").first.map(trim) : nil
+    return .init(meaning: meaning, example: example?.isEmpty == false ? example : nil)
+}
+
+/// `define serendipity`: its dictionary entry across the card. Enter opens it in Dictionary.
 struct DefineProvider: ResultProvider {
     var modes: [Mode] { [Mode(prefix: "define ", title: "Define", icon: .symbol("character.book.closed"), hint: "A word")] }
 
@@ -48,10 +100,14 @@ struct DefineProvider: ResultProvider {
             return [LauncherResult(id: "define", title: "No definition for “\(word)”", icon: .symbol("character.book.closed"),
                                    score: 50, actionTitle: "", action: {})]
         }
-        let (pronunciation, body) = formatDefinition(entry)
+        return [row(word: word, entry: entry)]
+    }
+
+    func row(word: String, entry: String) -> LauncherResult {
+        let parsed = parseDefinition(entry, word: word)
         let url = URL(string: "dict://" + (word.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? word))!
-        return [LauncherResult(id: "define", title: word, subtitle: pronunciation, icon: .symbol("character.book.closed"), score: 50,
-                               actionTitle: "Open", action: { NSWorkspace.shared.open(url) }, preview: body, previewStyle: .prose)]
+        return LauncherResult(id: "define", title: word, subtitle: parsed.pronunciation, icon: .symbol("character.book.closed"), score: 50,
+                              actionTitle: "Open", action: { NSWorkspace.shared.open(url) }, answer: .entry(parsed))
     }
 }
 

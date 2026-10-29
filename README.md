@@ -103,8 +103,8 @@ you usually open at this time of day, learned on your Mac from what you open wit
 <p align="center"><img src="docs/media/waiting.png" width="600" alt="The empty launcher with Design review in 6 minutes, a tea timer, two due reminders and two suggested apps"></p>
 
 **Answers in their own shape.** Most results are rows, with a preview beside them when there's more to read. An
-answer that reads better big takes the card instead, laid out for what it is: a stock or your internet speed across
-the whole card, a QR code beside what you can do with it, a color on a band over its notations.
+answer that reads better big takes the card instead, laid out for what it is: a stock, a word's entry or your internet
+speed across the whole card, a QR code beside what you can do with it, a color on a band over its notations.
 
 **Stocks.** `stock aapl` ⇥: the price and today's change, the week's chart with yesterday's close dashed across it,
 and the numbers under it, from Yahoo Finance. Copperlight asks only when you use the chip. Enter opens it there.
@@ -181,7 +181,7 @@ The answer appears as you type; Enter copies it.
 
 | Type | You get |
 |---|---|
-| `define laconic` | The entry from the Mac's dictionary |
+| `define laconic` | The entry from the Mac's dictionary, set like a page of one |
 | `spell definately` | `definitely`, and the other guesses |
 | `translate bom dia`, `translate thank you to japanese` | The translation, made on your Mac (macOS 26) |
 | `translate`, `translate to spanish` | What you copied, translated |

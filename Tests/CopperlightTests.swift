@@ -1934,9 +1934,37 @@ private let macOS26 = ProcessInfo.processInfo.isOperatingSystemAtLeast(Operating
     #expect(define.results(for: "define").first?.completion == "define ") // the trailing space is trimmed away
 }
 
+@Test func dictionaryEntryCard() {
+    // Made-up entries, written the way the Mac's dictionary writes them.
+    let simple = parseDefinition("serendip ser·en·dip | ˈserənˌdip | noun finding good things by chance: a happy find | another one. ORIGIN 1754: from a fairy tale.", word: "serendip")
+    #expect(simple == DictionaryEntry(word: "serendip", pronunciation: "ˈserənˌdip",
+                                      parts: [.init(name: "noun", senses: [.init(meaning: "finding good things by chance", example: "a happy find")])],
+                                      origin: "1754: from a fairy tale."))
+    // Its forms dropped, numbered meanings and bullets as meanings, grammar labels and notes left out, three at most.
+    let run = parseDefinition("run | rən | verb (runs) (past; ran | ran |) 1 [no object] move fast: she ran | he ran. • run as a sport: I run. "
+                              + "2 [with object] manage. It is used of shops. • go: the road runs north. noun an act of running. ORIGIN Old English.", word: "run")
+    #expect(run.parts.map(\.name) == ["verb", "noun"])
+    #expect(run.parts[0].senses == [.init(meaning: "move fast", example: "she ran"), .init(meaning: "run as a sport", example: "I run"),
+                                    .init(meaning: "manage", example: nil)])
+    #expect(run.parts[1].senses == [.init(meaning: "an act of running", example: nil)] && run.origin == "Old English.")
+    #expect(parseDefinition("odd text with no parts", word: "odd").parts.isEmpty)
+    // Words made from it aren't meanings of it; a colon in a note after the meaning isn't its example.
+    let terse = parseDefinition("terse | tərs | adjective using few words: a terse reply. DERIVATIVES tersely | ˈtərslē | adverb "
+                                + "terseness | ˈtərsnəs | noun ORIGIN Latin.", word: "terse")
+    #expect(terse.parts.map(\.name) == ["adjective"] && terse.origin == "Latin.")
+    let pear = parseDefinition("pear | per | noun 1 a fruit. 2 the tree which bears pears. Genus Pyrus, family Rosaceae: many kinds", word: "pear")
+    #expect(pear.parts.first?.senses.last == .init(meaning: "the tree which bears pears", example: nil))
+
+    let row = DefineProvider().row(word: "serendip", entry: "serendip | ˈserənˌdip | noun finding good things by chance.")
+    #expect(row.title == "serendip" && row.actionTitle == "Open")
+    guard case .entry(let entry)? = row.answer else { Issue.record("no dictionary card"); return }
+    #expect(entry.parts.first?.senses.first?.meaning == "finding good things by chance")
+}
+
 @Test(.enabled(if: definition(of: "serendipity") != nil)) func defineWithTheMacDictionary() {
     let define = DefineProvider()
-    #expect(define.results(for: "define serendipity").first?.preview?.contains("chance") == true)
+    guard case .entry(let entry)? = define.results(for: "define serendipity").first?.answer else { Issue.record("no card"); return }
+    #expect(entry.parts.first?.senses.first?.meaning.contains("chance") == true)
     #expect(define.results(for: "define xyzzyq").first?.title == "No definition for “xyzzyq”")
 }
 

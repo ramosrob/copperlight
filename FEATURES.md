@@ -29,7 +29,7 @@ files and the text in photos. Everything else on this page is on.
 | `meetings`, `agenda`, `events` | The rest of today's events; a copper badge on what's soon; Tab: the details | Joins the video call |
 | `bluetooth`, `dark mode` | System Settings pages | Opens that page |
 | `emoji party` | Emoji by name | Pastes it |
-| `define serendipity` | The dictionary entry | Opens it in Dictionary |
+| `define serendipity` | The dictionary entry, across the card | Opens it in Dictionary |
 | `spell definately` | The word spelled right, and the other guesses | Copies it |
 | `translate bom dia`, `… to spanish` | The translation (on the Mac); `translate` alone, what you copied | Copies it |
 | `gh copperlight`, `github` | Your `[[command]]` entries | Opens, launches or runs it |
@@ -125,7 +125,7 @@ files and the text in photos. Everything else on this page is on.
   new search starts without it). In clipboard history, in chips and in a command's output it's open from the start.
   It only ever shows for a row with something in it.
 - **Answers in their own shape:** an answer that reads better big takes the card in place of the list and the preview,
-  laid out for what it is. A stock and the speed test's result fill it (Enter opens or copies it); a QR code sits big
+  laid out for what it is. A stock, a dictionary entry and the speed test's result fill it (Enter opens or copies it); a QR code sits big
   on the left with its actions as rows beside it; a color is a band over its rows. Every row of the answer carries it, so it stays while you move between
   them, and on to the search row under it.
 - **The look:** two floating glass pieces, a pill search field and a results card
@@ -249,8 +249,10 @@ files and the text in photos. Everything else on this page is on.
 
 ## Words
 
-- **Define** (`define serendipity`): the entry from the Mac's dictionaries (Dictionary.app's, offline), in the
-  preview pane. Enter opens it in Dictionary.
+- **Define** (`define serendipity`): the entry from the Mac's dictionaries (Dictionary.app's, offline), across the
+  card: the word set in a serif with its pronunciation; its first two parts of speech, three meanings of the first and
+  one of the next, each with its first example; and where it comes from. Its forms, grammar labels, phrases and
+  derived words are left out. Enter opens the whole entry in Dictionary.
 - **Spell** (`spell definately`): the word spelled right and the other guesses, best first; a sentence comes back with
   each misspelled word corrected; one that's right says so. The Mac's own spelling. Enter copies it.
 - **Translate** (`translate bom dia`, `translate good morning to spanish`): Apple's on-device translation. The

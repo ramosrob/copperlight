@@ -45,8 +45,8 @@ Case and spaces around it don't matter; text over 15 characters isn't kept. Pick
 takes over, and an abbreviation you stop using fades after a few weeks.
 
 Answers take their own shape: most results are rows, with a preview beside them, but an answer that reads better big
-takes the card instead. A stock and the speed test's result fill it, a QR code sits big beside its actions, and a
-color is a band over its rows.
+takes the card instead. A stock, a dictionary entry and the speed test's result fill it, a QR code sits big beside
+its actions, and a color is a band over its rows.
 The rows under or beside it work as always, and the answer stays while you move between them.
 
 **Commands (`:`):** `:` lists them all, and what you type after it narrows them down (`:min`, `:fq`).
@@ -264,8 +264,10 @@ something on it (`dark mode`, `night shift`, `dock`, `default browser`, `login i
 **Emoji:** `emoji party` lists emoji whose names have words starting with each word you typed, using the names of
 the macOS emoji picker (flags and combinations too, English). Enter pastes it, like snippets.
 
-**Define:** `define serendipity` shows the entry from the Mac's dictionaries (offline) in the preview pane; Enter
-opens it in Dictionary.
+**Define:** `define serendipity` shows the entry from the Mac's dictionaries (offline) across the card: the word set
+in a serif and its pronunciation, its meanings (three of the first part of speech, one of the next), each with its
+first example, and where the word comes from. Enter opens the whole entry, phrases and derived words included, in
+Dictionary.
 
 **Spell:** `spell definately` gives the word spelled right and the other guesses, the best first; `spell` with a
 sentence gives it back with each misspelled word corrected. A word that's right says so. Enter copies it. It's the

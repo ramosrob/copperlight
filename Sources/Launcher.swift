@@ -695,6 +695,7 @@ private struct LauncherView: View {
                         .padding(14)
                     case .stock(let card)?: StockCardView(card: card).padding(18) // the whole card: its one row is Enter
                     case .speed(let test, let tested)?: SpeedCardView(test: test, tested: tested).padding(18)
+                    case .entry(let entry)?: DictionaryCardView(entry: entry).padding(.horizontal, 22).padding(.vertical, 18)
                     case .color(let color)?: // a band over its rows
                         VStack(spacing: 6) {
                             ColorBand(color: color).frame(height: Self.bandHeight)

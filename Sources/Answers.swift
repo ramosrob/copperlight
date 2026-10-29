@@ -7,6 +7,7 @@ enum Answer: Sendable {
     case stock(StockCard)
     case color(RGBColor)
     case speed(SpeedTest, tested: Date)
+    case entry(DictionaryEntry)
 }
 
 /// A stock's card, its text ready to show.
@@ -122,6 +123,48 @@ private struct EnterHint: View {
             Text(action).font(.system(size: 12)).foregroundStyle(.secondary)
             Keycap(label: "↵")
         }
+    }
+}
+
+/// The word set in a serif, its pronunciation, its meanings with an example each, and where it comes from.
+struct DictionaryCardView: View {
+    let entry: DictionaryEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 14) {
+                Text(entry.word).font(.system(size: 38, weight: .semibold, design: .serif)).lineLimit(1)
+                if !entry.pronunciation.isEmpty { Text("| \(entry.pronunciation) |").font(.system(size: 15)).foregroundStyle(.secondary) }
+            }
+            ForEach(Array(entry.parts.enumerated()), id: \.offset) { _, part in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(part.name).font(.system(size: 12.5, weight: .semibold)).italic().foregroundStyle(Color.copper)
+                        .padding(.horizontal, 10).frame(height: 22).background(Color.copper.opacity(0.15), in: Capsule())
+                    ForEach(Array(part.senses.enumerated()), id: \.offset) { index, sense in
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            if part.senses.count > 1 { Text("\(index + 1)").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary) }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(sense.meaning).font(.system(size: 16, design: .serif)).lineLimit(2)
+                                if let example = sense.example {
+                                    Text(example).font(.system(size: 14, design: .serif)).italic().foregroundStyle(.secondary).lineLimit(1)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if let origin = entry.origin {
+                (Text("ORIGIN  ").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.copper) + Text(origin).font(.system(size: 12.5)))
+                    .foregroundStyle(.secondary).lineLimit(2)
+            }
+            Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
+            HStack {
+                Text("The Mac’s dictionary").font(.system(size: 12)).foregroundStyle(.secondary)
+                Spacer()
+                EnterHint(action: "Open in Dictionary")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
