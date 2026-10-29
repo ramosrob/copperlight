@@ -31,7 +31,10 @@ searches the web), `~/code/copperlight` or `/Applications` (lists the folder), `
 
 A calculation shows on a band over its row: what you typed = the answer, big, and what a percentage hid (`150 +
 20%`: "20% of 150 is 30"; `20% off 80`: "You save 16"). A currency too: what you had → what it makes, with
-the rate and the two flags faintly behind; Enter copies it as money (€21.48), the row below the number alone.
+the rate and the two flags faintly behind; Enter copies it as money (€21.48), the row below the number alone. Rates
+are live, from Coinbase's public rates (every currency in one request, so it never learns which one you convert),
+fetched when you open the launcher and they're over 5 minutes old; the band says how fresh they are. Crypto converts
+too: `0.1 btc in eur`.
 
 **Chips:** a name that takes text (`translate `, `define `, `spell `, `emoji `, `stock `, `qr `, `large `, `contact `, `tabs `, `pomo `, `timer `, `port `, `note `, `add todo `, `add event `, `add note `,
 `:quit `, `:window `, `:output `, `:connect `, `:!`, `f `, `cpu `, `memory `, and your script filters' names) turns into a copper chip at the start of the field when you press Tab:

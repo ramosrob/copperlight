@@ -15,7 +15,9 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Later
 
-- **Calculating:** `2rem in px`; crypto in conversions (`0.1 btc in eur`).
+- **Settings for everything:** turn any feature on or off, rename its keyword (even the `:` prefix), and set its
+  options, in Settings and in config.toml.
+- **Calculating:** `2rem in px`.
 - **Finding:** `:look` for a full-size preview; kinds, dates and tags in the files chip (`f pdf invoice`, `f last
   week`); folders listed newest first; symbols by name (→, ⌘, ™) and a default emoji skin tone; songs, albums and
   playlists from your Music library; Safari's Reading List and iCloud Tabs; recent files; the text inside files back, as its own
@@ -51,7 +53,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   the speed test, download and upload climbing big as they're measured; a dictionary entry across the card; a person's card beside every
   way to reach them; a calculation on a band, what you typed = the answer, with what a percentage hid; a currency
   conversion on a band, the two flags faintly behind it; the meeting to join on a band, who's coming and a line of
-  its notes.
+  its notes. Live currency rates, every 5 minutes, and crypto in conversions (`0.1 btc in eur`).
 - **v0.10:** what you picked for what you typed comes first the next time you type it (`ss` → Slack); Tab on a
   file, an app or a clipboard item for what you can do with it (open with, reveal, copy the path or the file, trash;
   an app's recent documents, hide, quit, relaunch; open a link, Large Type, a QR code), its preview beside it; `speed`, an internet speed test; `:awake 2h`, `:awake until 18:00`; `colors`, the colors you picked; installing an app you don't have

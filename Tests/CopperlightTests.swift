@@ -123,23 +123,37 @@ func currencyRejects(_ input: String) {
 @Test func currencyBand() throws {
     let rates = ["EUR": 1, "USD": 1.1638, "JPY": 170]
     let now = try #require(Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 29, hour: 12)))
-    let rows = currencyRows(CurrencyQuery(amount: 25, from: "USD", to: "EUR"), rates: rates, date: "2026-10-29", now: now)
+    let rows = currencyRows(CurrencyQuery(amount: 25, from: "USD", to: "EUR"), rates: rates, updated: now - 120, now: now)
     // Enter copies it as money; the number alone a row below, for a spreadsheet.
     #expect(rows.map(\.title) == ["Copy €21.48", "Copy 21.48"] && rows[1].subtitle == "The number alone, for a spreadsheet")
     guard case .currency(let card)? = rows.first?.answer else { Issue.record("no band"); return }
     #expect(card.from == "$25.00" && card.fromName == "US Dollar" && card.to == "€21.48" && card.toName == "Euro")
-    #expect(card.rate == "1 USD = 0.8593 EUR" && card.when == "ECB rate, today" && rows.allSatisfy { $0.answer != nil })
-    let older = currencyRows(CurrencyQuery(amount: 1, from: "EUR", to: "JPY"), rates: rates, date: "2026-10-28", now: now)
-    if case .currency(let card)? = older.first?.answer { #expect(card.when == "ECB rate, yesterday" && card.to == "¥170") }
-    if case .currency(let card)? = currencyRows(CurrencyQuery(amount: 1, from: "EUR", to: "USD"), rates: rates, date: "2026-10-23", now: now).first?.answer {
-        #expect(card.when == "ECB rate of Oct 23")
-    }
-    #expect(currencyRows(CurrencyQuery(amount: 1, from: "XYZ", to: "EUR"), rates: rates, date: "2026-10-29").isEmpty)
-    // The flags behind it, from the code's first two letters: EUR is the EU's.
+    #expect(card.rate == "1 USD = 0.8593 EUR" && card.when == "Live rate, 2 min ago" && rows.allSatisfy { $0.answer != nil })
+    // A small amount keeps its digits: a yen in euros isn't €0.01.
+    let yen = currencyRows(CurrencyQuery(amount: 1, from: "JPY", to: "EUR"), rates: rates, updated: now, now: now)
+    if case .currency(let card)? = yen.first?.answer { #expect(card.to == "€0.005882" && yen[1].title == "Copy 0.005882") }
+    #expect(currencyRows(CurrencyQuery(amount: 1, from: "XYZ", to: "EUR"), rates: rates, updated: now).isEmpty)
+    // How fresh the rate is.
+    #expect(rateAge(now - 20, now: now) == "Live rate, just now" && rateAge(now - 4 * 60, now: now) == "Live rate, 4 min ago")
+    #expect(rateAge(now - 3 * 3600, now: now) == "Rate from \((now - 3 * 3600).formatted(date: .omitted, time: .shortened))")
+    #expect(rateAge(now - 86_400, now: now) == "Rate from yesterday")
+    #expect(rateAge(now - 6 * 86_400, now: now) == "Rate from \((now - 6 * 86_400).formatted(.dateTime.month(.abbreviated).day()))")
+    // The flags behind it, from the code's first two letters: EUR is the EU's; a currency of no one country has none.
     #expect(flag("USD") == "🇺🇸" && flag("EUR") == "🇪🇺" && flag("BRL") == "🇧🇷")
+    #expect(flag("BTC").isEmpty && flag("XAF").isEmpty) // not Bhutan's; Central Africa's, of six countries
     // Drawn whole, cut to the flag itself: wider than tall, with no empty margin around it.
     let picture = try #require(flagPicture("🇺🇸"))
     #expect(Double(picture.width) / Double(picture.height) > 1.2 && flagPicture("") == nil)
+}
+
+@Test func liveRates() throws {
+    // What api.coinbase.com/v2/exchange-rates?currency=EUR answered (Tests/Fixtures/coinbase-rates.json, trimmed): every
+    // currency at once, so it never learns which one you convert; crypto too.
+    let data = try Data(contentsOf: URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/coinbase-rates.json"))
+    let rates = try #require(parseRates(data))
+    #expect(rates["EUR"] == 1 && rates["USD"] == 1.1167694154476033 && rates["BTC"] == 0.0000138151810604)
+    #expect(convert(CurrencyQuery(amount: 0.1, from: "BTC", to: "EUR"), rates: rates).map { Int($0) } == 7238)
+    #expect(parseRates(Data("{}".utf8)) == nil && parseRates(Data("{\"data\":{\"rates\":{}}}".utf8)) == nil)
 }
 
 // MARK: Search merging

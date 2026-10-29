@@ -203,7 +203,7 @@ private struct GeneralPane: View {
     let model: SettingsModel
     let showWelcome: @MainActor () -> Void
 
-    /// The currencies the ECB publishes rates for.
+    /// The currencies offered as the default target: the most traded.
     private static let currencies = ["AUD", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS",
                                      "INR", "ISK", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PLN", "RON", "SEK", "SGD",
                                      "THB", "TRY", "USD", "ZAR"]

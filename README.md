@@ -129,7 +129,7 @@ alone says it's a Friday. Before you finish typing, `in 3` already answers in da
 
 **Math and money.** The answer appears as you type: percentages, currencies at today's rate, units and time zones. Enter copies it.
 
-<p align="center"><img src="docs/media/convert.png" width="600" alt="Converting 25 US dollars to euros at the ECB's rate"></p>
+<p align="center"><img src="docs/media/convert.png" width="600" alt="Converting 25 US dollars to euros at today's rate"></p>
 
 **Little things, fast.** Emoji by name, UUIDs, passwords, JSON, colors and timestamps: type the tool's name, press Enter.
 
@@ -171,7 +171,7 @@ The answer appears big as you type, with what a percentage hid beside it; Enter 
 | `20% of 150`, `150 + 20%`, `20% off 80` | `30`, `180`, `64` |
 | `30 is what % of 150`, `10k * 3` | `20%`, `30000`; Tab puts the answer in the field, to keep going |
 | `255 in hex` | `0xFF` |
-| `25 usd to eur`, `39*8 usd` | The amount in euros, at today's rate, big, with both flags behind it |
+| `25 usd to eur`, `39*8 usd`, `0.1 btc in eur` | The amount in euros at the live rate, big, with both flags behind it |
 | `10 km in mi`, `30c` | `6.21 mi`, `86 °F` |
 | `3pm lisbon in sf`, `now in tokyo` | The time there |
 | `days until dec 25`, `in 3 weeks` | `58 days`, the date in 3 weeks; `dec 25` alone says it's a Friday |
@@ -308,7 +308,8 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 ## Privacy
 
 - **No account, no analytics, no crash reports.** Nothing about you is sent anywhere.
-- **Few network requests, none about you:** currency rates (ECB, through frankfurter.dev) at most once a day, and for
+- **Few network requests, none about you:** currency rates (Coinbase's public rates, every currency at once, so it
+  never learns which one you convert) at most every 5 minutes, when you open the launcher, and for
   finding apps by what they do, Homebrew's public app list (downloaded whole, weekly, so it doesn't reveal which apps
   you have), each listed app's homepage once, and the App Store's description of apps you got there.
   `[apps] online = false` turns those off. Links and searches open in your browser.

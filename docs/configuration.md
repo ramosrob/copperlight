@@ -157,8 +157,8 @@ Everything lives in `~/.config/copperlight/`:
   suggestions, `colors`: the colors you picked, the last 30). Written by the app
   (debounced, atomic). Sections it doesn't know are kept. If the file is unreadable it's moved to
   `state.json.bad` and the app starts fresh.
-- `rates.json`: Frankfurter/ECB rates, raw API response. Refreshed in the background when over 24 h old,
-  on launch and on panel open. When you're offline the old rates are used.
+- `rates.json`: currency rates, Coinbase's response as it came (every currency per 1 EUR). Refreshed in the
+  background when over 5 minutes old, on launch and on panel open. When you're offline the old rates are used.
 - `clipboard.sqlite`: clipboard history, text and PNG images (SQLite, readable only by you). Deleted items are overwritten on
   disk (`secure_delete`), not just unlinked. `sqlite3 ~/.config/copperlight/clipboard.sqlite` to poke at it.
 

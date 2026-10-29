@@ -29,7 +29,7 @@ struct CurrencyCard: Sendable {
     var from: String, fromName: String, fromCode: String // "$25.00", "US Dollar", "USD"
     var to: String, toName: String, toCode: String
     var rate: String // "1 USD = 0.8593 EUR"
-    var when: String // "ECB rate, today"
+    var when: String // "Live rate, 2 min ago"
 }
 
 /// A person's card, its text ready to show.

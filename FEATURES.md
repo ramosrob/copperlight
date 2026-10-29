@@ -179,10 +179,12 @@ files and the text in photos. Everything else on this page is on.
     alone shows 255.
   - `ans`: the last result you copied with Enter (`ans * 2`, `ans in hex`). Forgotten on quit.
 - **Currency:** `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`. On a band: what you had → what it makes, big,
-  with the currency names, the rate (`1 USD = 0.8593 EUR`), the ECB's date, and both flags faintly behind, one at each end.
+  with the currency names, the rate (`1 USD = 0.8593 EUR`) and how fresh it is ("Live rate, 2 min ago"), and both flags faintly behind, one at each end.
   Enter copies it as money (€21.48); the row below copies the number alone (21.48). Without a target, it converts to
-  `[currency] default_target`, and that currency itself converts to USD. Math before it works too: `39*8 usd`. ECB
-  rates, cached for a day, so it works offline.
+  `[currency] default_target`, and that currency itself converts to USD. Math before it works too: `39*8 usd`. Live
+  rates from Coinbase's public rates, every currency in one request (so it never learns which one you convert), crypto
+  too (`0.1 btc in eur`): fetched when the launcher opens and they're over 5 minutes old, kept on disk, so it works
+  offline (the band then says how old they are).
 - **Stocks:** `stock AAPL`, `stock MGLU3.SA`, `stock ^BVSP`, `stock BTC-USD` (Yahoo Finance's tickers; `sto` ⇥ is the
   Stock chip). Across the whole card: the ticker and name, the price and today's change (▲ or ▼), when it was last
   traded and where, the last 7 days drawn hourly in copper with yesterday's close dashed across, and under it the

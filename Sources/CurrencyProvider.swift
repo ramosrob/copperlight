@@ -21,16 +21,41 @@ func parseCurrency(_ query: String, defaultTarget: String = "EUR") -> CurrencyQu
     return CurrencyQuery(amount: amount, from: from, to: to)
 }
 
-/// `rates` are per 1 EUR (Frankfurter's default base) and must include EUR itself.
+/// `rates` are per 1 EUR and must include EUR itself.
 func convert(_ query: CurrencyQuery, rates: [String: Double]) -> Double? {
     guard let from = rates[query.from], let to = rates[query.to] else { return nil }
     return query.amount / from * to
 }
 
-/// A currency's flag: its code's first two letters as regional indicators (EUR → 🇪🇺, the EU's).
+/// Coinbase's rates per 1 EUR, every currency at once (`api.coinbase.com/v2/exchange-rates?currency=EUR`), crypto
+/// too. nil: not that, or empty.
+func parseRates(_ data: Data) -> [String: Double]? {
+    guard let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+          let table = (object["data"] as? [String: Any])?["rates"] as? [String: String]
+    else { return nil }
+    let rates = table.compactMapValues { Double($0) }.filter { $0.value > 0 }
+    return rates.isEmpty ? nil : rates.merging(["EUR": 1]) { a, _ in a }
+}
+
+/// How fresh a rate is: "Live rate, just now" or "Live rate, 4 min ago" within the hour; then "Rate from 14:05",
+/// "Rate from yesterday", "Rate from Oct 23".
+func rateAge(_ updated: Date, now: Date = .now) -> String {
+    let minutes = Int(now.timeIntervalSince(updated) / 60), calendar = Calendar.current
+    if minutes < 1 { return "Live rate, just now" }
+    if minutes < 60 { return "Live rate, \(minutes) min ago" }
+    if calendar.isDate(updated, inSameDayAs: now) { return "Rate from " + updated.formatted(date: .omitted, time: .shortened) }
+    if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(updated, inSameDayAs: yesterday) {
+        return "Rate from yesterday"
+    }
+    return "Rate from " + updated.formatted(.dateTime.month(.abbreviated).day())
+}
+
+/// A currency's flag: its code's first two letters as regional indicators (EUR → 🇪🇺, the EU's). Empty for a currency
+/// of no one country: BTC (not Bhutan's), XAF (six countries').
 func flag(_ code: String) -> String {
-    String(String.UnicodeScalarView(code.uppercased().unicodeScalars.filter { (65...90).contains($0.value) }.prefix(2)
-        .compactMap { UnicodeScalar(0x1F1E6 + $0.value - 65) }))
+    let code = code.uppercased()
+    guard code == "EUR" || (Locale.commonISOCurrencyCodes.contains(code) && Locale.Region(String(code.prefix(2))).isISORegion) else { return "" }
+    return String(String.UnicodeScalarView(code.unicodeScalars.prefix(2).compactMap { UnicodeScalar(0x1F1E6 + $0.value - 65) }))
 }
 
 /// A flag emoji as a picture cut to the flag itself, so it can be drawn whole at any height. nil: nothing to draw.
@@ -58,62 +83,55 @@ func flagPicture(_ flag: String) -> CGImage? {
 }
 
 /// The conversion on a band (what you had → what it makes, the rate, its flags behind), and its two rows: Enter copies
-/// it as money (€21.48), the row below the number alone. `date`: the ECB's, of `rates`. Empty for a currency it lacks.
-func currencyRows(_ query: CurrencyQuery, rates: [String: Double], date: String, now: Date = .now) -> [LauncherResult] {
+/// it as money (€21.48), the row below the number alone. `updated`: when `rates` came. Empty for a currency it lacks.
+func currencyRows(_ query: CurrencyQuery, rates: [String: Double], updated: Date, now: Date = .now) -> [LauncherResult] {
     guard let value = convert(query, rates: rates), let rate = convert(CurrencyQuery(amount: 1, from: query.from, to: query.to), rates: rates)
     else { return [] }
-    let english = Locale(identifier: "en_US"), calendar = Calendar.current
-    let money = { (amount: Double, code: String) in amount.formatted(.currency(code: code).locale(english)) }
+    let english = Locale(identifier: "en_US")
+    // Under 1, up to 6 decimals: a yen in euros is €0.005882, not €0.01.
+    let small = { (amount: Double) in amount.magnitude < 1 && amount != 0 }
+    let money = { (amount: Double, code: String) in
+        let style = FloatingPointFormatStyle<Double>.Currency(code: code).locale(english)
+        return amount.formatted(small(amount) ? style.precision(.fractionLength(2...6)) : style)
+    }
     let name = { (code: String) in english.localizedString(forCurrencyCode: code) ?? code }
-    let parts = date.split(separator: "-").compactMap { Int($0) }
-    let day = parts.count == 3 ? calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) : nil
-    let when = day.map { day in
-        calendar.isDate(day, inSameDayAs: now) ? "ECB rate, today"
-            : calendar.date(byAdding: .day, value: -1, to: now).map { calendar.isDate(day, inSameDayAs: $0) } == true ? "ECB rate, yesterday"
-            : "ECB rate of " + day.formatted(.dateTime.month(.abbreviated).day())
-    } ?? "ECB rate"
-    let shown = money(value, query.to), number = formatNumber(value, decimals: 2...2)
+    let shown = money(value, query.to), number = formatNumber(value, decimals: small(value) ? 2...6 : 2...2)
     let card = CurrencyCard(from: money(query.amount, query.from), fromName: name(query.from), fromCode: query.from, to: shown,
                             toName: name(query.to), toCode: query.to,
-                            rate: "1 \(query.from) = \(formatNumber(rate, decimals: 2...4)) \(query.to)", when: when)
+                            rate: "1 \(query.from) = \(formatNumber(rate, decimals: rate < 0.01 ? 2...8 : 2...4)) \(query.to)",
+                            when: rateAge(updated, now: now))
     return [LauncherResult(id: "currency", title: "Copy " + shown, icon: .symbol("arrow.left.arrow.right"), score: 10, actionTitle: "Copy",
                            action: { copyToClipboard(shown) }, answer: .currency(card)),
             LauncherResult(id: "currency:number", title: "Copy " + number, subtitle: "The number alone, for a spreadsheet",
                            icon: .symbol("number"), score: 9.99, actionTitle: "Copy", action: { copyToClipboard(number) }, answer: .currency(card))]
 }
 
-/// Answers from the in-memory copy of rates.json only; the network fetch runs separately.
+/// Answers from the in-memory copy of rates.json only; the fetch runs when the launcher opens.
 actor CurrencyProvider: ResultProvider {
-    private struct Rates: Decodable { var date: String, rates: [String: Double] }
-
     private static let file = configDir.appending(path: "rates.json")
-    private static let url = URL(string: "https://api.frankfurter.dev/v1/latest")!
+    /// Coinbase's public rates: every currency at once, so it never learns which one you convert. Updated about every
+    /// minute; no key.
+    private static let url = URL(string: "https://api.coinbase.com/v2/exchange-rates?currency=EUR")!
     private var rates: [String: Double] = [:]
-    private var date = "" // ECB publication date of `rates`
-    private var fetched = Date.distantPast
+    private var fetched = Date.distantPast // when `rates` came
     private var refreshing = false
     private var defaultTarget = "EUR"
 
     init() {
-        guard let data = try? Data(contentsOf: Self.file), let cached = Self.decode(data) else { return }
-        (rates, date) = cached
+        guard let data = try? Data(contentsOf: Self.file), let cached = parseRates(data) else { return }
+        rates = cached
         fetched = (try? Self.file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
     }
 
-    private static func decode(_ data: Data) -> (rates: [String: Double], date: String)? {
-        guard let decoded = try? JSONDecoder().decode(Rates.self, from: data) else { return nil }
-        return (decoded.rates.merging(["EUR": 1]) { a, _ in a }, decoded.date)
-    }
-
-    /// Fetches when the cache is over 24 h old. On failure the stale rates stay in use.
+    /// Fetches when the rates are over 5 minutes old. On failure the older rates stay in use, saying how old.
     func refreshIfStale() async {
-        guard !refreshing, Date.now.timeIntervalSince(fetched) > 24 * 3600 else { return }
+        guard !refreshing, Date.now.timeIntervalSince(fetched) > 5 * 60 else { return }
         refreshing = true
         defer { refreshing = false }
         guard let (data, response) = try? await URLSession.shared.data(from: Self.url),
-              (response as? HTTPURLResponse)?.statusCode == 200, let fresh = Self.decode(data)
+              (response as? HTTPURLResponse)?.statusCode == 200, let fresh = parseRates(data)
         else { return }
-        (rates, date) = fresh
+        rates = fresh
         fetched = .now
         try? FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
         try? data.write(to: Self.file, options: .atomic)
@@ -125,9 +143,9 @@ actor CurrencyProvider: ResultProvider {
         guard let parsed = parseCurrency(query, defaultTarget: defaultTarget) else { return [] }
         guard !rates.isEmpty else {
             return [LauncherResult(id: "currency", title: "No currency rates yet",
-                                   subtitle: "Waiting for the first download from frankfurter.dev",
+                                   subtitle: "Waiting for the first download from Coinbase",
                                    icon: .symbol("exclamationmark.triangle"), score: 10, actionTitle: "", action: {})]
         }
-        return currencyRows(parsed, rates: rates, date: date)
+        return currencyRows(parsed, rates: rates, updated: fetched)
     }
 }
