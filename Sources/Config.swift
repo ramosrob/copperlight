@@ -17,6 +17,7 @@ struct Config: Decodable, Equatable {
     var browser = Browser()
     var notes = Notes()
     var meetings = Meetings()
+    var weather = Weather()
     var commands: [Command] = []
     var snippets: [Snippet] = []
 
@@ -59,6 +60,18 @@ struct Config: Decodable, Equatable {
             defaultTarget = try c.decodeIfPresent(String.self, forKey: .defaultTarget)
         }
         private enum CodingKeys: String, CodingKey { case defaultTarget = "default_target" }
+    }
+
+    /// `weather` with nothing typed: the city when Location Services is off for Copperlight. nil: it asks for the location.
+    struct Weather: Decodable, Equatable {
+        var city: String?
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            city = try c.decodeIfPresent(String.self, forKey: .city)
+        }
+        private enum CodingKeys: String, CodingKey { case city }
     }
 
     /// The floating notes. `markdown`: style Markdown as you type (headings, bold, checkboxes); the files stay plain text.
@@ -219,10 +232,11 @@ struct Config: Decodable, Equatable {
         browser = try c.decodeIfPresent(Browser.self, forKey: .browser) ?? browser
         notes = try c.decodeIfPresent(Notes.self, forKey: .notes) ?? notes
         meetings = try c.decodeIfPresent(Meetings.self, forKey: .meetings) ?? meetings
+        weather = try c.decodeIfPresent(Weather.self, forKey: .weather) ?? weather
         commands = try c.decodeIfPresent([Command].self, forKey: .commands) ?? []
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? []
     }
-    private enum CodingKeys: String, CodingKey { case hotkeys, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, commands = "command", snippets = "snippet" }
+    private enum CodingKeys: String, CodingKey { case hotkeys, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, weather, commands = "command", snippets = "snippet" }
 
     static func parse(_ text: String) throws -> Config {
         try TOMLDecoder().decode(Config.self, from: text)
@@ -292,6 +306,9 @@ struct Config: Decodable, Equatable {
         [meetings]
         show_on_open = false           # true: the empty launcher lists today's events. false: only a meeting with a call,
                                        # from 10 minutes before it starts. Needs Calendars access ("meetings" asks).
+
+        [weather]
+        # city = "Lisbon"              # for "weather" when Location Services is off for Copperlight
 
         [notes]
         markdown = true                # style Markdown as you type: # headings, **bold**, - [ ] checkboxes, links.

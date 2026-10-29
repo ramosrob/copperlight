@@ -172,6 +172,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let tabs = BrowserTabsProvider()
     private let reminders = RemindersProvider()
     private let translate = TranslateProvider()
+    private let weather = WeatherProvider()
     private let files = FileSearchProvider()
     private let photoText = Feature.photoText.isOn ? try? PhotoTextStore(path: PhotoTextStore.file.path) : nil
     private lazy var photoIndexer = photoText.map(PhotoIndexer.init)
@@ -192,7 +193,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var model = SearchModel(
         providers: ([(commands, .commands), (ScriptProvider(), .scripts), (snippets, .snippets), (builtins, nil),
                      (EmojiProvider(), .quickTools), (DefineProvider(), .quickTools), (SpellProvider(), .quickTools),
-                     (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (reminders, nil), (contacts, nil), (TextToolProvider(), .quickTools),
+                     (translate, .quickTools), (StockProvider(), .quickTools), (weather, .quickTools), (meetings, nil), (reminders, nil), (contacts, nil), (TextToolProvider(), .quickTools),
                      (ColorProvider(show: { [unowned self] in panel.show(typing: $0) }, store: .shared), .quickTools), (QRCodeProvider(), .quickTools), (LargeTypeProvider(), .quickTools),
                      (ScreenTextProvider(show: { [unowned self] in panel.show(typing: $0) }), .quickTools), (capture, .notes), (apps, nil),
                      (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
@@ -388,6 +389,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pomodoro.breakMinutes = config.pomodoro.breakMinutes
         suggestsApps = config.apps.suggestions
         // Chained so back-to-back reloads reach the providers in order.
+        weather.setCity(config.weather.city ?? "")
         configUpdate = Task { [previous = configUpdate, commands, currency, translate, files, apps, web, snippets] in
             await previous?.value
             await commands.setCommands(config.commands, browser: config.browser)

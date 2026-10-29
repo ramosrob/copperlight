@@ -46,6 +46,10 @@ break_minutes = 5              # default, 1–240
 show_on_open = false           # default. true: the empty launcher lists today's next events. false: only a meeting
                                # with a call, from 10 minutes before it starts. Settings › General › Calendar.
 
+[weather]
+city = "Lisbon"                # optional: "weather" with nothing typed, when Location Services is off for Copperlight.
+                               # Unset: it asks for your location. Settings › General › Weather.
+
 [notes]
 markdown = true                # default: style Markdown in notes as you type (# headings, **bold**, - [ ] checkboxes,
                                # links). The files stay plain text. Settings › General › Notes.

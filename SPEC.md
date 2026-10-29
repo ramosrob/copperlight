@@ -51,7 +51,9 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
 - **Instant.** No network on the keystroke path. Anything remote is cached and read from the cache. The Stock chip
   alone waits for a pause in typing and then asks Yahoo Finance (decided 2026-10-28). Currency rates are live:
   Coinbase's public rates, every currency in one request so it never learns which you convert, fetched when the
-  launcher opens and they're over 5 minutes old (decided 2026-10-29).
+  launcher opens and they're over 5 minutes old (decided 2026-10-29). Weather works like a stock: only in the Weather
+  chip, after a pause, the city or where you are (rounded to about a kilometer) goes to Open-Meteo; Location Services
+  is asked once from a row, and a city in Settings does without it (decided 2026-10-29).
 - **Plain files.** Config, state and the note are human-readable files in `~/.config/copperlight/`. What belongs
   to this Mac (recent queries, saved window layouts, whose frames fit its screens) lives in `state.json`, not
   config.toml, so a config kept in git works on any Mac (decided 2026-10-28). Notes are plain text: their Markdown is

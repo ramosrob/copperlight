@@ -701,6 +701,7 @@ private struct LauncherView: View {
                         .fixedSize(horizontal: false, vertical: true) // as tall as the taller: the card, or the rows
                         .padding(14)
                     case .stock(let card)?: StockCardView(card: card).padding(18) // the whole card: its one row is Enter
+                    case .weather(let card)?: WeatherCardView(card: card).padding(18) // the whole card: its one row is Enter
                     case .speed(let test, let tested, let running)?: SpeedCardView(test: test, tested: tested, running: running).padding(18)
                     case .entry(let entry)?: DictionaryCardView(entry: entry).padding(.horizontal, 22).padding(.vertical, 18)
                     case .calculation(let typed, let result, let note)?: // a band over its rows

@@ -3337,3 +3337,62 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     for gray in 0..<40 { rememberColor(RGBColor(red: gray, green: gray, blue: gray), in: store, at: now) }
     #expect(store.get(PickedColor.stateSection, as: [PickedColor].self)?.count == PickedColor.limit) // the last 30
 }
+
+// MARK: Weather
+
+@Test func weather() async throws {
+    // What Open-Meteo answered for Lisbon (Tests/Fixtures/open-meteo-*.json, its hours trimmed to two days).
+    let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures")
+    let forecastData = try Data(contentsOf: fixtures.appending(path: "open-meteo-forecast.json"))
+    let placeData = try Data(contentsOf: fixtures.appending(path: "open-meteo-geocode.json"))
+    let forecast = try #require(parseForecast(forecastData))
+    #expect(forecast.now.temperature == 18.6 && forecast.now.code == 0 && !forecast.now.isDay && forecast.days.count == 6)
+    let place = try #require(parsePlace(placeData))
+    #expect(place.name == "Lisbon" && place.latitude == 38.72509 && place.longitude == -9.1498)
+    #expect(parseForecast(Data("{}".utf8)) == nil && parsePlace(Data("{}".utf8)) == nil && parsePlace(Data("{\"results\":[]}".utf8)) == nil)
+
+    // The card: now big, the next hours, and five days with how warm each gets.
+    let updated = Date(timeIntervalSince1970: 1_793_303_100)
+    let card = weatherCard(forecast, place: "Lisbon", updated: updated, fahrenheit: false)
+    #expect(card.place == "Lisbon" && card.temperature == "19°" && card.conditions == "Clear" && card.symbol == "moon.stars.fill")
+    #expect(card.details == "H 26° · L 12° · Feels like 18° · Wind 5 km/h")
+    #expect(card.hours.count == 8 && card.hours[0].label == "Now" && card.hours[0].temperature == "19°")
+    #expect(card.days.count == 5 && card.days.map(\.label).prefix(2) == ["Today", "Fri"] && card.days[0].high == 25.8)
+    #expect(card.updated == "Open-Meteo · updated \(updated.formatted(date: .omitted, time: .shortened))")
+    let us = weatherCard(forecast, place: "Lisbon", updated: updated, fahrenheit: true)
+    #expect(us.temperature == "65°" && us.details == "H 78° · L 54° · Feels like 65° · Wind 3 mph")
+    #expect(weatherConditions(61, day: true).text == "Light rain" && weatherConditions(2, day: true).symbol == "cloud.sun.fill")
+    #expect(weatherConditions(2, day: false).symbol == "cloud.moon.fill" && weatherConditions(95, day: true).text == "Thunderstorm")
+
+    // The chip, a city typed: asked once typing pauses; Enter opens Weather.
+    let asked = Mutex<[String]>([])
+    func provider(_ status: LocationStatus, city: String = "", here: Place? = nil) -> WeatherProvider {
+        WeatherProvider(pause: .zero, city: city, status: { status }, locate: { here }, fetch: { url in
+            asked.withLock { $0.append(url.absoluteString) }
+            return url.host()?.hasPrefix("geocoding") == true ? placeData : forecastData
+        })
+    }
+    let typed = await provider(.refused).modeResults(for: "weather lisbon")
+    #expect(typed.first?.title == "19° · Clear" && typed.first?.subtitle == "Lisbon · H 26° L 12°" && typed.first?.actionTitle == "Open")
+    guard case .weather(let shown)? = typed.first?.answer else { Issue.record("no weather card"); return }
+    #expect(shown.place == "Lisbon")
+    // Only a rounded place goes to the forecast: about a kilometer.
+    #expect(asked.withLock { $0.last }?.contains("latitude=38.73&longitude=-9.15") == true)
+
+    // Nothing typed: where you are; else the city from Settings; neither, a row says how.
+    let here = Place(name: "Alfama", latitude: 38.7115, longitude: -9.1300)
+    let local = await provider(.allowed, here: here).modeResults(for: "weather ")
+    if case .weather(let card)? = local.first?.answer { #expect(card.place == "Alfama") } else { Issue.record("no weather where you are") }
+    let unasked = await provider(.unasked).modeResults(for: "weather ")
+    #expect(unasked.first?.title == "Weather Where You Are" && unasked.first?.actionTitle == "Allow" && unasked.first?.answer == nil)
+    let refused = await provider(.refused).modeResults(for: "weather ")
+    #expect(refused.first?.title == "Type a city, or set yours in Settings" && refused.first?.answer == nil)
+    let city = await provider(.refused, city: "Lisbon").modeResults(for: "weather ")
+    if case .weather(let card)? = city.first?.answer { #expect(card.place == "Lisbon") } else { Issue.record("no weather for the Settings city") }
+    #expect(await WeatherProvider(pause: .zero, city: "", status: { .refused }, locate: { nil }, fetch: { _ in nil })
+        .modeResults(for: "weather porto").first?.title == "Couldn't reach Open-Meteo") // Lisbon's is kept 10 minutes
+
+    // `weather` offers the chip; `[weather] city` is the city when Location Services is off.
+    #expect(await provider(.refused).results(for: "weather").first?.completion == "weather ")
+    #expect(try Config.parse("[weather]\ncity = \"Lisbon\"").weather.city == "Lisbon" && Config().weather.city == nil)
+}

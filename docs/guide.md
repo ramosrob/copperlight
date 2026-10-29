@@ -383,6 +383,14 @@ It says what you asked for, so it waits for you: only in the Stock chip, and onl
 pause typing, does the ticker go to Yahoo; the answer is kept for a minute. Typed without the chip, `stock aapl` asks
 nothing: below the files, a row offers it (Stock Price of AAPL), and Tab or Enter on it makes the chip.
 
+**Weather:** `weather` ⇥ is the Weather chip. With nothing after it, it's the weather where you are: the first time, a
+row asks for your location (Location Services), once. If you'd rather not share it, set a city in Settings › General
+› Weather (`[weather] city`). Type a city after the chip (`weather lisbon`) for that city. The card shows the
+temperature now with its symbol, the conditions, today's high and low, how it feels and the wind, the next five days
+with their lows and highs on bars of one scale, and the next seven hours. Enter opens the Weather app. It comes from
+Open-Meteo, free and without an account: only in the chip and once you pause typing, and where you are goes rounded to
+about a kilometer. An answer is kept for 10 minutes.
+
 **Lookups:** `ip` lists each interface's IPv4 address (Wi-Fi, Ethernet; Enter copies it) and a Public IP row that
 asks api.ipify.org only when you press Enter on it. `battery` (from `batt`) shows the charge and what it's doing
 ("87%, charging, 1:05 to full"), its health and cycle count; Enter opens Battery settings. `disk` shows free space on

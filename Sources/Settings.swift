@@ -255,6 +255,13 @@ private struct GeneralPane: View {
         } header: { Text("Notes") } footer: {
             Note("# headings, **bold**, *italic*, `code`, lists, - [ ] checkboxes you can click, and links. The notes stay plain text files.")
         }
+        Section {
+            TextField("City", text: Binding(get: { model.config.weather.city ?? "" },
+                                            set: { model.text(\.weather.city, "weather", "city").wrappedValue = $0 }),
+                      prompt: Text("Where you are"))
+        } header: { Text("Weather") } footer: {
+            Note("For “weather” when Location Services is off for Copperlight, or you’d rather not share where you are.")
+        }
         Section("Pomodoro") {
             Minutes(title: "Focus", value: model.binding(\.pomodoro.defaultMinutes, "pomodoro", "default_minutes") { .int($0) })
             Minutes(title: "Break", value: model.binding(\.pomodoro.breakMinutes, "pomodoro", "break_minutes") { .int($0) })

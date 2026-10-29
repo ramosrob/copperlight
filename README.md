@@ -70,6 +70,7 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Dictionary and translation**<br>`define`, `translate` | The Mac's dictionary and on-device translation, without opening an app. Copy something and type `translate`. |
 | **Music and sound**<br>`:play`, `:mute`, `:output` | Play, pause and skip whatever is playing, mute, set the volume, and switch between speakers and headphones. |
 | **Stocks**<br>`stock AAPL` | The price now, today's change and the week's chart across the whole card. Enter opens the stock on Yahoo Finance. |
+| **Weather**<br>`weather` | Now, the next hours and five days across the card, for where you are or any city. Enter opens Weather. |
 | **Lookups**<br>`ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery and its health, free space on each disk, and what's listening on a port, with Enter to end it. |
 | **Speed test**<br>`speed` | Your internet's download and upload speed and its latency, measured by macOS's own tool against Apple's servers, when you press Enter. |
 | **Processes**<br>`cpu`, `memory` | What's using the processor or memory, the busiest first, with each one's app icon. Enter ends a process, or quits an app, after asking. |
@@ -176,6 +177,7 @@ The answer appears big as you type, with what a percentage hid beside it; Enter 
 | `3pm lisbon in sf`, `now in tokyo` | The time there |
 | `days until dec 25`, `in 3 weeks` | `58 days`, the date in 3 weeks; `dec 25` alone says it's a Friday |
 | `stock AAPL`, `stock MGLU3.SA` | The price now, today's change and the last 7 days as a chart (from Yahoo Finance) |
+| `weather`, `weather lisbon` | The weather now, the next hours and five days, where you are or in that city (from Open-Meteo) |
 
 ### Words
 
@@ -313,8 +315,10 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
   finding apps by what they do, Homebrew's public app list (downloaded whole, weekly, so it doesn't reveal which apps
   you have), each listed app's homepage once, and the App Store's description of apps you got there.
   `[apps] online = false` turns those off. Links and searches open in your browser.
-- **Stock prices only when you ask:** in the Stock chip (`stock aapl`, then Tab), the ticker goes to Yahoo Finance
-  once you pause typing, and nothing else. Typing alone never sends it. Likewise your public IP: the `ip` row asks
+- **Stock prices and weather only when you ask:** in the Stock chip (`stock aapl`, then Tab), the ticker goes to
+  Yahoo Finance once you pause typing, and nothing else. In the Weather chip, the city, or where you are rounded to
+  about a kilometer, goes to Open-Meteo the same way; Location Services is asked once, and a city in Settings does
+  without it. Typing alone never sends it. Likewise your public IP: the `ip` row asks
   api.ipify.org only when you press Enter on Public IP, `speed` tests against Apple's servers only when you press
   Enter on it, and Homebrew downloads an app only when you press Enter on Install.
 - **What it keeps stays on your Mac**, in `~/.config/copperlight/`: your config, notes, state and clipboard history

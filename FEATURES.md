@@ -22,6 +22,7 @@ files and the text in photos. Everything else on this page is on.
 | `3pm lisbon in sf`, `now in tokyo` | The time there | Copies it |
 | `days until dec 25`, `in 3 weeks`, `dec 25` | How long, which day; a date's weekday and week | Copies it |
 | `stock AAPL`, `stock MGLU3.SA` | The price, today's change and a 7-day chart across the card (Yahoo Finance) | Opens it on Yahoo Finance |
+| `weather`, `weather lisbon` | Now, the next hours and five days across the card (Open-Meteo) | Opens Weather |
 | `copperlight git` | Bookmarks and recent pages from your browser | Opens it in its profile |
 | `inbox`, `tabs` ⇥ | The tabs open in your browsers | Switches to it |
 | `ana` | People from Contacts; Tab: every way to reach them | Messages them |
@@ -189,8 +190,15 @@ files and the text in photos. Everything else on this page is on.
   Stock chip). Across the whole card: the ticker and name, the price and today's change (▲ or ▼), when it was last
   traded and where, the last 7 days drawn hourly in copper with yesterday's close dashed across, and under it the
   previous close and the change over the 7 days. Enter opens the stock on Yahoo Finance. The ticker goes to Yahoo only in the Stock chip, once typing pauses (350 ms); an answer is kept a
-  minute. It's Copperlight's one request that says what you looked up. Typed without the chip, `stock aapl` asks
+  minute. With weather, it's one of the two requests that say what you looked up. Typed without the chip, `stock aapl` asks
   nothing: a row under the files offers it (Stock Price of AAPL, Tab).
+- **Weather:** `weather` (`wea` ⇥ is the Weather chip). Nothing typed: where you are, from Location Services (asked
+  once, from a row: Weather Where You Are, Allow), else `[weather] city` (Settings › General › Weather); a city typed
+  (`weather lisbon`): that city. Across the whole card: the temperature now big with its symbol, the conditions, today's
+  high and low, how it feels and the wind; the next five days with their lows and highs on bars of one scale; the next
+  seven hours along the bottom. °F and mph where the Mac uses US units. Enter opens the Weather app. Like a stock, the
+  place goes to Open-Meteo (free, no key) only in the chip, once typing pauses; where you are goes rounded to about a
+  kilometer, and an answer is kept 10 minutes.
 
 - **Units:** `10 km in mi`, `10km mi`, `100 f to c`, `2,5 kg`, `1 gb in mb`, `90 min in h`, `1 day in hours`.
   Length, weight, temperature, volume, speed, data, time and area, by the names people type (`km`, `miles`,

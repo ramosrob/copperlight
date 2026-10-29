@@ -146,7 +146,10 @@ Sources/
   Lookups.swift             `ip`, `battery`, `disk`, `port 3000`, `cpu`, `memory`, `speed`: getifaddrs, IOKit power sources, volumes, lsof, ps, networkQuality
   Controls.swift            `:play`, `:mute`, `:output`, `:connect`, `:wifi`, `:awake`: media keys, CoreAudio, IOBluetooth, CoreWLAN, power
   Stocks.swift              `stock AAPL`: Yahoo Finance's chart data and the price row, its card
-  Answers.swift             answers drawn big in place of the preview: a picture beside its rows, a stock's card, a color's band
+  Weather.swift             `weather`: Open-Meteo's forecast and places, Location Services, the forecast's card
+  Answers.swift             answers drawn big in place of the preview: a picture or a person beside their rows, a stock's,
+                            the speed test's, a dictionary entry's or the weather's card, a band (a color, a calculation,
+                            a currency, the next meeting) over its rows
   Menus.swift               `:export pdf`: the menus of the app in front (Accessibility), their shortcuts
   Config.swift              Config (TOML), hotkey parsing, example config, directory watcher
   StateStore.swift          state.json

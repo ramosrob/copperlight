@@ -12,6 +12,17 @@ enum Answer: Sendable {
     case calculation(String, result: String, note: String?)
     case currency(CurrencyCard)
     case meeting(MeetingCard)
+    case weather(WeatherCard)
+}
+
+/// A forecast, its text ready to show; the days' temperatures as numbers, for their bars.
+struct WeatherCard: Sendable {
+    struct Hour: Sendable { var label: String, symbol: String, temperature: String } // "Now" or "15:00"
+    struct Day: Sendable { var label: String, symbol: String, low: Double, high: Double } // "Today", "Fri"
+    var place: String, temperature: String, symbol: String, conditions: String
+    var details: String // "H 23° · L 15° · Feels like 20° · Wind 14 km/h"
+    var hours: [Hour], days: [Day]
+    var updated: String // "Open-Meteo · updated 14:52"
 }
 
 /// The meeting to join, its text ready to show.
@@ -351,6 +362,87 @@ private struct BandFlags: View {
             }
         }
         .frame(height: height)
+    }
+}
+
+/// Now big on the left, the next five days on the right with how warm each gets, the next hours along the bottom.
+struct WeatherCardView: View {
+    let card: WeatherCard
+
+    var body: some View {
+        let lowest = card.days.map(\.low).min() ?? 0, highest = card.days.map(\.high).max() ?? 1
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 28) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Kicker(text: "\(card.place) · now")
+                    HStack(spacing: 12) {
+                        WeatherSymbol(name: card.symbol, size: 40)
+                        Text(card.temperature).font(.system(size: 60, weight: .semibold)).monospacedDigit()
+                    }
+                    Text(card.conditions).font(.system(size: 17, weight: .medium))
+                    Text(card.details).font(.system(size: 12.5)).foregroundStyle(.secondary).lineLimit(2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(spacing: 7) {
+                    ForEach(Array(card.days.enumerated()), id: \.offset) { _, day in
+                        HStack(spacing: 10) {
+                            Text(day.label).font(.system(size: 13, weight: .medium)).frame(width: 44, alignment: .leading)
+                            WeatherSymbol(name: day.symbol, size: 14).frame(width: 22)
+                            Text("\(Int(day.low.rounded()))°").foregroundStyle(.secondary).frame(width: 30, alignment: .trailing)
+                            DayRange(low: day.low, high: day.high, lowest: lowest, highest: highest).frame(width: 96, height: 5)
+                            Text("\(Int(day.high.rounded()))°").frame(width: 30, alignment: .leading)
+                        }
+                        .font(.system(size: 13)).monospacedDigit()
+                    }
+                }
+            }
+            Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
+            HStack(spacing: 0) {
+                ForEach(Array(card.hours.enumerated()), id: \.offset) { _, hour in
+                    VStack(spacing: 6) {
+                        Text(hour.label).font(.system(size: 11.5)).foregroundStyle(.secondary)
+                        WeatherSymbol(name: hour.symbol, size: 17).frame(height: 20)
+                        Text(hour.temperature).font(.system(size: 13, weight: .medium)).monospacedDigit()
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
+            HStack {
+                Text(card.updated).font(.system(size: 12)).foregroundStyle(.secondary)
+                Spacer()
+                EnterHint(action: "Open in Weather")
+            }
+        }
+    }
+}
+
+/// A weather symbol in its own colors (a yellow sun, blue rain); in light mode a soft dark edge keeps the white
+/// moon and clouds from vanishing into the card.
+private struct WeatherSymbol: View {
+    let name: String, size: CGFloat
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        Image(systemName: name).symbolRenderingMode(.multicolor).font(.system(size: size))
+            .shadow(color: scheme == .dark ? .clear : .black.opacity(0.35), radius: size > 20 ? 2 : 1)
+    }
+}
+
+/// A day's low to high, as a bar placed on the scale of all five days.
+private struct DayRange: View {
+    let low: Double, high: Double, lowest: Double, highest: Double
+
+    var body: some View {
+        GeometryReader { geometry in
+            let span = max(highest - lowest, 1), width = geometry.size.width
+            Capsule().fill(Color.primary.opacity(0.1))
+                .overlay(alignment: .leading) {
+                    Capsule().fill(LinearGradient(colors: [Color(red: 0.45, green: 0.72, blue: 0.85), .copper], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: max(width * (high - low) / span, 6))
+                        .offset(x: width * (low - lowest) / span)
+                }
+        }
     }
 }
 
