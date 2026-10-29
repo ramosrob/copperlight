@@ -150,27 +150,33 @@ Sources/
   Config.swift              Config (TOML), hotkey parsing, example config, directory watcher
   StateStore.swift          state.json
   AppProvider.swift         fuzzy matcher, app scan
-  CalculatorProvider.swift  math via Expression, percentages, hex and binary, ans
+  CalculatorProvider.swift  math via Expression, percentages and their phrases, 10k, hex and binary, ans
   CurrencyProvider.swift    query parser, rate cache
   Shell.swift               `:!` shell lines: run with a timeout, output in place of the list
-  Scripts.swift             ~/.config/copperlight/scripts/: executables as commands, their @title/@icon/@output header
+  Scripts.swift             ~/.config/copperlight/scripts/: executables as commands, their @title/@icon/@output header, script filters
                             and community script commands' headers
   Snippets.swift            [[snippet]] rows, placeholders, paste
   Units.swift               unit names and conversions (Foundation Measurement)
   TimeZones.swift           places, `3pm lisbon in sf`
   Dates.swift               date math: `days until dec 25`, `in 3 weeks`, a date's weekday; what a phrase could become
   BrowserPages.swift        bookmarks and history: Chromium, Firefox, Safari readers, search
+  Tabs.swift                open browser tabs (AppleScript, Automation permission), switching to one
+  Contacts.swift            people from Contacts, the Contact chip: message, call, FaceTime, WhatsApp, email, copy
+  Reminders.swift           reminders that are due (EventKit): the empty launcher, `due`, Enter completes
+  Suggestions.swift         the apps you open around this time of day, for the empty launcher (state.json)
   Meetings.swift            today's events (EventKit), video call links
   SystemSettings.swift      System Settings pages by name
   OtherNames.swift          other words for built-ins and apps ("turn off" → Shut Down)
   Emoji.swift               emoji by name (the emoji picker's names)
-  Words.swift               define (Dictionary Services), translate (Translation)
+  Words.swift               define (Dictionary Services), spell (NSSpellChecker), translate (Translation)
   Tools.swift               running command-line tools with a timeout and cancel (:! lines, scripts)
   PathProvider.swift        `~/…` and `/…`: list a folder, go into it, open what's in it
   Capture.swift             add note/todo/event (EventKit, date reading), screenshot and record
   TextTools.swift           text tools (json, b64, case…), paste as plain text or Markdown (HTML → Markdown)
   Colors.swift              `#c87533`, `rgb(…)`, `hsl(…)` in the other notations, `pick color` (NSColorSampler)
   QRCode.swift              `qr`: QR codes (Core Image), copying a picture
+  ScreenText.swift          `copy text`: a region of the screen (screencapture), its text and QR codes (Vision)
+  LargeType.swift           `large 555-0100`: the text across the screen
   CommandProvider.swift     [[command]] entries, quicklinks, browsers and profiles, URL and web search fallbacks, search engines, detached processes, notifications
   Clipboard.swift           pasteboard polling (text, images), SQLite store, clipboard rows, ⌘V
   FileSearchProvider.swift  Spotlight (NSMetadataQuery) file search, by name and by the text inside

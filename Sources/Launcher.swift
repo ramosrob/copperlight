@@ -52,6 +52,9 @@ struct LauncherResult: Identifiable, Sendable {
     var completion: String? = nil
     /// The key the selected row shows beside what it does.
     var key: String { completion != nil ? "tab" : "↵" }
+    /// Tab goes a step into the row while Enter still runs `action`: this goes in the field, its name becoming a chip
+    /// (a person's ways to reach them). The selected row names it beside what Enter does.
+    var more: (label: String, fill: String)? = nil
     /// Something for the pane beside the list: text, text to load, or a picture.
     var hasPreview: Bool { preview != nil || loadPreview != nil || previewImage != nil }
     /// Enter runs it, drops the row and keeps the panel open, so several can go in a row (`:delete`).
@@ -206,11 +209,15 @@ final class SearchModel {
         return true
     }
 
-    /// Enter on a row: count it, so it ranks higher next time.
+    /// Enter on a row: count it, so it ranks higher next time. An app's (its id is its path) is kept with the time
+    /// too, for the empty launcher's suggestions.
     func picked(_ id: String) {
         guard let state else { return }
         frecency = Frecency.picking(id, in: frecency, at: .now)
         state.set(Frecency.stateSection, frecency)
+        guard id.hasPrefix("/"), id.hasSuffix(".app") else { return }
+        let opens = (state.get(AppOpen.stateSection, as: [AppOpen].self) ?? []) + [AppOpen(app: id, at: .now)]
+        state.set(AppOpen.stateSection, Array(opens.suffix(AppOpen.limit)))
     }
 
     /// The chip showing, and whose: set by Tab or Enter only (`fill`, `complete`), never by typing.
@@ -247,9 +254,9 @@ final class SearchModel {
             search() // the same text, now for its provider alone
         }
         if moveEnding() || entered != nil { return }
-        if let row = selected, let completion = row.completion {
+        if let row = selected, let fill = row.completion ?? row.more?.fill {
             picked(row.id)
-            return fill(completion)
+            return self.fill(fill)
         }
         // A row with something to show: Tab opens it beside the list (and closes it again).
         if let row = selected, row.hasPreview, !previewsByDefault { return previewOpen.toggle() }
@@ -659,7 +666,7 @@ private struct LauncherView: View {
                             }
                             let selected = index == model.selection
                             ResultRow(result: result, selected: selected,
-                                      offersPreview: selected && result.hasPreview && result.completion == nil && !model.showsPreview)
+                                      offersPreview: selected && result.hasPreview && result.completion == nil && result.more == nil && !model.showsPreview)
                         }
                         .id(result.id)
                     }
@@ -773,10 +780,10 @@ private struct ResultRow: View {
                 }
             }
             Spacer(minLength: 8)
-            if selected, !result.actionTitle.isEmpty || offersPreview {
+            if selected, !result.actionTitle.isEmpty || offersPreview || result.more != nil {
                 HStack(spacing: 7) {
-                    if offersPreview {
-                        Text("Preview").font(.system(size: 12)).foregroundStyle(.secondary)
+                    if let tab = offersPreview ? "Preview" : result.more?.label {
+                        Text(tab).font(.system(size: 12)).foregroundStyle(.secondary)
                         Keycap(label: "tab").padding(.trailing, 6)
                     }
                     if !result.actionTitle.isEmpty {

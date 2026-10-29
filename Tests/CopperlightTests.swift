@@ -1422,10 +1422,10 @@ private struct Sized: ResultProvider {
     #expect(found[0].title == "Deploy App" && found[0].icon == "hammer" && found[0].output == .show && found[1].output == .silent)
 
     let provider = ScriptProvider(folder: folder)
-    let typed = provider.results(for: "deploy it's live")
+    let typed = await provider.results(for: "deploy it's live")
     #expect(typed.first?.title == "Deploy App it's live" && typed.first?.score == 100) // the text after the name: arguments
     #expect(await typed.first?.output?({ _ in }).preview == "to it's") // quoted, so it reaches the script as typed
-    #expect(provider.results(for: "dep").first?.title == "Deploy App") // found loosely too
+    #expect(await provider.results(for: "dep").first?.title == "Deploy App") // found loosely too
     #expect(shellQuoted("it's") == #"'it'\''s'"#)
 
     let model = SearchModel(providers: [provider, CaptureProvider(addToNote: { _ in })])
@@ -1477,10 +1477,10 @@ private struct Sized: ResultProvider {
     #expect(both.title == "Mine" && both.output == .show) // Copperlight's own headers win
 
     let provider = ScriptProvider(folder: folder)
-    let row = try #require(provider.results(for: "ask will it ship").first)
+    let row = try #require(await provider.results(for: "ask will it ship").first)
     #expect(row.subtitle == "Prints the question back")
     #expect(await row.output?({ _ in }).preview == "[will it ship]") // one declared argument: the whole question
-    #expect(provider.results(for: "restart-dock").first?.confirm == "Run Restart Dock?")
+    #expect(await provider.results(for: "restart-dock").first?.confirm == "Run Restart Dock?")
     #expect(scriptArguments(["a", "b", "c"], declared: 2) == ["a", "b c"] && scriptArguments(["a", "b"], declared: nil) == ["a", "b"])
 }
 
@@ -2654,4 +2654,245 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(already.map { !$0.subtitle.hasSuffix("→ German") && !$0.title.hasSuffix("→ German to translate here") } == true)
     translate.setDefaultTarget("klingon") // not one the Mac translates: automatic
     #expect(await translate.results(for: "translate good morning, how are you").first?.subtitle != "English → Klingon")
+}
+
+// MARK: Contacts
+
+@MainActor @Test func contacts() async throws {
+    let ana = Person(id: "1", name: "Ana Silva", organization: "Acme", phones: [.init(label: "mobile", value: "+351 912 345 678")],
+                     emails: [.init(label: "work", value: "ana@acme.com")], birthday: DateComponents(month: 3, day: 4))
+    let bob = Person(id: "2", name: "Bob Stone", nickname: "Bobby", emails: [.init(label: "home", value: "bob@example.com")])
+    let carla = Person(id: "3", name: "Carla Dias")
+    let contacts = ContactsProvider(people: [ana, bob, carla], whatsApp: true)
+
+    // Every word typed starts a word of the name, the nickname or the company, from 2 letters.
+    #expect(await contacts.results(for: "ana").map(\.title) == ["Ana Silva"])
+    #expect(await contacts.results(for: "silva an").map(\.title) == ["Ana Silva"])
+    #expect(await contacts.results(for: "bobby").map(\.title) == ["Bob Stone"])
+    #expect(await contacts.results(for: "acme").map(\.title) == ["Ana Silva"])
+    #expect(await contacts.results(for: "a").isEmpty)
+    #expect(await contacts.results(for: "ilva").isEmpty) // not inside a word
+    let row = try #require(await contacts.results(for: "ana").first)
+    #expect(row.subtitle == "+351 912 345 678 · ana@acme.com" && row.actionTitle == "Message")
+    #expect(row.more?.fill == "contact Ana Silva" && row.more?.label == "Actions")
+    #expect(row.score < 1 && row.score > -0.4) // below apps, above browser pages and files
+    // Enter messages: a phone, else an email, else it opens the card.
+    #expect(messageURL(ana)?.absoluteString == "sms:+351912345678")
+    #expect(messageURL(bob)?.absoluteString == "imessage:bob@example.com")
+    #expect(messageURL(carla) == nil)
+    #expect(await contacts.results(for: "carla").first?.actionTitle == "Open in Contacts")
+    #expect(contactCardURL("410FE041-5C4E-48DA-B4DE-04C15EA3DBAC:ABPerson") != nil)
+
+    // Tab: the person's chip, every way to reach them, the card beside them.
+    let actions = await contacts.modeResults(for: "contact Ana Silva")
+    #expect(actions.map(\.title) == ["Message", "Call", "FaceTime", "WhatsApp", "Email", "Copy +351 912 345 678",
+                                     "Copy ana@acme.com", "Open in Contacts"])
+    #expect(actions[0].subtitle == "+351 912 345 678 · mobile" && actions[4].subtitle == "ana@acme.com · work")
+    #expect(actions.allSatisfy { $0.preview == "Ana Silva\nAcme" })
+    #expect(actions[0].details.map(\.0) == ["mobile", "work", "Birthday"] && actions[0].details[2].1 == "March 4")
+    #expect(await ContactsProvider(people: [ana], whatsApp: false).modeResults(for: "contact ana").allSatisfy { $0.title != "WhatsApp" })
+    // In the chip: nothing typed lists everyone; a name that fits one person, their actions.
+    #expect(await contacts.modeResults(for: "contact").map(\.title) == ["Ana Silva", "Bob Stone", "Carla Dias"])
+    #expect(await contacts.modeResults(for: "contact bob").map(\.title) == ["Message", "Email", "Copy bob@example.com", "Open in Contacts"])
+
+    let model = SearchModel(providers: [contacts])
+    model.query = "ana"
+    try await Task.sleep(for: .milliseconds(100))
+    model.complete() // Tab steps into the row; Enter would have messaged
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(model.mode?.title == "Contact" && model.typed == "Ana Silva" && model.rows.first?.title == "Message")
+}
+
+// MARK: Browser tabs
+
+@Test func browserTabs() async throws {
+    let (us, rs) = ("\u{1F}", "\u{1E}")
+    let output = ["1\(us)1\(us)Copperlight on GitHub\(us)https://github.com/example/copperlight",
+                  "1\(us)2\(us)Inbox\(us)https://mail.example.com/inbox", "7\(us)1\(us)\(us)about:blank"].joined(separator: rs) + "\n"
+    let tabs = parseTabs(output, browser: "com.google.Chrome")
+    #expect(tabs.count == 3 && tabs[1] == BrowserTab(title: "Inbox", url: "https://mail.example.com/inbox", window: "1", index: 2,
+                                                       browser: "com.google.Chrome"))
+    #expect(parseTabs("", browser: "com.apple.Safari").isEmpty)
+
+    // Enter switches to it: its window comes forward with it showing.
+    #expect(switchScript(tabs[1])?.contains("set active tab index of w to 2") == true)
+    #expect(switchScript(BrowserTab(title: "", url: "", window: "3", index: 4, browser: "com.apple.Safari"))?
+        .contains("set current tab of w to tab 4 of w") == true)
+    #expect(switchScript(BrowserTab(title: "", url: "", window: "1 \" & do shell script \"x", index: 1, browser: "com.google.Chrome")) == nil)
+
+    // Like bookmarks: every word typed starts a word of the title or the address, from 2 letters; above them.
+    let provider = BrowserTabsProvider(tabs: tabs, apps: ["com.google.Chrome": URL(filePath: "/Applications/Google Chrome.app")])
+    let row = try #require(await provider.results(for: "copper git").first)
+    #expect(row.title == "Copperlight on GitHub" && row.subtitle == "github.com · Tab" && row.actionTitle == "Switch to Tab")
+    #expect(row.score > -0.4 && row.score < 0.5) // above browser pages, below contacts and apps
+    #expect(await provider.results(for: "inbox").map(\.title) == ["Inbox"])
+    #expect(await provider.results(for: "i").isEmpty)
+    #expect(await provider.results(for: "tabs").first?.completion == "tabs ") // the chip, a Tab away
+    // In the chip: every tab, in window order; typing narrows them.
+    #expect(await provider.modeResults(for: "tabs").map(\.title) == ["Copperlight on GitHub", "Inbox", "about:blank"])
+    #expect(await provider.modeResults(for: "tabs mail").map(\.title) == ["Inbox"])
+}
+
+// MARK: Text from the screen
+
+@MainActor @Test func textFromTheScreen() async throws {
+    // A picture of some text, as a region of the screen would be.
+    let picture = NSImage(size: NSSize(width: 900, height: 260), flipped: false) { rect in
+        NSColor.white.setFill()
+        rect.fill()
+        let font = [NSAttributedString.Key.font: NSFont.systemFont(ofSize: 48), .foregroundColor: NSColor.black]
+        ("Invoice 2041 is due" as NSString).draw(at: NSPoint(x: 30, y: 150), withAttributes: font)
+        ("Total 129.90" as NSString).draw(at: NSPoint(x: 30, y: 50), withAttributes: font)
+        return true
+    }
+    let image = try #require(picture.cgImage(forProposedRect: nil, context: nil, hints: nil))
+    let read = readScreenshot(image)
+    #expect(read.text == "Invoice 2041 is due\nTotal 129.90" && read.codes.isEmpty) // top to bottom
+    #expect(readScreenshot(try #require(qrCode("https://copperlight.app"))).codes == ["https://copperlight.app"])
+
+    let rows = ScreenTextProvider()
+    #expect(await rows.results(for: "copy text").first?.title == "Copy Text from Screen")
+    #expect(await rows.results(for: "ocr").first?.title == "Copy Text from Screen")
+    #expect(await rows.results(for: "text from").first?.actionTitle == "Select")
+    #expect((await rows.results(for: "cop").first?.score ?? 0) < 50) // below Copperlight Settings
+}
+
+// MARK: Spelling
+
+@MainActor @Test func spelling() async throws {
+    #expect(spellings(of: "definately", language: "en").first == "definitely") // a word: its guesses, the best first
+    #expect(spellings(of: "definitely", language: "en").isEmpty)
+    #expect(spellings(of: "I recieved the leter", language: "en") == ["I received the letter"]) // words: the text, corrected
+
+    let rows = SpellProvider(language: "en")
+    let row = try #require(await rows.results(for: "spell definately").first)
+    #expect(row.title == "definitely" && row.subtitle == "Spelling of “definately”" && row.actionTitle == "Copy")
+    #expect(await rows.results(for: "spell definitely").first?.subtitle == "Spelled right")
+    #expect(await rows.results(for: "spell qzxvbnmq").first?.title == "No spelling for “qzxvbnmq”")
+    #expect(await rows.results(for: "spel").first?.completion == "spell ")
+    #expect(await rows.results(for: "definately").isEmpty) // only after its name
+}
+
+// MARK: Suggestions in the empty launcher
+
+@MainActor @Test func appSuggestions() async throws {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "UTC")!
+    let now = Date(timeIntervalSince1970: 1_793_203_080) // Wednesday 2026-10-28, 15:58 UTC
+    let opened = { (app: String, days: [Double], minutes: Double) in
+        days.map { AppOpen(app: "/System/Applications/\(app).app", at: now - $0 * 86_400 + minutes * 60) }
+    }
+    let opens = opened("Mail", [1, 2, 3], -20) + opened("Notes", [1, 2, 3, 4], 30) // on 3 days or more, within the hour
+        + opened("Music", [1, 2, 2], 5) // on 2 days only: not a habit yet
+        + opened("Maps", [1, 2, 3, 4], 180) // another time of day
+        + opened("Books", [40, 41, 42], 0) // more than 4 weeks ago
+    #expect(suggestedApps(opens, now: now, calendar: calendar) == ["/System/Applications/Notes.app", "/System/Applications/Mail.app"])
+    let midnight = now + 8 * 3600 + 12 * 60 // 00:10: 23:50 is 20 minutes before it
+    #expect(suggestedApps(opened("Mail", [1, 2, 3], 8 * 60 - 8), now: midnight, calendar: calendar) == ["/System/Applications/Mail.app"])
+
+    // The rows: the app in front is already open; one that's gone isn't shown.
+    let rows = suggestionRows(opens + opened("Gone", [1, 2, 3], 0), now: now, calendar: calendar, front: "/System/Applications/Notes.app")
+    #expect(rows.map(\.title) == ["Mail"] && rows[0].id == "/System/Applications/Mail.app" && rows[0].subtitle == "Often around this time")
+    #expect(rows[0].score < 99) // after a meeting about to start and what's running
+
+    // Opening an app from the launcher is what they learn from; other rows aren't.
+    let store = StateStore(file: try tempStateFile())
+    let model = SearchModel(providers: [], frecency: store)
+    model.picked("/System/Applications/Mail.app")
+    model.picked("builtin:clipboard")
+    #expect(store.get(AppOpen.stateSection, as: [AppOpen].self)?.map(\.app) == ["/System/Applications/Mail.app"])
+    #expect(try Config.parse("[apps]\nsuggestions = false").apps.suggestions == false && Config().apps.suggestions)
+}
+
+// MARK: Large Type
+
+@MainActor @Test func largeType() async throws {
+    let large = LargeTypeProvider(clipboard: { "Wi-Fi: copper-guest" })
+    let row = try #require(await large.results(for: "large 555-0100").first)
+    #expect(row.title == "555-0100" && row.subtitle == "Large Type" && row.actionTitle == "Show")
+    #expect(await large.results(for: "large").first?.completion == "large ") // its chip, a Tab away
+    #expect(await large.modeResults(for: "large").first?.title == "Wi-Fi: copper-guest") // nothing typed: what you copied
+    #expect(await large.results(for: "big text").first?.title == "Large Type")
+    #expect(await LargeTypeProvider(clipboard: { nil }).modeResults(for: "large").first?.actionTitle == "")
+
+    let window = LargeTypeWindow(text: "555-0100")
+    #expect(window.canBecomeKey && window.frame == (NSScreen.main?.frame ?? window.frame))
+}
+
+// MARK: Due reminders
+
+@MainActor @Test func dueReminders() async throws {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "UTC")!
+    let now = Date(timeIntervalSince1970: 1_793_203_080) // Wednesday 2026-10-28, 15:58 UTC
+    let today = calendar.startOfDay(for: now)
+    let items = [
+        ReminderItem(id: "a", title: "Call the bank", due: now - 3600, allDay: false, list: "Errands"),
+        ReminderItem(id: "b", title: "Water the plants", due: today, allDay: true, list: "Home"),
+        ReminderItem(id: "c", title: "Send the invoice", due: now + 20 * 60, allDay: false, list: "Work"),
+        ReminderItem(id: "d", title: "Book flights", due: now + 3 * 3600, allDay: false, list: "Travel"), // later today
+        ReminderItem(id: "e", title: "Renew passport", due: today - 2 * 86_400, allDay: true, list: "Travel"),
+    ]
+    // The empty launcher: what's overdue, due within the hour, or due today with no time (by the end of it); the
+    // soonest deadline first.
+    let due = dueNow(items, now: now, calendar: calendar)
+    #expect(due.map(\.id) == ["e", "a", "c", "b"])
+    #expect(due.map { reminderBadge($0, now: now, calendar: calendar) } == ["Overdue", "Overdue", "in 20 min", "Today"])
+
+    let provider = RemindersProvider(calendar: calendar, fetch: { items })
+    let rows = await provider.upNext(now: now)
+    #expect(rows.map(\.title) == ["Renew passport", "Call the bank", "Send the invoice", "Water the plants"])
+    #expect(rows[0].actionTitle == "Complete" && rows[0].staysOpen && rows[0].badge == "Overdue" && rows[0].subtitle.hasPrefix("Travel"))
+    #expect(rows.allSatisfy { $0.score < 99.99 && $0.score > 50 }) // after a meeting and what's running, before suggestions
+    // `due`: the same, and the rest of today's.
+    #expect(await provider.results(for: "due", now: now).map(\.title) == ["Renew passport", "Call the bank", "Send the invoice",
+                                                                           "Book flights", "Water the plants"])
+    #expect(await provider.results(for: "du", now: now).isEmpty)
+}
+
+// MARK: Calculator phrases
+
+@Test func calculatorPhrasesAndKeepingGoing() async throws {
+    #expect(calculate("20% off 80") == 64)
+    #expect(calculate("30 is what % of 150") == 20)
+    #expect(calculate("30 is what percent of 150") == 20)
+    #expect(calculate("10k * 3") == 30_000)
+    #expect(calculate("2.5k + 1") == 2501)
+    #expect(calculate("10k") == nil) // a shorthand alone isn't math: it may be a file's name
+    #expect(calculate("0x10 + 1") == 17) // hex keeps its letters
+
+    let calculator = CalculatorProvider()
+    #expect(await calculator.results(for: "30 is what % of 150").first?.title == "20%")
+    // Tab puts the result in the field, to keep calculating with it; Enter still copies it.
+    let row = try #require(await calculator.results(for: "20% off 80").first)
+    #expect(row.title == "64" && row.actionTitle == "Copy" && row.more?.fill == "64" && row.more?.label == "Keep Going")
+}
+
+// MARK: Script filters
+
+@MainActor @Test func scriptFilters() async throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: "copperlight-filters-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let script = folder.appending(path: "links.sh")
+    try """
+        #!/bin/sh
+        # @title Team Links
+        # @output rows
+        printf 'Docs\\tThe handbook\\thttps://example.com/docs\\nWiki\\t\\thttps://example.com/wiki\\nOn-call: %s\\n' "$1"
+        """.write(to: script, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+
+    // Each line a row: its title, then a subtitle and the value Enter uses, after tabs.
+    #expect(scriptRows("a\tb\tc\n\nplain\n").map(\.title) == ["a", "plain"] && scriptRows("a\tb\tc\nplain").map(\.value) == ["c", "plain"])
+
+    let provider = ScriptProvider(folder: folder)
+    #expect(provider.modes.map(\.prefix) == ["links "] && provider.modes[0].title == "Team Links") // its chip
+    let offer = try #require(await provider.results(for: "links").first)
+    #expect(offer.title == "Team Links" && offer.completion == "links ")
+    // In its chip, or typed after its name: the script prints the rows for the text.
+    let rows = await provider.modeResults(for: "links ana")
+    #expect(rows.map(\.title) == ["Docs", "Wiki", "On-call: ana"])
+    #expect(rows[0].subtitle == "The handbook" && rows[0].actionTitle == "Open" && rows[2].actionTitle == "Copy") // a link opens
+    #expect(await provider.results(for: "links ana").map(\.title) == ["Docs", "Wiki", "On-call: ana"])
 }

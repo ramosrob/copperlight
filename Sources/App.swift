@@ -168,6 +168,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let snippets = SnippetProvider()
     private let pages = BrowserPagesProvider()
     private let meetings = MeetingsProvider()
+    private let contacts = ContactsProvider()
+    private let tabs = BrowserTabsProvider()
+    private let reminders = RemindersProvider()
     private let translate = TranslateProvider()
     private let files = FileSearchProvider()
     private let photoText = Feature.photoText.isOn ? try? PhotoTextStore(path: PhotoTextStore.file.path) : nil
@@ -188,26 +191,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // Each provider with the feature it belongs to (none: always on); Features.swift says which are on.
     private lazy var model = SearchModel(
         providers: ([(commands, .commands), (ScriptProvider(), .scripts), (snippets, .snippets), (builtins, nil),
-                     (EmojiProvider(), .quickTools), (DefineProvider(), .quickTools),
-                     (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (TextToolProvider(), .quickTools),
-                     (ColorProvider(show: { [unowned self] in panel.show(typing: $0) }), .quickTools), (QRCodeProvider(), .quickTools), (capture, .notes), (apps, nil),
+                     (EmojiProvider(), .quickTools), (DefineProvider(), .quickTools), (SpellProvider(), .quickTools),
+                     (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (reminders, nil), (contacts, nil), (TextToolProvider(), .quickTools),
+                     (ColorProvider(show: { [unowned self] in panel.show(typing: $0) }), .quickTools), (QRCodeProvider(), .quickTools), (LargeTypeProvider(), .quickTools),
+                     (ScreenTextProvider(show: { [unowned self] in panel.show(typing: $0) }), .quickTools), (capture, .notes), (apps, nil),
                      (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
                      (TimeZoneProvider(), .quickTools), (DateMathProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools),
                      (TimerProvider(clock: countdown), .quickTools),
                      (StopwatchProvider(watch: stopwatch), .quickTools), (LookupProvider(), .quickTools), (files, nil),
-                     (FileContentProvider(files: files), .fileContent), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
+                     (FileContentProvider(files: files), .fileContent), (tabs, nil), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
             .compactMap { $0.1?.isOn == false ? nil : $0.0 } + (photoText.map { [PhotoTextProvider(store: $0)] } ?? []),
         exclusive: [FileSearchProvider.prefix: files, VerbProvider.prefix: verbs,
                     ShellProvider.prefix: ShellProvider(state: .shared), "~": PathProvider(), "/": PathProvider()],
-        frecency: .shared, idle: Self.upNext(meetings, clocks: { [unowned self] in
+        frecency: .shared, idle: Self.upNext(meetings, reminders, clocks: { [unowned self] in
             runningClocks(pomodoro: pomodoro, timer: countdown, stopwatch: stopwatch)
+                + (suggestsApps ? suggestionRows(StateStore.shared.get(AppOpen.stateSection, as: [AppOpen].self) ?? []) : [])
         }))
+    private var suggestsApps = true
     private lazy var panel: LauncherPanel = LauncherPanel(model: model, placeholder: "Type anything")
 
-    /// What the empty launcher shows: the meeting to join, a few minutes before it starts, and what's counting.
-    nonisolated private static func upNext(_ meetings: MeetingsProvider,
+    /// What the empty launcher shows: the meeting to join, a few minutes before it starts, what's counting, reminders
+    /// that are due, and the apps you open around now.
+    nonisolated private static func upNext(_ meetings: MeetingsProvider, _ reminders: RemindersProvider,
                                            clocks: @escaping @MainActor @Sendable () -> [LauncherResult]) -> @Sendable () async -> [LauncherResult] {
-        { (await meetings.upNext() + MainActor.run { clocks() }).sorted { $0.score > $1.score } }
+        { (await meetings.upNext() + reminders.upNext() + MainActor.run { clocks() }).sorted { $0.score > $1.score } }
     }
     private var history: ClipboardHistory? // nil if clipboard.sqlite can't be opened
     private var historyError: String?
@@ -375,6 +382,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notes.values.forEach { $0.restyle() }
         pomodoro.defaultMinutes = config.pomodoro.defaultMinutes
         pomodoro.breakMinutes = config.pomodoro.breakMinutes
+        suggestsApps = config.apps.suggestions
         // Chained so back-to-back reloads reach the providers in order.
         configUpdate = Task { [previous = configUpdate, commands, currency, translate, files, apps, web, snippets] in
             await previous?.value
@@ -395,10 +403,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func refresh() {
         // Hours the first time, for a big library: on its own, and only one at a time (it says when it's busy).
         Task.detached(priority: .utility) { [photoIndexer] in await photoIndexer?.update() }
-        Task { [apps, currency, pages] in
+        Task { [apps, currency, pages, contacts, tabs] in
+            await tabs.refresh()
             await apps.rescan()
             if Feature.quickTools.isOn { await currency.refreshIfStale() }
             await pages.refresh()
+            await contacts.refresh()
         }
     }
 }

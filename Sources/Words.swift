@@ -55,6 +55,61 @@ struct DefineProvider: ResultProvider {
     }
 }
 
+// MARK: Spelling
+
+/// `text` spelled right: a word's guesses, the best first (up to 5), or the text with each misspelled word replaced by
+/// its best guess. Empty when it's spelled right, or nothing fits. `language` nil: the Mac's spelling setting.
+@MainActor func spellings(of text: String, language: String? = nil) -> [String] {
+    let checker = NSSpellChecker.shared
+    let misspelled = { (from: Int) in checker.checkSpelling(of: text, startingAt: from, language: language, wrap: false,
+                                                            inSpellDocumentWithTag: 0, wordCount: nil) }
+    guard misspelled(0).location != NSNotFound else { return [] }
+    if !text.contains(" ") {
+        return Array((checker.guesses(forWordRange: NSRange(location: 0, length: (text as NSString).length), in: text, language: language,
+                                      inSpellDocumentWithTag: 0) ?? []).prefix(5))
+    }
+    var fixed = text as NSString, from = 0
+    while case let range = checker.checkSpelling(of: fixed as String, startingAt: from, language: language, wrap: false,
+                                                 inSpellDocumentWithTag: 0, wordCount: nil), range.location != NSNotFound {
+        // Its best guess: autocorrect's pick is a word that's close, "leter" → "Peter".
+        let word = checker.guesses(forWordRange: range, in: fixed as String, language: language, inSpellDocumentWithTag: 0)?.first
+            ?? checker.correction(forWordRange: range, in: fixed as String, language: language ?? checker.language(), inSpellDocumentWithTag: 0)
+        guard let word else { from = range.location + range.length; continue }
+        fixed = fixed.replacingCharacters(in: range, with: word) as NSString
+        from = range.location + (word as NSString).length
+    }
+    return fixed as String == text ? [] : [fixed as String]
+}
+
+/// `spell definately`: the word spelled right, and the other guesses; `spell` with words, the text corrected. Enter
+/// copies it. The Mac's own spelling, its languages as System Settings has them.
+struct SpellProvider: ResultProvider {
+    var language: String? = nil
+    var modes: [Mode] { [Mode(prefix: "spell ", title: "Spell", icon: .symbol("textformat.abc"), hint: "A word or a sentence")] }
+
+    func results(for query: String) async -> [LauncherResult] {
+        if let start = startRow(query, keyword: "spell", title: "Spell", hint: "Type a word: spell definately", symbol: "textformat.abc") {
+            return [start]
+        }
+        guard query.lowercased().hasPrefix("spell ") else { return [] }
+        let text = query.dropFirst(6).trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return [] }
+        let row = { (index: Int, title: String, subtitle: String) in
+            LauncherResult(id: "spell:\(index)", title: title, subtitle: subtitle, icon: .symbol("textformat.abc"), score: 50 - Double(index) / 100,
+                           actionTitle: "Copy", action: { copyToClipboard(title) })
+        }
+        let found = await MainActor.run { [language] in
+            (fixes: spellings(of: text, language: language), right: NSSpellChecker.shared.checkSpelling(of: text, startingAt: 0, language: language,
+                wrap: false, inSpellDocumentWithTag: 0, wordCount: nil).location == NSNotFound)
+        }
+        if found.right { return [row(0, text, "Spelled right")] }
+        guard !found.fixes.isEmpty else {
+            return [LauncherResult(id: "spell", title: "No spelling for “\(text)”", icon: .symbol("textformat.abc"), score: 50, actionTitle: "", action: {})]
+        }
+        return found.fixes.enumerated().map { row($0, $1, "Spelling of “\(text)”") }
+    }
+}
+
 // MARK: Translate
 
 /// `translate bom dia`, `translate good morning to spanish`: Apple's on-device translation (macOS 26), from the

@@ -7,16 +7,23 @@ let lastAnswer = Mutex<Double?>(nil)
 
 /// The value of `query` if it's a calculation. nil for anything malformed, non-finite,
 /// or that isn't really math (a bare number like `42`, a lone constant like `pi`).
-/// Besides Expression's math: `20% of 150`, `150 + 20%` (20% of 150 added), `0b1010`, and `ans`.
+/// Besides Expression's math: `20% of 150`, `150 + 20%` (20% of 150 added), `20% off 80`, `30 is what % of 150`,
+/// `0b1010`, `10k` (in math: `10k * 3`), and `ans`.
 func calculate(_ query: String, ans: Double? = nil) -> Double? {
     var text = query.trimmingCharacters(in: .whitespaces)
     // Empty parens: Expression 0.13.9 crashes (out-of-range index) describing the error for
     // inputs like "x 2()". No math needs them. Fuzzed ~6M random inputs with this guard: no crash.
     guard Double(text) == nil, !text.contains(#/\(\s*\)/#) else { return nil }
     text = text.replacing(#/\b0b([01]+)\b/#) { binary in Int(binary.1, radix: 2).map(String.init) ?? String(binary.0) }
-    // Expression's % is the remainder (10 % 3), so only these two shapes mean percent.
+    // Thousands, as plain digits: "10k" alone stays a number, which isn't math.
+    text = text.replacing(#/\b(\d+(?:\.\d+)?)k\b/#) { short in Double(short.1).map { formatNumber($0 * 1000) } ?? String(short.0) }
+    // Expression's % is the remainder (10 % 3), so only these shapes mean percent.
     if let percent = text.wholeMatch(of: #/(\d+(?:\.\d+)?)\s*%\s+of\s+(.+)/#) {
         text = "(\(percent.1) / 100) * (\(percent.2))"
+    } else if let percent = text.wholeMatch(of: #/(\d+(?:\.\d+)?)\s*%\s+off\s+(.+)/#) {
+        text = "(\(percent.2)) * (1 - \(percent.1) / 100)"
+    } else if let ratio = text.wholeMatch(of: #/(?i)(.+?)\s+is\s+what\s*(?:%|percent)\s+of\s+(.+)/#) {
+        text = "(\(ratio.1)) / (\(ratio.2)) * 100"
     } else if let percent = text.wholeMatch(of: #/(.+?)\s*([+-])\s*(\d+(?:\.\d+)?)\s*%/#) {
         text = "(\(percent.1)) * (1 \(percent.2) \(percent.3) / 100)"
     }
@@ -55,19 +62,21 @@ func convertBase(_ query: String, ans: Double? = nil) -> String? {
     }
 }
 
+/// The result, Enter copying it; Tab puts it in the field instead, to keep calculating with it.
 struct CalculatorProvider: ResultProvider {
     func results(for query: String) async -> [LauncherResult] {
         let ans = lastAnswer.withLock { $0 }
         if let converted = convertBase(query, ans: ans) {
             return [LauncherResult(id: "calculator", title: converted, subtitle: query, icon: .symbol("number"), score: 10,
-                                   actionTitle: "Copy", action: { copyToClipboard(converted) })]
+                                   actionTitle: "Copy", action: { copyToClipboard(converted) }, more: ("Keep Going", converted))]
         }
         guard let value = calculate(query, ans: ans) else { return [] }
         let text = formatNumber(value)
-        return [LauncherResult(id: "calculator", title: text, subtitle: query, icon: .symbol("equal"), score: 10, actionTitle: "Copy",
+        let percent = query.contains(#/(?i)\bwhat\s*(?:%|percent)/#) ? "%" : "" // "30 is what % of 150": 20%
+        return [LauncherResult(id: "calculator", title: text + percent, subtitle: query, icon: .symbol("equal"), score: 10, actionTitle: "Copy",
                                action: {
                                    lastAnswer.withLock { $0 = value }
-                                   copyToClipboard(text)
-                               })]
+                                   copyToClipboard(text + percent)
+                               }, more: ("Keep Going", text))]
     }
 }

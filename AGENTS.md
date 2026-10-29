@@ -16,6 +16,8 @@ code is laid out, the rules a change has to fit) first. This file only adds what
   elsewhere is a recording in `Tests/Fixtures/`.
 - `state.json` keeps dates as ISO 8601 in whole seconds, so a test date that goes through `StateStore` needs whole
   seconds too.
+- In an actor provider, write `modeResults` as `async`, like the protocol: a synchronous one loses to the protocol
+  extension's default, which only calls `results`.
 - Don't rebuild what macOS already does well: ROADMAP.md's "Not planned" lists what's been ruled out and why.
 - A feature is done when the docs say it: [FEATURES.md](FEATURES.md), [docs/guide.md](docs/guide.md),
   [docs/configuration.md](docs/configuration.md) for a config key, the README when it's worth showing, and

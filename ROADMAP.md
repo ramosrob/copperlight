@@ -10,33 +10,35 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   `{date}` inside url and shell commands.
 - **Your own fallback rows:** choose what the last rows offer when nothing matches: several search engines, or any of
   your commands.
-- **Script filters:** a script prints rows, Copperlight lists them, Enter runs the one you pick. New features can live
-  in a script instead of the core.
 - **Updates,** for 1.0: tell you when a new version is out, and install it.
 
 ## Later
 
-- **Calculating:** phrases and shorthands (`20% off 80`, `30 is what % of 150`, `10k`, `2rem in px`); crypto in
-  conversions (`0.1 btc in eur`); a result back in the field, to keep going.
+- **Calculating:** `2rem in px`; crypto in conversions (`0.1 btc in eur`).
 - **Finding:** `:look` for a full-size preview; kinds, dates and tags in the files chip (`f pdf invoice`, `f last
   week`); folders listed newest first; symbols by name (→, ⌘, ™) and a default emoji skin tone; songs, albums and
-  playlists from your Music library; Safari's Reading List and iCloud Tabs; your open browser tabs and recent files;
-  suggestions in the empty field from what you use at this time of day.
+  playlists from your Music library; Safari's Reading List and iCloud Tabs; recent files, and an app's recent documents
+  a Tab away from its row; what you picked for an abbreviation first the next time you type it (`ss` → Slack); the
+  text inside files back, as its own chip.
 - **Clipboard:** pin items; copied files; copied images found by their text, and QR codes read from them; `:plain` and
   `:clear 15 min` in clipboard history; save an item as a snippet; paste in sequence, one older item each time.
 - **Text:** more placeholders (`{uuid}`, `{clipboard 1}`, a snippet inside another) with modifiers (`|upper`), and
   several named arguments; Markdown snippets pasted as rich text; title, kebab and sentence case, random numbers, and
-  the links pulled out of text; Large Type (`large 555-0100`); spelling suggestions (`spell definately`).
+  the links pulled out of text; the colors you picked, kept (`colors`).
 - **Windows:** sixths, fourths, the full height or width, `:size 1280x800`, gaps between windows; layouts that open
   their apps too.
-- **Files and apps:** `:move to`, `:rename`, `:duplicate`, `:compress`, AirDrop and `:info` on a file; the files
-  selected in Finder as what the hotkey acts on; `:uninstall` (asks first); volume per app.
-- **Your day:** contacts (call, FaceTime, message or email someone by name); meetings beyond today, free slots to
-  copy, and the next meeting in the menu bar; due and overdue reminders, with Enter to complete one; lists, priorities
-  and places in `add todo` and `add event`; screenshots by date, and pasting the latest.
-- **Screen tools:** copy the text or a QR code in a region of the screen (recognized on your Mac).
-- **The Mac:** Stage Manager on and off; dismiss notifications.
-- **Extending it:** script rows with live output and a choice of arguments; a URL scheme and Shortcuts actions; a
+- **Files and apps:** `:move to`, `:rename`, `:duplicate`, `:compress`, AirDrop and `:info` on a file; Tab on a file,
+  an app or a clipboard item for its actions as rows (open with, reveal, copy path, trash); the files selected in
+  Finder as what the hotkey acts on; `:uninstall` (asks first); installing an app you don't have with Homebrew, from
+  its row, and `:upgrade`; volume per app.
+- **Your day:** meetings beyond today, free slots to copy, and the next meeting in the menu bar; lists, priorities and
+  places in `add todo` and `add event`; what's playing in the empty launcher; screenshots and downloads by date, and
+  pasting the latest.
+- **The Mac:** processes by CPU and memory, with Enter to end one; `:awake 2h`, `:awake until 18:00`; connecting paired
+  Bluetooth devices (`:connect airpods`); `:input` for the microphone; `speed`, an internet speed test with macOS's own
+  tool; the Wi-Fi password, and a QR code for guests; Stage Manager on and off; dismiss notifications.
+- **Extending it:** script rows with live output and a choice of arguments; `copperlight choose`, lines from a
+  pipe as rows; a URL scheme and Shortcuts actions; a
   starter library of commands, and importers for snippets and quicklinks from other apps.
 - **Look and feel:** text size, and which screen it opens on; other languages for the interface (what you type stays
   as it is); switching the keyboard layout from the field; a double-tapped modifier as the hotkey (still one hotkey).
@@ -49,7 +51,11 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 - **v0.9:** colors by their shape (`#c87533`, `rgb(…)`, `hsl(…)`) with a swatch, and `pick color`; `qr`
   codes; date math (`days until dec 25`, `in 3 weeks`, a date's weekday and week), answered before you finish typing;
-  `{cursor}` in snippets; currency after math (`39*8 usd`).
+  `{cursor}` in snippets; currency after math (`39*8 usd`); contacts (Enter messages, Tab for call, FaceTime, WhatsApp,
+  email, copy); open browser tabs, Enter switching to one; `copy text` from any part of the screen, and the link in a
+  QR code there; `spell`; reminders that are due, and the apps you open around this time, waiting in the empty
+  launcher; Large Type; `20% off 80`, `30 is what % of 150`, `10k * 3`, and Tab to keep going with a result; script
+  filters (`@output rows`).
 - **v0.8:** `timer until 15:30`; a stopwatch; what's running (the pomodoro, the timer, the stopwatch) waiting
   in the empty launcher, its time ticking.
 - **v0.7:** the preview opens with Tab in the general search, so the list keeps its width; the next meeting, waiting

@@ -31,6 +31,12 @@ exclude = ["node_modules", ".git", ".venv", "__pycache__", "DerivedData", "build
 terminal = "Ghostty"           # optional: where :terminal opens a folder (an app's name or bundle id); unset: Terminal.
                                # Settings › Files › Terminal.
 
+[apps]
+online = true                  # default: app descriptions from Homebrew's public list and the App Store, to find apps
+                               # by what they do. false keeps it all on this Mac. Settings › Files › Apps.
+suggestions = true             # default: the apps you open around this time of day (on 3 days or more of the last 4
+                               # weeks) wait in the empty launcher, learned from what you open with it.
+
 [pomodoro]
 default_minutes = 25           # default, 1–240
 break_minutes = 5              # default, 1–240
@@ -145,7 +151,8 @@ Everything lives in `~/.config/copperlight/`:
   quits. Edits made elsewhere are picked up while the note doesn't have focus.
 - `notes/`: the other notes, one text file each, named by when they were made (a note's title is its first line),
   saved the same way. Edits made elsewhere show the next time the note opens. Delete a file to delete that note.
-- `state.json`: app state, one top-level section per feature (`frecency`, `windows`, `pomodoro`). Written by the app
+- `state.json`: app state, one top-level section per feature (`frecency`, `windows`, `pomodoro`, `opened`: the apps you
+  opened from the launcher and when, the last 500, for suggestions). Written by the app
   (debounced, atomic). Sections it doesn't know are kept. If the file is unreadable it's moved to
   `state.json.bad` and the app starts fresh.
 - `rates.json`: Frankfurter/ECB rates, raw API response. Refreshed in the background when over 24 h old,

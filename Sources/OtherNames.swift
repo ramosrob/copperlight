@@ -36,6 +36,9 @@ let otherNames: [String: [String]] = [
     "Open in Terminal": ["shell here", "command line"],
     "Move to Trash": ["delete file", "remove file"],
     "All Notes": ["list notes", "my notes", "notes list"],
+    "Copy Text from Screen": ["ocr", "scan text", "grab text", "extract text", "live text", "screen text", "text recognition",
+                              "read text"],
+    "Large Type": ["big text", "large text", "show big", "huge text"],
     "Pick Color": ["color picker", "colour picker", "pick colour", "eyedropper", "eye dropper"],
     // Lookups
     "IP Address": ["my ip", "public ip", "local ip", "ip address", "what is my ip"],

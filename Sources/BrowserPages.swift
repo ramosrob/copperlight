@@ -128,12 +128,20 @@ func firefoxProfiles(_ base: URL) -> [(name: String, folder: URL)] {
     return profiles
 }
 
-/// A page's words, title and address, lowercased, each after a space: " copperlight on github https github com …".
-/// A typed word matches where `" " + word` is in it, so at the start of a word ("30c" isn't in "HP30138C").
-private func searchKey(_ page: BrowserPage) -> String {
-    " " + (page.title + " " + page.url).folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+/// `text`'s words, lowercased and without accents, each after a space: " copperlight on github https github com".
+/// A typed word (`typedWords`) matches where it's in it, so at the start of a word ("30c" isn't in "HP30138C").
+func wordStarts(_ text: String) -> String {
+    " " + text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
         .split(whereSeparator: { !$0.isLetter && !$0.isNumber }).joined(separator: " ")
 }
+
+/// The words typed, each after a space, to look for in `wordStarts`.
+func typedWords(_ query: String) -> [String] {
+    query.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        .split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map { " " + $0 }
+}
+
+private func searchKey(_ page: BrowserPage) -> String { wordStarts(page.title + " " + page.url) }
 
 /// Bookmarks and recent history from the browser links open in (`[browser]`, else the default), searched from 2
 /// letters: every word typed must start a word of the title or the address. Bookmarks come first, then the most
@@ -167,8 +175,7 @@ actor BrowserPagesProvider: ResultProvider {
     func results(for query: String) -> [LauncherResult] {
         // Calls wait their turn on the actor: one for a keystroke since typed over would hold up the current one.
         guard !Task.isCancelled else { return [] }
-        let words = query.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
-            .split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map { " " + $0 }
+        let words = typedWords(query)
         guard query.count >= 2, !words.isEmpty, let app else { return [] }
         let matches = zip(pages, keys).filter { _, key in words.allSatisfy { key.range(of: $0, options: .literal) != nil } }.map(\.0)
         // Once per address, and once per title on a site (the same video with another &t=).

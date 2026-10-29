@@ -41,8 +41,9 @@ commands and scripts. One field does it all, and anything that isn't a search is
 - **Keyboard first.** Every result and every action is a few keystrokes from <kbd>⌥ Space</kbd>, even the menus of
   the app you're in (`:export pdf`). Select text anywhere first and it's already typed; <kbd>↑</kbd> in the empty
   field brings back what you ran before. The mouse is optional.
-- **Already there.** Open it and what's next is waiting: the call about to start (Enter joins), and the pomodoro,
-  timer or stopwatch you have running, its time ticking. Nothing to type.
+- **Already there.** Open it and what's next is waiting: the call about to start (Enter joins), the pomodoro, timer
+  or stopwatch you have running, reminders that are due (Enter completes them), and the apps you usually open at this
+  time of day. Nothing to type.
 - **Yours.** Your settings live in one plain-text file you can read, edit and keep in git. Add your own commands,
   quicklinks, snippets and scripts.
 - **Private.** No account, no telemetry, no AI service. What it keeps stays on your Mac.
@@ -62,6 +63,9 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Quick capture**<br>`add todo`, `add event` | Reminders, calendar events and note lines, with the date read from what you type: `add todo call mom tomorrow 5pm`. |
 | **Snippets**<br>`sig`, `reply Ana` | The text you type over and over, with placeholders for the date, the clipboard or a name. |
 | **Meetings**<br>`meetings`, `agenda` | The rest of today's calendar, a copper badge on what starts within the hour, and Tab for the details. A few minutes before a call, it's already there when you open Copperlight: Enter joins. |
+| **Contacts**<br>`ana` | People from your contacts as you type their name. Enter messages them; Tab lists every way to reach them: call, FaceTime, WhatsApp, email, or copy their number. |
+| **Due reminders**<br>`due` | What's overdue or due within the hour waits when you open Copperlight, with a copper badge. Enter completes it. |
+| **Browser tabs**<br>`tabs`, `inbox` | The tabs open in your browsers, found by their title or address. Enter switches to the tab instead of opening the page again. |
 | **Dictionary and translation**<br>`define`, `translate` | The Mac's dictionary and on-device translation, without opening an app. Copy something and type `translate`. |
 | **Music and sound**<br>`:play`, `:mute`, `:output` | Play, pause and skip whatever is playing, mute, set the volume, and switch between speakers and headphones. |
 | **Stocks**<br>`stock AAPL` | The price now, today's change and a 7-day chart, beside the results. Enter opens the stock on Yahoo Finance. |
@@ -70,6 +74,9 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Text tools**<br>`json`, `uuid`, `b64`, `hex` | Format JSON, make a UUID or a password, encode text, convert colors and timestamps. |
 | **Colors**<br>`#c87533`, `pick color` | A color in hex, RGB and HSL, with its swatch. Pick one off the screen and its hex is copied. |
 | **QR codes**<br>`qr` | A QR code of a link or any text, or of what you copied, ready to paste. |
+| **Text from the screen**<br>`copy text` | Drag over anything, a video, a picture, an error you can't select, and its text is copied, read on your Mac. A link in a QR code opens. |
+| **Spelling**<br>`spell definately` | The word spelled right, and the other guesses; a sentence comes back corrected. |
+| **Large Type**<br>`large 555-0100` | Any text across the screen, big enough to read from across the room. |
 | **Emoji**<br>`emoji party` | Every emoji by name, pasted where you are. |
 | **Screenshots**<br>`screenshot`, `record` | The macOS screenshot toolbar, ready to capture or record. |
 
@@ -81,10 +88,16 @@ into the chip. A space is still only a space, so a search for `stock_Apple.pdf` 
 
 <p align="center"><img src="docs/media/chips.png" width="600" alt="A Translate to German chip in the field, with hello world after it, translated to Hallo Welt"></p>
 
-**What's next, when you open it.** No need to type: the call about to start is already selected, Enter to join, and
-whatever you have running sits below it, the time ticking: a pomodoro, a timer, a stopwatch.
+**Contacts.** Type a name and Enter messages them. Tab goes into the person instead: message, call, FaceTime,
+WhatsApp, email or copy, with their card beside the list. Read on your Mac, never sent anywhere.
 
-<p align="center"><img src="docs/media/clocks.png" width="600" alt="The empty launcher with Design review in 6 minutes, and a pomodoro, a tea timer and a stopwatch, each with its time"></p>
+<p align="center"><img src="docs/media/contacts.png" width="600" alt="The Contact chip with Ana Ribeiro: Message, Call, FaceTime, WhatsApp, Email, Copy and Open in Contacts, her card beside them"></p>
+
+**What's next, when you open it.** No need to type: the call about to start is already selected, Enter to join.
+Below it, whatever you have running, the time ticking; reminders that are due, Enter to complete them; and the apps
+you usually open at this time of day, learned on your Mac from what you open with Copperlight.
+
+<p align="center"><img src="docs/media/waiting.png" width="600" alt="The empty launcher with Design review in 6 minutes, a tea timer, two due reminders and two suggested apps"></p>
 
 **Stocks.** `stock aapl` ⇥: the price, today's change and the last 7 days beside the results, from Yahoo Finance.
 Copperlight asks only when you use the chip.
@@ -133,6 +146,8 @@ A taste of what the field understands. Enter does the obvious thing: opens, copi
 | `invoice` | Files and folders, from Spotlight's index (`f invoice`: files only) |
 | `~/Downloads`, `/Applications` | That folder's contents, to go into or open |
 | `copperlight git` | Bookmarks and recent pages from your browser, opened in their profile |
+| `inbox`, `tabs` ⇥ | The tabs open in your browsers; Enter switches to it |
+| `ana` | People from your contacts: Enter messages them, Tab for call, FaceTime, WhatsApp, email |
 | `gmail.com`, `localhost:3000` | Opens it in your browser |
 | anything | "Search Google for …" (or DuckDuckGo, Bing, Brave Search, Ecosia, Kagi), always last |
 
@@ -142,7 +157,8 @@ The answer appears as you type; Enter copies it.
 
 | Type | You get |
 |---|---|
-| `20% of 150`, `150 + 20%` | `30`, `180` |
+| `20% of 150`, `150 + 20%`, `20% off 80` | `30`, `180`, `64` |
+| `30 is what % of 150`, `10k * 3` | `20%`, `30000`; Tab puts the answer in the field, to keep going |
 | `255 in hex` | `0xFF` |
 | `25 usd to eur`, `39*8 usd` | The amount in euros, at today's rate |
 | `10 km in mi`, `30c` | `6.21 mi`, `86 °F` |
@@ -155,6 +171,7 @@ The answer appears as you type; Enter copies it.
 | Type | You get |
 |---|---|
 | `define laconic` | The entry from the Mac's dictionary |
+| `spell definately` | `definitely`, and the other guesses |
 | `translate bom dia`, `translate thank you to japanese` | The translation, made on your Mac (macOS 26) |
 | `translate`, `translate to spanish` | What you copied, translated |
 | `translate hello world to ger` ⇥ | The language moves into the chip (Translate to German), so the field holds only your text |
@@ -170,6 +187,8 @@ The answer appears as you type; Enter copies it.
 | `uuid`, `password 32`, `lorem 3` | A UUID, a password, placeholder text |
 | `unix 1700000000`, `#ff8800` | `2023-11-14T22:13:20Z`, `rgb(255, 136, 0)` and `hsl(32, 100%, 50%)` |
 | `qr`, `qr https://copperlight.app` | A QR code of what you copied, or of what you type, beside the results |
+| `copy text` | The text in any part of the screen you drag over, copied; a QR code's link opens |
+| `large 555-0100`, `large` | The text across the screen, huge; `large` alone shows what you copied |
 
 ### Windows, apps and the Mac
 
@@ -194,6 +213,7 @@ The answer appears as you type; Enter copies it.
 |---|---|
 | `meetings`, `agenda`, `events` | The rest of today's events, a copper badge on what's soon; Tab shows the details (call link, people, notes), Enter joins the call. A few minutes before a call, it's already there when you open the launcher (or all of today, with Settings › General › Calendar) |
 | `add todo call mom tomorrow 5pm` | A reminder, due and alerting then |
+| `due` | Reminders due today and overdue; Enter completes one. What's due soon waits when you open the launcher |
 | `add event fri 10am dentist` | An event in your calendar |
 | `note` ⇥, `note milk` ⇥, `new note`, `add note buy milk` | Floating notes, saved as you type: Tab on `note` lists only your notes, with a preview, and typing finds the one that says it |
 | `:delete note milk` | Move a note to the Trash (asks first) |
@@ -208,6 +228,7 @@ The answer appears as you type; Enter copies it.
 |---|---|
 | `gh copperlight` | Your quicklinks: a URL with what you typed filled in |
 | `deploy staging` | Your scripts in `~/.config/copperlight/scripts/`, run with the text as arguments. Community script commands work as they are |
+| `links docs` | A script that prints rows (`@output rows`): its name is a chip, the rows change as you type, and Enter opens or copies the one you pick |
 | `sig`, `reply Ana` | Your snippets, placeholders filled in, pasted where you are |
 | `:!git status` | A shell line, its output right in the launcher |
 
@@ -260,9 +281,11 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 |---|---|
 | Accessibility | Pasting into the app you were in (clipboard history, snippets, emoji, paste as Markdown); moving and switching windows; searching menus; `:play`, `:next track` |
 | Calendars | `meetings` (reads today's events) and `add event` (add-only access is enough for that) |
-| Reminders | `add todo` |
+| Reminders | `add todo`, and reminders that are due |
+| Contacts | People as you type their name |
+| Screen Recording | `copy text` (only the part you drag over is read) |
 | Notifications | The end of a pomodoro or a timer, shell lines that finish in the background, errors |
-| Automation | `:empty trash`, `:dark`, `:restart`, `:shut down`, `:log out` (asking Finder, System Events or loginwindow) |
+| Automation | Your browser's open tabs (asked once per browser, from `tabs` ⇥); `:empty trash`, `:dark`, `:restart`, `:shut down`, `:log out` (asking Finder, System Events or loginwindow) |
 | Full Disk Access, by hand | Safari's bookmarks and history only |
 
 ## Privacy
@@ -278,6 +301,8 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 - **What it keeps stays on your Mac**, in `~/.config/copperlight/`: your config, notes, state and clipboard history
   (SQLite, readable only by you; deleted items are overwritten). Copies marked as passwords, and copies made in
   password managers, are never recorded.
+- **Contacts, tabs and reminders are read on your Mac** when you open the launcher, and kept in memory only. The apps
+  it suggests are learned from what you open with it, kept in `state.json`.
 - **No AI service.** With Apple Intelligence on, the Mac's own on-device model writes search words for your apps.
   Nothing leaves the Mac.
 

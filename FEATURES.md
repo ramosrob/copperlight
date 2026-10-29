@@ -16,20 +16,25 @@ files and the text in photos. Everything else on this page is on.
 | `~/code/copperlight`, `/Applications` | That folder's contents | Goes into a folder, opens a file |
 | `gmail.com`, `localhost:3000` | An "Open" row | Opens it in `[browser]` |
 | anything | "Search Google for …", always last | Searches (Settings › Browser picks the engine) |
-| `2^10 / 3`, `20% of 150`, `255 in hex` | The result | Copies it |
+| `2^10 / 3`, `20% of 150`, `20% off 80`, `30 is what % of 150`, `10k * 3`, `255 in hex` | The result; Tab puts it in the field to keep going | Copies it |
 | `25 usd to eur`, `25 usd`, `39*8 usd` | The conversion | Copies it |
 | `10 km in mi`, `30c` | Units converted | Copies it |
 | `3pm lisbon in sf`, `now in tokyo` | The time there | Copies it |
 | `days until dec 25`, `in 3 weeks`, `dec 25` | How long, which day; a date's weekday and week | Copies it |
 | `stock AAPL`, `stock MGLU3.SA` | The price, today's change, a 7-day chart (Yahoo Finance) | Opens it on Yahoo Finance |
 | `copperlight git` | Bookmarks and recent pages from your browser | Opens it in its profile |
+| `inbox`, `tabs` ⇥ | The tabs open in your browsers | Switches to it |
+| `ana` | People from Contacts; Tab: every way to reach them | Messages them |
+| `due` | Reminders due today and overdue (soon ones wait in the empty launcher) | Completes it |
 | `meetings`, `agenda`, `events` | The rest of today's events; a copper badge on what's soon; Tab: the details | Joins the video call |
 | `bluetooth`, `dark mode` | System Settings pages | Opens that page |
 | `emoji party` | Emoji by name | Pastes it |
 | `define serendipity` | The dictionary entry | Opens it in Dictionary |
+| `spell definately` | The word spelled right, and the other guesses | Copies it |
 | `translate bom dia`, `… to spanish` | The translation (on the Mac); `translate` alone, what you copied | Copies it |
 | `gh copperlight`, `github` | Your `[[command]]` entries | Opens, launches or runs it |
 | `deploy staging` | Your scripts in `~/.config/copperlight/scripts/`, community script commands too | Runs it with the text as arguments |
+| `links docs` | A script filter's rows (`@output rows`), for what you type | Opens or copies the one you pick |
 | `sig`, `reply John` | Your `[[snippet]]` entries | Pastes the text, placeholders filled in |
 | `:` | Commands for windows, apps, files, the Mac | Runs it |
 | `:export pdf`, `:new tab` | The menus of the app you were in | Chooses that menu item |
@@ -38,6 +43,8 @@ files and the text in photos. Everything else on this page is on.
 | `json`, `uuid`, `upper hi`… | Text tools | Copies (or pastes) the result |
 | `#c87533`, `rgb(…)`, `pick color` | The color in the other notations, with its swatch; a color from the screen | Copies it |
 | `qr`, `qr https://…` | A QR code of what you typed or copied, beside the list | Copies the picture |
+| `copy text` | Drag over any part of the screen | Copies its text (a QR code's link opens) |
+| `large 555-0100`, `large` | The text across the screen | Shows it |
 | `paste plain`, `paste markdown` | The clipboard, cleaned or as Markdown | Pastes it |
 | `add note …`, `add todo …`, `add event …` | Capture | Adds it |
 | `screenshot`, `record` | The screenshot toolbar | Opens it |
@@ -64,6 +71,14 @@ files and the text in photos. Everything else on this page is on.
   shows its details. With `[meetings] show_on_open` (Settings › General › Calendar), the empty launcher lists the day's
   next five events instead. It needs Calendars access already given (`meetings` asks): opening the launcher never asks.
   Typing hides it.
+- **Due reminders, waiting:** the reminders that are overdue, due within the hour, or due today with no time, soonest
+  deadline first, with a copper badge ("Overdue", "in 20 min", "Today"). Enter completes one and keeps the launcher
+  open for the next. Needs full Reminders access already given (`add todo` or `due` asks).
+- **Suggestions, waiting:** up to 3 apps you open around this time of day (from the launcher, within an hour of now, on
+  3 days or more of the last 4 weeks), not the one you're in. Kept in `state.json`; `[apps] suggestions = false`
+  (Settings › Files › Apps) turns them off.
+- **Tab steps into some rows** while Enter still runs them, and the selected row names both: on a person, Actions ⇥
+  (Message ↵); on a calculation, Keep Going ⇥ puts the result in the field (Copy ↵).
 - **↑ in the empty field brings back what you ran,** the last 50 queries, newest first; ↑ again (on the top row)
   goes further back. Each comes back as it was run: in its chip, or typed. Kept in `state.json`.
 - **It never takes focus** from the app you were in, so window commands and pastes act on that app.
@@ -72,8 +87,8 @@ files and the text in photos. Everything else on this page is on.
 - **Some rows fill in instead of run,** and their key is Tab: Tab on `Translate` types `translate `, on `Quit
   Application` `:quit `, on a folder its path (Enter does the same). With a name typed whole (`translate`), Tab fills
   it in whatever row is selected.
-- **A name that takes text becomes a chip:** `translate `, `define `, `emoji `, `stock `, `pomo `, `timer `, `port `, `note `, `add todo `, `:quit `, `:!`,
-  `f `. Tab turns the name into a copper chip at the start of the field, keeping what you typed after it
+- **A name that takes text becomes a chip:** `translate `, `define `, `spell `, `emoji `, `stock `, `qr `, `large `, `contact `, `tabs `, `pomo `, `timer `, `port `, `note `, `add todo `, `:quit `, `:!`,
+  `f `, a script filter's name. Tab turns the name into a copper chip at the start of the field, keeping what you typed after it
   (`stock aapl` ⇥); the field shows what comes after it with a hint while empty, and only that feature answers (no
   search row). Typing never makes a chip, so `stock apple` still finds `stock_Apple.pdf`. Delete in the empty
   field turns the chip back into the text.
@@ -124,7 +139,10 @@ files and the text in photos. Everything else on this page is on.
 ## Math and money
 
 - **Calculator:** `+ - * / ^`, parentheses, `sqrt(2)`, `pi` and the usual math functions. Enter copies the result.
-  - Percentages: `20% of 150` (30), `150 + 20%` (180), `150 - 20%` (120). `%` elsewhere is the remainder (`10 % 3`).
+  - Percentages: `20% of 150` (30), `150 + 20%` (180), `150 - 20%` (120), `20% off 80` (64), `30 is what % of 150`
+    (20%). `%` elsewhere is the remainder (`10 % 3`).
+  - `k` for thousands, in math: `10k * 3` (30000), `2.5k + 1`. Alone, `10k` is left to the search.
+  - Tab puts the result in the field (Keep Going), to calculate on with it.
   - Hex and binary: `0xff + 1`, `0b1010 * 2`; `255 in hex` (0xFF), `0xff in dec`, `(2^8 - 1) to binary`; `0xff`
     alone shows 255.
   - `ans`: the last result you copied with Enter (`ans * 2`, `ans in hex`). Forgotten on quit.
@@ -170,15 +188,32 @@ files and the text in photos. Everything else on this page is on.
   profile, or all of them (the row says which). Each opens in the profile it came from. Chrome, Brave, Edge,
   Vivaldi, Chromium and Firefox work as they are; Safari needs Full Disk Access for Copperlight. Loaded when the
   launcher opens (at most every 2 minutes), kept in memory only.
+- **Open tabs** (from 2 letters): the tabs open in Chrome, Brave, Edge, Vivaldi, Chromium, Arc and Safari, found the
+  same way, up to 4, just above bookmarks. Enter switches to the tab, its window in front. `tabs` ⇥ is the Tabs chip:
+  every tab, in window order. Private windows aren't listed. Read through AppleScript when the launcher opens, from
+  the browsers that are running and that you allowed (once per browser, from the Tabs chip's row), kept in memory only.
 - **Meetings** (`meetings` from `mee`, `agenda` from `age`, `events`): the rest of today, soonest first, with start
   time and how soon, a copper badge on one within the hour or going; Tab shows its details. Enter joins a Meet,
   Zoom, Teams or Webex call found in the event (a Meet link opens in your `[browser]` profile), or opens Calendar.
   Calendars added to the Calendar app count (Google, Outlook).
 
+## People and reminders
+
+- **Contacts** (from 2 letters): people whose name, nickname or company has a word starting with each word typed. The
+  row shows their number and email; Enter messages them (mobile number, else a number, else their email), or opens
+  their card. Tab: the Contact chip, with Message, Call, FaceTime and WhatsApp (when installed) per number, Email per
+  address, Copy for each, and Open in Contacts, their card beside the list. `contact` ⇥ lists everyone. Access is
+  asked from the `contacts` row; read when the launcher opens (at most every 2 minutes), kept in memory only.
+- **Due reminders** (`due`, `overdue`, `todos`): incomplete reminders due today or before, soonest deadline first, with
+  their list and a copper badge. Enter completes one, the launcher staying open. The soon ones also wait in the empty
+  launcher.
+
 ## Words
 
 - **Define** (`define serendipity`): the entry from the Mac's dictionaries (Dictionary.app's, offline), in the
   preview pane. Enter opens it in Dictionary.
+- **Spell** (`spell definately`): the word spelled right and the other guesses, best first; a sentence comes back with
+  each misspelled word corrected; one that's right says so. The Mac's own spelling. Enter copies it.
 - **Translate** (`translate bom dia`, `translate good morning to spanish`): Apple's on-device translation. The
   text's language is detected; it goes to the language you name (`to`, `in`, `into` + a name or a code), or else
   to `[translate] default_target` (Settings › General › Translate to), or else your first language in System Settings
@@ -212,6 +247,11 @@ so they see the PATH a terminal has. A comment near the top can set:
 | `# @output silent` | The default: runs in the background; a failure posts a notification |
 | `# @output show` | Shows the output in place of the list, like `:!`; Enter copies it |
 | `# @output copy` | Copies what it prints (stdout) and confirms with a notification |
+| `# @output rows` | A script filter: its name is a chip, and what it prints for the text after it is the list |
+
+**Script filters** (`@output rows`) run with the text typed after their name as their one argument, once typing
+pauses, in their chip (Tab) or typed whole. Each line printed is a row: its title, then after tabs a subtitle and the
+value Enter uses. Enter opens a file, a folder or a link an app takes, and copies anything else.
 
 Community script commands work unchanged: their title, mode, icon (an SF Symbol name), description, confirmation
 and declared arguments are read from their headers (docs/guide.md has the details).
@@ -273,7 +313,7 @@ preview pane. From 3 letters, a name's start finds it too (`pas` → the paste t
 | `hex #ff8800`, `hex 255 136 0` | The color in the other notation |
 | `paste plain`, `paste markdown` | Pastes the clipboard without formatting, or as Markdown (from web pages, Google Docs, Slack, Word…) |
 
-## Colors and QR codes
+## Colors, QR codes and the screen
 
 - **Colors:** `#c87533`, `#f80`, `rgb(200, 117, 51)` or `hsl(27, 59%, 49%)` shows in the other two notations, each
   row with the color's swatch, the one you typed last. Tab shows it big. Enter copies it.
@@ -281,6 +321,11 @@ preview pane. From 3 letters, a name's start finds it too (`pas` → the paste t
   copied, and the launcher comes back with it, the other notations a row away.
 - **QR codes:** `qr https://copperlight.app` (`qr` ⇥ is the QR Code chip) shows the code beside the list, and `qr`
   alone makes one of what you copied. Enter copies the picture. Made on your Mac.
+- **Text from the screen** (`copy text`, or `ocr`, `scan text`): drag over any part of the screen and its text is
+  copied, read on the Mac (Vision). A QR code or barcode there is copied instead, and a link in it comes back in the
+  launcher, Enter opening it. Needs Screen Recording, asked the first time; only the part you drag over is read.
+- **Large Type** (`large 555-0100`, `large` for what you copied): the text across the screen, as big as it fits. Any
+  key, a click or switching apps puts it away.
 
 ## Capture
 
@@ -338,7 +383,7 @@ The row shows the title and date Copperlight read before you press Enter; a noti
 
 **Settings…** in the menu bar, or `copperlight settings` in the launcher. A pane per group: General (hotkey, Open at
 Login, currency, translate to, pomodoro), Clipboard (how much to keep, apps not recorded), Files (folders searched, names hidden,
-app descriptions online or not),
+app suggestions, app descriptions online or not),
 Browser (where links open, which profile), Commands and Snippets (add, edit, delete), and About (version, license,
 and the open source it's built with). Every change goes straight into config.toml, editing only its own lines, comments kept;
 one it can't make cleanly is refused, and the file stays as it was. Edits made by hand show up in the window.
@@ -356,8 +401,10 @@ Otherwise macOS asks when a feature first needs one:
 | macOS asks for | When | For |
 |---|---|---|
 | Accessibility | First paste or window command | Pasting (⌘V into your app), window commands and layouts, `:window`, `:lock`, menu search, `:play` and the track keys, opening on the selected text |
-| Automation | First `:empty trash`, `:dark`, `:restart`, `:shut down`, `:log out` | Asking Finder, System Events, loginwindow to do it |
-| Reminders | First `add todo` | Adding reminders (no add-only option exists) |
+| Automation | First `:empty trash`, `:dark`, `:restart`, `:shut down`, `:log out`; a browser's row in `tabs` ⇥ | Asking Finder, System Events, loginwindow to do it; listing and switching a browser's tabs |
+| Reminders | First `add todo`, or `due`'s Allow row | Adding reminders (no add-only option exists), and the ones that are due |
+| Contacts | `contacts`, from its Allow row | Finding people as you type |
+| Screen Recording | First `copy text` | Reading the part of the screen you drag over |
 | Calendars, add only | First `add event` | Adding events |
 | Calendars, full access | `meetings`, from its Allow row | Reading today's events |
 | Full Disk Access (by hand) | Only for Safari | Reading Safari's bookmarks and history |
@@ -371,7 +418,7 @@ first time per launch; after that, a notification says where it is.
 ## Where things live
 
 All in `~/.config/copperlight/`: `config.toml` (your settings, hot reloaded; a mistake shows as an error row),
-`note.txt`, `notes/` (the other notes), `state.json` (frecency, recent queries, saved layouts, the timer), `clipboard.sqlite` (history, readable only
+`note.txt`, `notes/` (the other notes), `state.json` (frecency, recent queries, saved layouts, the timer, the apps you opened and when), `clipboard.sqlite` (history, readable only
 by you), `rates.json` (currency rates), `apps.json` (what each app does) and `homebrew-apps.json` (Homebrew's list,
 trimmed), `photos.sqlite` (the text in your photos), `scripts/` (on the shell's PATH).
 

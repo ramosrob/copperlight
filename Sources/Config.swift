@@ -154,8 +154,18 @@ struct Config: Decodable, Equatable {
 
     /// Apps are found by what they do too (AppIndex). `online`: descriptions from Homebrew's public app list and,
     /// for apps from the App Store, the App Store.
+    /// `suggestions`: the apps you often open around this time wait in the empty launcher.
     struct Apps: Decodable, Equatable, Sendable {
         var online = true
+        var suggestions = true
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            online = try c.decodeIfPresent(Bool.self, forKey: .online) ?? online
+            suggestions = try c.decodeIfPresent(Bool.self, forKey: .suggestions) ?? suggestions
+        }
+        private enum CodingKeys: String, CodingKey { case online, suggestions }
     }
 
 
@@ -268,6 +278,8 @@ struct Config: Decodable, Equatable {
         # Homebrew's public app list (downloaded whole, so it says nothing about your apps) and, for apps from the
         # App Store, the App Store's. Set false to keep it all on this Mac.
         online = true
+        suggestions = true             # the apps you often open around this time wait in the empty launcher,
+                                       # learned from what you open with it, on this Mac
 
         [pomodoro]
         default_minutes = 25           # "pomo" in the launcher; "pomo 50" for another length

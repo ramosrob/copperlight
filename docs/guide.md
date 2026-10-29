@@ -12,7 +12,7 @@ config.toml.
 | ⌥Space | Show / hide the launcher. With text selected in the app you're in, it opens with that text typed and selected |
 | ↑ ↓ | Move selection. ↑ in the empty field: the last query you ran (↑ again for the one before) |
 | Enter | Run: open app or file, copy a calculator, currency or text tool result, run command, open URL, search the web. Clipboard: paste the item |
-| Tab | Fill in: on a row that says Tab (Translate, Quit Application, a folder), or with a name typed whole (`translate`), it types the name, which becomes a chip. On a row with something to show (a note, a file's text, a snippet), it opens its preview beside the list, and Tab again closes it. In clipboard history and in chips the preview is open already |
+| Tab | Fill in: on a row that says Tab (Translate, Quit Application, a folder), or with a name typed whole (`translate`), it types the name, which becomes a chip. On a row that names what Tab does beside Enter, it steps into it: a person's Actions, a calculation's Keep Going. On a row with something to show (a note, a file's text, a snippet), it opens its preview beside the list, and Tab again closes it. In clipboard history and in chips the preview is open already |
 | `:` (typed first) | Commands: the window in front, running apps, files, the Mac. Clipboard history has its own |
 | Esc, or click elsewhere | Hide (or back out of a confirmation) |
 
@@ -20,16 +20,17 @@ The launcher is the only global hotkey, and the panel has no modifier keys: anyt
 command you type after `:`. Everything else (note, clipboard history, pomodoro…) is found by typing.
 
 Things to type: `saf`, `vsc`, `2^10 / 3`, `sqrt(2) * pi`, `20% of 150`, `255 in hex`, `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`,
-`25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), `39*8 usd`, `days until dec 25`,
-`in 3 weeks`, `#c87533`, `pick color`, `qr`, any command alias,
+`25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), `39*8 usd`, `20% off 80`,
+`30 is what % of 150`, `10k * 3`, `days until dec 25`, `in 3 weeks`, `#c87533`, `pick color`, `qr`, `copy text`,
+`large 555-0100`, `spell definately`, a person's name, an open tab's title, `due`, any command alias,
 `note`, `note milk`, `clip` (opens clipboard history), `pomo`, `pomo 50`, `pomo break`, `pomo stop`, `timer 10 min tea`, `stopwatch`, `bluetooth`,
 `dark mode`, `emoji party`, `define serendipity`, `translate bom dia`, `translate` (what you copied), `uuid`, `json`, `paste markdown`, `add`,
 `add note buy milk`, `screenshot`, any file
 name (`invoice`), text inside a file or a picture (`29.99`), an app by what it does (`draw`, `noise`), `f readme` (files only), `github.com/swiftlang` (opens it), anything at all (the last row
 searches the web), `~/code/copperlight` or `/Applications` (lists the folder), `:` (every command), `:min`, `:quit saf`, `:window term`, `:!git status`. The selected row says what Enter does.
 
-**Chips:** a name that takes text (`translate `, `define `, `emoji `, `stock `, `qr `, `pomo `, `timer `, `port `, `note `, `add todo `, `add event `, `add note `,
-`:quit `, `:window `, `:output `, `:!`, `f `) turns into a copper chip at the start of the field when you press Tab:
+**Chips:** a name that takes text (`translate `, `define `, `spell `, `emoji `, `stock `, `qr `, `large `, `contact `, `tabs `, `pomo `, `timer `, `port `, `note `, `add todo `, `add event `, `add note `,
+`:quit `, `:window `, `:output `, `:!`, `f `, and your script filters' names) turns into a copper chip at the start of the field when you press Tab:
 `tra` Tab is the Translate chip, and `stock aapl` Tab is the Stock chip with `aapl` after it. Typing never makes one,
 so `stock apple` still finds `stock_Apple.pdf`. The field then holds what follows, with a hint while it's empty, and
 only that feature answers, so there's no search row in the way. Delete in the empty field turns the chip back
@@ -180,6 +181,22 @@ row's subtitle, and `needsConfirmation true` asks before it runs. A script that 
 (`argument1`…) gets that many, the last one holding the rest of what you typed, so `ask will it ship` passes "will
 it ship" whole. Where a script sets both, `@title`, `@icon` and `@output` win.
 
+**Script filters:** a script with `@output rows` lists what it prints, and Enter acts on the row you pick. Its name
+is a chip (`links` ⇥); as you type after it, the script runs with that text as its one argument, once typing pauses,
+and its rows replace the list (`links docs` typed whole does the same). Each line it prints is a row: its title, then,
+after tabs, a subtitle and the value Enter uses (the title without one). Enter opens a value that's a file or folder
+(`/…`, `~/…`) or a link an app takes (`https://…`, `obsidian://…`), and copies anything else. Up to 100 rows, in the
+order printed; a failure says so in a row.
+
+```sh
+#!/bin/sh
+# @title Team Links
+# @output rows
+printf 'Docs\tThe handbook\thttps://example.com/docs\n'
+printf 'Wiki\t\thttps://example.com/wiki\n'
+printf 'On-call: %s\n' "$1"
+```
+
 **Colors:** a color typed as `#c87533`, `#f80`, `rgb(200, 117, 51)` or `hsl(27, 59%, 49%)` (spaces for commas
 too) shows in the other two notations, each row with the color's swatch, the one you typed last. Tab shows it big.
 Enter copies it. `pick color` (also `color picker`, `eyedropper`) opens macOS's magnifier: click anywhere on any
@@ -189,6 +206,16 @@ away. Esc cancels. Colors are sRGB, what hex codes mean on the web.
 **QR codes:** `qr https://copperlight.app` offers the code (Tab or Enter), and in the QR Code chip it shows beside the
 list as you type. `qr` alone makes one of what you copied. Enter copies the picture (PNG). Made on your Mac; up to
 about 2,000 characters.
+
+**Text from the screen:** `copy text` (also `ocr`, `scan text`, `grab text`) turns the pointer into the screenshot
+crosshair: drag over any part of any screen (a video, a picture, a locked PDF, an error you can't select) and its
+text is copied, line by line, read by the Mac's own text recognition. Esc cancels. If there's a QR code or a barcode,
+what it says is copied instead, and a link in it comes back in the launcher, so Enter opens it. Taking the picture
+needs the Screen Recording permission (Privacy & Security), asked for the first time; only the part you drag over
+is read, and nothing is kept.
+
+**Large Type:** `large 555-0100` (also `big text`) shows the text across the screen, as big as it fits, to show
+someone across the desk; `large` alone shows what you copied. Any key, a click or switching apps puts it away.
 
 **Snippets:** `[[snippet]]` entries ([configuration.md](configuration.md)) are found by name like commands. Enter pastes the text into the app
 you were in, the same way the paste tools do (Accessibility; without it, Enter copies), and then puts your
@@ -223,6 +250,10 @@ the macOS emoji picker (flags and combinations too, English). Enter pastes it, l
 
 **Define:** `define serendipity` shows the entry from the Mac's dictionaries (offline) in the preview pane; Enter
 opens it in Dictionary.
+
+**Spell:** `spell definately` gives the word spelled right and the other guesses, the best first; `spell` with a
+sentence gives it back with each misspelled word corrected. A word that's right says so. Enter copies it. It's the
+Mac's own spelling, in the languages System Settings › Keyboard › Text Input has for it.
 
 **Translate:** `translate bom dia`, `translate good morning to spanish` (`to`, `in` or `into`, then a language's
 English name or code). Apple's on-device translation (macOS 26): the source language is detected, and without a
@@ -318,6 +349,22 @@ profile and opens there). Chrome, Brave, Edge, Vivaldi and Chromium (bookmarks J
 Safari's `Bookmarks.plist` and `History.db` need Full Disk Access for Copperlight (Privacy & Security). Arc isn't read.
 Loaded in the background when the launcher opens, at most every 2 minutes; never written anywhere.
 
+**Browser tabs:** typing finds the tabs open in your browsers, like bookmarks: every word you typed starts a word of
+the title or the address, from 2 letters, up to 4 tabs, ranked just above bookmarks. Enter switches to the tab, its
+window coming forward, instead of opening the page again. `tabs` ⇥ is the Tabs chip: every open tab, in window order,
+and typing narrows them. Chrome, Brave, Edge, Vivaldi, Chromium, Arc and Safari, whichever are running; private
+windows aren't listed, and Firefox can't say what tabs it has. Copperlight asks each browser through AppleScript,
+which needs your OK once per browser: the Tabs chip has a row that asks (System Settings › Privacy & Security ›
+Automation, if you said no). Read when the launcher opens, kept in memory only.
+
+**Contacts:** from 2 letters, the people in your contacts where each word you typed starts a word of their name,
+nickname or company. The row shows their number and email; Enter messages them in Messages (their mobile number,
+else their first number, else their email), or opens their card if they have neither. Tab goes into the person, the
+Contact chip: Message, Call (through your iPhone), FaceTime and WhatsApp (when it's installed) for each number, Email
+for each address, Copy for each, and Open in Contacts, with their card beside the list (numbers, emails, birthday).
+`contact` ⇥ alone lists everyone. The first time, `contacts` (below the Contacts app) has a row that asks to read
+them. Read on your Mac when the launcher opens, at most every 2 minutes, kept in memory only.
+
 **Meetings:** `meetings` (from `mee`), `agenda` (from `age`) or `events` list the rest of today's events from
 Calendar, all-day ones aside, with their times and how soon they start; `calendar` typed whole too, below the
 Calendar app. One that starts within the hour, or is going, has a copper badge ("in 17 min", "Now"). Tab shows its
@@ -331,6 +378,12 @@ starts until 10 minutes after, the empty launcher shows that meeting with its ba
 General › Calendar › Show today's events when the launcher opens (`[meetings] show_on_open`) lists the day's next
 five events there instead, with or without a call. Either only once Calendars access is given; opening the launcher
 never asks. Typing hides it.
+
+**Due reminders:** the empty launcher lists the reminders that are overdue, due within the hour, or due today with no
+time, the soonest deadline first, each with a copper badge ("Overdue", "in 20 min", "Today") and its list. Enter
+completes one and keeps the launcher open, so you can tick off the next. `due` (or `overdue`, `todos`) lists all of
+today's and the overdue ones. Reading them needs full Reminders access, which `add todo` asks for, or the row `due`
+shows the first time; opening the launcher never asks.
 
 **Pomodoro:** `pomo` starts `default_minutes`, `pomo 50` starts 50 minutes (1–240), `pomo break` starts
 `break_minutes` of break (`pomo break 15` for another length; a cup in the menu bar), `pomo stop` stops. While it
@@ -354,3 +407,8 @@ stop the one running, and so does `timer stop`. `tim` Tab is the Timer chip. A t
 **What's running, when you open it:** while a pomodoro, a break, a timer or the stopwatch runs, the empty launcher
 lists it with its time ticking in a copper pill: left for the pomodoro and the timer, so far for the stopwatch.
 Enter stops it, after asking. A meeting about to start stays above them, so Enter still joins.
+
+**Suggestions:** below all that, the empty launcher shows up to 3 apps you open around this time of day: opened from
+the launcher within an hour of now on 3 days or more of the last 4 weeks, the most often first (a recent day counts
+more). The app you're in isn't one of them. Learned from what you open with Copperlight, kept in `state.json`;
+Settings › Files › Apps › Suggest apps when the launcher opens (`[apps] suggestions`) turns it off.
