@@ -160,19 +160,25 @@ private struct Echo: ResultProvider {
     }
 }
 
+/// Waits until `condition` holds, looking every 10 ms, for at most `timeout`: a busy CI machine can take a while.
+@MainActor func eventually(within timeout: Duration = .seconds(3), _ condition: () -> Bool) async {
+    let deadline = ContinuousClock.now + timeout
+    while !condition(), ContinuousClock.now < deadline { try? await Task.sleep(for: .milliseconds(10)) }
+}
+
 @MainActor @Test func enterRunsWhatWasJustTyped() async throws {
     let typed = Typed()
     let model = SearchModel(providers: [typed, Echo(delay: .seconds(1))]) // the slow one holds the rows for the wait
     let panel = LauncherPanel(model: model, placeholder: "…")
     model.query = "sa"
-    try await Task.sleep(for: .milliseconds(200))
+    await eventually { model.results.first?.title == "sa" }
     model.query = "saf" // Enter right away, while the list still shows the rows for "sa"
     panel.sendEvent(try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0,
                                                     context: nil, characters: "\r", charactersIgnoringModifiers: "\r",
                                                     isARepeat: false, keyCode: 36)))
     #expect(typed.ran.isEmpty)
-    try await Task.sleep(for: .milliseconds(200))
-    #expect(typed.ran == ["saf"])
+    await eventually { !typed.ran.isEmpty }
+    #expect(typed.ran == ["saf"]) // not "sa", the row that was showing
 }
 
 private struct Fixed: ResultProvider {
@@ -3070,7 +3076,7 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(rows.allSatisfy { $0.details.map(\.0) == ["Where", "Kind", "Size", "Modified"] })
     #expect(await rows[0].loadPreview?() == "first line\nsecond") // a text file's text beside them
     // A folder's listing has them on each file (Tab on a folder still goes into it).
-    let listed = await PathProvider().results(for: folder.path + "/").first { $0.title == "notes.txt" }
+    let listed = PathProvider().results(for: folder.path + "/").first { $0.title == "notes.txt" }
     #expect(listed?.actions != nil)
 
     // An app: what you can do depends on whether it's running.
