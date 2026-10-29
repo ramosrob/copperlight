@@ -73,7 +73,7 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Lookups**<br>`ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery and its health, free space on each disk, and what's listening on a port, with Enter to end it. |
 | **Speed test**<br>`speed` | Your internet's download and upload speed and its latency, measured by macOS's own tool against Apple's servers, when you press Enter. |
 | **Processes**<br>`cpu`, `memory` | What's using the processor or memory, the busiest first, with each one's app icon. Enter ends a process, or quits an app, after asking. |
-| **Keep awake**<br>`:awake` | Keeps your Mac and its displays awake until you say so, with a sun in the menu bar while it's on. |
+| **Keep awake**<br>`:awake`, `:awake 2h` | Keeps your Mac and its displays awake until you say so, or for a while (`:awake 2h`, `:awake until 18:00`), with a sun in the menu bar while it's on. |
 | **Text tools**<br>`json`, `uuid`, `b64`, `hex` | Format JSON, make a UUID or a password, encode text, convert colors and timestamps. |
 | **Colors**<br>`#c87533`, `pick color` | A color in hex, RGB and HSL, with its swatch. Pick one off the screen and its hex is copied. |
 | **QR codes**<br>`qr` | A QR code of a link or any text, or of what you copied, ready to paste. |
@@ -205,6 +205,7 @@ The answer appears as you type; Enter copies it.
 | `:export pdf`, `:new tab` | The menus of the app you're in, with their shortcuts |
 | `:quit saf`, `:quit all`, `:hide others`, `:unhide all`, `:relaunch slack` | The apps that are running |
 | `:open with readme`, `:trash readme`, `:terminal ~/code/app` | A file: open it with another app, move it to the Trash (asks first), or open its folder in your terminal |
+| `:awake 2h`, `:awake until 18:00` | Your Mac kept awake for a while, then it lets go by itself; the time left ticks in the empty launcher |
 | `:dark`, `:wifi`, `:awake`, `:lock`, `:show desktop`, `:log out`, `:empty trash` | The Mac itself; each row says what Enter does (Turn Wi-Fi Off), and the ones you can't undo ask first |
 | `:play`, `:next track`, `:mute`, `:mute mic`, `:volume 30`, `:output airpods` | What's playing, in any app, where the sound goes, and your microphone |
 | `:shortcut name`, `:shortcut name some text` | Your Shortcuts, Focus modes included; text after the name is its input |

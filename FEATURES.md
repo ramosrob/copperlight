@@ -39,6 +39,7 @@ files and the text in photos. Everything else on this page is on.
 | `:` | Commands for windows, apps, files, the Mac | Runs it |
 | `:export pdf`, `:new tab` | The menus of the app you were in | Chooses that menu item |
 | `:play`, `:mute`, `:wifi`, `:awake`, `:output` | What's playing, the sound, Wi-Fi, keeping the Mac awake | Toggles it, or switches to that output |
+| `:awake 2h`, `:awake until 18:00` | Keeping the Mac awake for a while | Keeps it awake, then lets go by itself |
 | `:!git status` | A shell line | Runs it, shows the output; Enter again copies |
 | `json`, `uuid`, `upper hi`… | Text tools | Copies (or pastes) the result |
 | `#c87533`, `rgb(…)`, `pick color` | The color in the other notations, with its swatch; a color from the screen | Copies it |
@@ -306,7 +307,7 @@ The row shows its first line, and long ones show whole in the preview pane.
 | Layouts | `:layout save work` keeps every window on screen (this Space: not hidden, minimized or full screen) by app and title; `:layout work` puts them back, matching each app's windows by title, then in order, on the same screen or the same share of the main one if it's gone; apps that aren't open are named in a notification. `:layout` lists them, `:layout delete work` forgets one. Kept in `state.json`, since the frames belong to this Mac's screens |
 | Running apps | `:quit saf`, `:force quit saf` (asks first), `:hide saf`, `:hide others`, `:unhide all`, `:relaunch slack`, `:quit all` and `:quit others` (every app, or all but the one in front; ask first; never Finder) |
 | Files | `:reveal readme`, `:copy path readme`, `:trash readme` (asks first), `:terminal readme` (its folder, in `[files] terminal`: Terminal unless you pick another in Settings › Files) (file search, or a path: `:copy path ~/code/copperlight/`). `:open with readme` lists files; Tab on one, then the apps that open it, its default first (`:open with ~/x/readme.md code`) |
-| The Mac | `:lock`, `:sleep`, `:sleep displays`, `:restart`, `:shut down`, `:log out`, `:empty trash` (these four ask first), `:screen saver`, `:show desktop` (hides every app; `:unhide all` brings them back), `:open trash`, `:dark`, `:wifi`, `:awake`, `:hidden files`, `:eject`, `:shortcut name` (your Shortcuts, also the way to Focus modes; `:shortcut name some text` gives it the text as input). `:dark`, `:wifi` and `:awake` say what Enter does now (Turn Wi-Fi Off) |
+| The Mac | `:lock`, `:sleep`, `:sleep displays`, `:restart`, `:shut down`, `:log out`, `:empty trash` (these four ask first), `:screen saver`, `:show desktop` (hides every app; `:unhide all` brings them back), `:open trash`, `:dark`, `:wifi`, `:awake`, `:hidden files`, `:eject`, `:shortcut name` (your Shortcuts, also the way to Focus modes; `:shortcut name some text` gives it the text as input). `:dark`, `:wifi` and `:awake` say what Enter does now (Turn Wi-Fi Off). `:awake 2h`, `:awake 90 min`, `:awake until 18:00` keep it awake for a while; `:awake` alone also offers an hour or two |
 | Sound | `:play` (play or pause), `:next track`, `:previous track`: the keyboard's media keys, so they reach whatever is playing (Music, a browser tab, Spotify). `:mute` (Mute or Unmute), `:mute mic` (the microphone: its mute, or for one without, its level to 0 and back), `:volume 30`, `:output airpods` lists the sound outputs, the current one first; Enter switches to it |
 | Notes | `:delete note milk` (by its title or what's in it; to the Trash, asks first) |
 | Shell | `:!git status` (below) |
@@ -400,8 +401,9 @@ The row shows the title and date Copperlight read before you press Enter; a noti
   of day: `timer until 15:30 standup`, `timer at 3pm`.
 - **Stopwatch** (`stopwatch`, from `stopw`): counts up in the menu bar, kept through restarts; stopping it says the
   time.
-- **What's running, on opening:** the pomodoro, the timer and the stopwatch, while they run, are rows in the empty
-  launcher, their time ticking in a copper pill; Enter stops one after asking. The meeting about to start stays
+- **What's running, on opening:** the pomodoro, the timer, the stopwatch and keeping awake, while they run, are rows
+  in the empty launcher, their time ticking in a copper pill (keeping awake's, when it's for a while); Enter stops one
+  after asking. The meeting about to start stays
   first.
 
 ## Settings
@@ -416,7 +418,8 @@ one it can't make cleanly is refused, and the file stays as it was. Edits made b
 ## Menu bar
 
 The C, with Settings… (⌘,), Welcome to Copperlight, Launch at Login and Quit. A running pomodoro or timer adds its countdown next to it,
-and `:awake` a sun while it keeps the Mac awake (click either to stop it). Keeping awake ends when Copperlight quits.
+and `:awake` a sun while it keeps the Mac awake (click either to stop it; for a while, its menu says until when). Keeping
+awake ends when its time is up, or when Copperlight quits.
 
 ## Permissions
 

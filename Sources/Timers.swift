@@ -259,5 +259,12 @@ struct StopwatchProvider: ResultProvider {
             id: "clock:stopwatch", title: "Stopwatch", subtitle: "Started \(at(started))", icon: .symbol("stopwatch"), score: 99.995,
             actionTitle: "Stop", action: { stopwatch.stopAndSay() }, confirm: "Stop the stopwatch?", ticking: .up(from: started)))
     }
+    if KeepAwake.isOn { // `:awake`: counting down when it's for a while
+        let until = KeepAwake.shared.until
+        rows.append(LauncherResult(
+            id: "clock:awake", title: "Keeping Awake", subtitle: until.map { "Until \(at($0))" } ?? "Until you stop it", icon: .symbol("sun.max"),
+            score: 99.994, actionTitle: "Stop", action: { KeepAwake.shared.stop() }, confirm: "Stop keeping the Mac awake?",
+            ticking: until.map { .down(to: $0) }))
+    }
     return rows
 }

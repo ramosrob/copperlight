@@ -121,36 +121,91 @@ func wifiIsOn() -> Bool { CWWiFiClient.shared().interface()?.powerOn() ?? false 
 
 // MARK: Keep awake
 
-/// `:awake`: keeps the Mac and its displays awake until it's run again, or Copperlight quits (macOS lets go with it).
-/// While it's on, a menu bar item says so; click it to stop, like the pomodoro's.
-/// ponytail: no time limit (`:awake 2h`); add one if people forget it on.
+/// `:awake`: keeps the Mac and its displays awake until it's run again, or Copperlight quits (macOS lets go with it);
+/// `:awake 2h`, `:awake until 18:00` for a while, after which it lets go by itself. While it's on, a menu bar item says
+/// so (click it to stop, like the pomodoro's), and the empty launcher lists it with what's running.
 @MainActor final class KeepAwake: NSObject {
     static let shared = KeepAwake()
     private nonisolated static let assertion = Mutex<IOPMAssertionID?>(nil)
     nonisolated static var isOn: Bool { assertion.withLock { $0 != nil } }
+    /// When it lets go by itself; nil: when you stop it.
+    private(set) var until: Date?
     private var item: NSStatusItem?
+    private var ending: Task<Void, Never>?
 
     func toggle() { Self.isOn ? stop() : start() }
 
-    private func start() {
-        var id = IOPMAssertionID(0)
-        guard IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn),
-                                          "Keep Awake, from Copperlight" as CFString, &id) == kIOReturnSuccess
-        else { return NSSound.beep() }
-        Self.assertion.withLock { $0 = id }
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "sun.max", accessibilityDescription: "Keeping Awake")
+    /// On, until `deadline` (nil: until stopped). Already on, it keeps going until the new deadline instead.
+    func start(until deadline: Date? = nil) {
+        if !Self.isOn {
+            var id = IOPMAssertionID(0)
+            guard IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn),
+                                              "Keep Awake, from Copperlight" as CFString, &id) == kIOReturnSuccess
+            else { return NSSound.beep() }
+            Self.assertion.withLock { $0 = id }
+            let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+            item.button?.image = NSImage(systemSymbolName: "sun.max", accessibilityDescription: "Keeping Awake")
+            self.item = item
+        }
+        until = deadline
+        ending?.cancel()
+        ending = deadline.map { deadline in
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(max(0, deadline.timeIntervalSinceNow))) // a continuous clock: sleep counts
+                if !Task.isCancelled { self?.stop() }
+            }
+        }
         let menu = NSMenu()
+        if let deadline { menu.addItem(withTitle: "Awake until \(deadline.formatted(date: .omitted, time: .shortened))", action: nil, keyEquivalent: "") }
         menu.addItem(withTitle: "Stop Keeping Awake", action: #selector(stopFromMenu), keyEquivalent: "").target = self
-        item.menu = menu
-        self.item = item
+        item?.menu = menu
     }
 
-    private func stop() {
+    func stop() {
         if let id = Self.assertion.withLock({ id in defer { id = nil }; return id }) { IOPMAssertionRelease(id) }
         if let item { NSStatusBar.system.removeStatusItem(item) }
-        item = nil
+        (item, until) = (nil, nil)
+        ending?.cancel()
     }
 
     @objc private func stopFromMenu() { stop() }
+}
+
+/// What follows `:awake`: a length (`2h`, `90 min`, `30`, a bare number being minutes) or a time of day (`until 18:00`,
+/// `till 6pm`), as `timer` reads them; "for" before a length is fine. nil for anything else.
+func awakeDeadline(_ text: String, now: Date = .now) -> Date? {
+    var text = text.trimmingCharacters(in: .whitespaces)
+    if text.lowercased().hasPrefix("for ") { text.removeFirst(4) }
+    return switch parseTimer(text) {
+    case .start(let seconds, let label) where label.isEmpty: now + TimeInterval(seconds)
+    case .until(let hour, let minute, let label) where label.isEmpty: nextTime(hour: hour, minute: minute, after: now)
+    default: nil
+    }
+}
+
+/// `:awake` rows: on (or off) first, so Enter still toggles it, then an hour or two; with a time typed, for that long.
+@MainActor func awakeRows(_ text: String, now: Date = .now) -> [LauncherResult] {
+    let at = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
+    let row = { (title: String, subtitle: String, deadline: Date?, score: Double) in
+        LauncherResult(id: "awake:\(title)", title: title, subtitle: subtitle, icon: .symbol("sun.max"), score: score, actionTitle: "Run",
+                       action: { KeepAwake.shared.start(until: deadline) })
+    }
+    guard text.isEmpty else {
+        guard let deadline = awakeDeadline(text, now: now) else {
+            return [LauncherResult(id: "awake:hint", title: "Keep Awake for a while", subtitle: "Type how long: 2h, 90 min, until 18:00",
+                                   icon: .symbol("sun.max"), score: 1, actionTitle: "", action: {})]
+        }
+        let seconds = Int(deadline.timeIntervalSince(now).rounded())
+        let atTime = text.lowercased().firstMatch(of: #/^(until|till|til|at)\b/#) != nil // a time of day, not a length
+        return [atTime ? row("Keep Awake until \(at(deadline))", "For \(timerLength(seconds / 60 * 60))", deadline, 1)
+                          : row("Keep Awake for \(timerLength(seconds))", "Until \(at(deadline))", deadline, 1)]
+    }
+    let toggle = KeepAwake.isOn
+        ? LauncherResult(id: "awake:toggle", title: "Stop Keeping Awake", subtitle: KeepAwake.shared.until.map { "Awake until \(at($0))" } ?? "Awake until you stop it",
+                         icon: .symbol("sun.max"), score: 2, actionTitle: "Run", action: { KeepAwake.shared.stop() },
+                         ticking: KeepAwake.shared.until.map { .down(to: $0) })
+        : row("Keep Awake", "Until you stop it", nil, 2)
+    return [toggle] + [3600, 7200].enumerated().map { index, seconds in
+        row("Keep Awake for \(timerLength(seconds))", "Until \(at(now + TimeInterval(seconds)))", now + TimeInterval(seconds), 1 - Double(index) / 100)
+    }
 }

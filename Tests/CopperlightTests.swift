@@ -3038,3 +3038,37 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(row.title == "Test Internet Speed" && row.actionTitle == "Test" && row.output != nil) // runs on Enter only
     #expect(await LookupProvider().results(for: "speedtest").first?.title == "Test Internet Speed")
 }
+
+// MARK: Keep awake for a while
+
+@MainActor @Test func keepAwakeForAWhile() async throws {
+    let now = Date(timeIntervalSince1970: 1_793_203_080)
+    #expect(awakeDeadline("2h", now: now) == now + 7200)
+    #expect(awakeDeadline("for 90 min", now: now) == now + 5400)
+    #expect(awakeDeadline("30", now: now) == now + 1800) // minutes, like a timer
+    let evening = try #require(awakeDeadline("until 18:00", now: now))
+    #expect(Calendar.current.component(.hour, from: evening) == 18 && evening > now)
+    #expect(awakeDeadline("forever", now: now) == nil && awakeDeadline("2h tea", now: now) == nil)
+
+    let verbs = VerbProvider(verbs: Verb.launcher(files: FileSearchProvider()))
+    let alone = await verbs.results(for: ":awake")
+    #expect(alone.first?.title == "Keep Awake" && alone.first?.completion == nil) // Enter still turns it on
+    #expect(alone.map(\.title).contains("Keep Awake for 2 hours"))
+    let timed = try #require(await verbs.results(for: ":awake 2h").first)
+    #expect(timed.title == "Keep Awake for 2 hours" && timed.subtitle.hasPrefix("Until "))
+    #expect(await verbs.results(for: ":awake until 6pm").first?.title.hasPrefix("Keep Awake until ") == true)
+    #expect(await verbs.results(for: ":aw").first { $0.id == "verb:awake" }?.completion == nil) // runs, doesn't fill in
+
+    // On for a while: a row in the empty launcher ticks down to when it lets go, which it does by itself.
+    let store = StateStore(file: try tempStateFile())
+    KeepAwake.shared.start(until: .now + 1)
+    defer { KeepAwake.shared.stop() }
+    let until = try #require(KeepAwake.shared.until)
+    #expect(KeepAwake.isOn)
+    let row = runningClocks(pomodoro: Pomodoro(store: store), timer: Countdown(store: store), stopwatch: Stopwatch(store: store))
+        .first { $0.id == "clock:awake" }
+    #expect(row?.ticking == .down(to: until) && row?.actionTitle == "Stop")
+    #expect(await verbs.results(for: ":awake").first?.title == "Stop Keeping Awake")
+    try await Task.sleep(for: .milliseconds(1500))
+    #expect(!KeepAwake.isOn)
+}

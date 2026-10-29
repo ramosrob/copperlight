@@ -69,6 +69,7 @@ takes over, and an abbreviation you stop using fades after a few weeks.
 | `:trash readme`, `:terminal readme` | Move a file to the Trash (asks first), or open its folder (a folder itself) in your terminal: Terminal, or the app in Settings › Files › Terminal |
 | `:dark`, `:wifi`, `:hidden files` | Dark mode and Wi-Fi on or off (the row says which: Turn Wi-Fi Off); show or hide hidden files in Finder (Finder restarts) |
 | `:awake` | Keep the Mac and its displays awake until you run it again (Stop Keeping Awake) or Copperlight quits. A sun in the menu bar shows it's on; click it to stop |
+| `:awake 2h`, `:awake 90 min`, `:awake until 18:00` | Keep it awake for a while, then let go by itself. Lengths and times read like `timer`'s (`30` is minutes, `till 6pm`); `:awake` alone also offers an hour or two. Run again, it keeps going until the new time. The time left ticks in the empty launcher, and the sun's menu says until when |
 | `:play`, `:next track`, `:previous track` | The keyboard's media keys: play or pause, skip, go back, in whatever is playing (Music, a browser tab, Spotify). Needs Accessibility, like pasting |
 | `:mute`, `:volume 30` | Mute or unmute (the row says which), set the output volume (0–100, unmutes). A display's speakers can't be muted from the Mac: a beep says so |
 | `:mute mic` | Mute or unmute the microphone (Mute Microphone, Unmute Microphone). One without a mute control gets its input level set to 0, and back |
@@ -433,8 +434,9 @@ stop the one running, and so does `timer stop`. `tim` Tab is the Timer chip. A t
 **Stopwatch:** `stopwatch` (from `stopw`) starts one, counting up in the menu bar and kept through restarts;
 `stopwatch` again, or a click on it in the menu bar, stops it and says the time in a notification.
 
-**What's running, when you open it:** while a pomodoro, a break, a timer or the stopwatch runs, the empty launcher
-lists it with its time ticking in a copper pill: left for the pomodoro and the timer, so far for the stopwatch.
+**What's running, when you open it:** while a pomodoro, a break, a timer or the stopwatch runs, or the Mac is kept
+awake, the empty launcher lists it with its time ticking in a copper pill: left for the pomodoro, the timer and keeping
+awake for a while, so far for the stopwatch.
 Enter stops it, after asking. A meeting about to start stays above them, so Enter still joins.
 
 **Suggestions:** below all that, the empty launcher shows up to 3 apps you open around this time of day: opened from

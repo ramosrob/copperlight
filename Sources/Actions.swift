@@ -54,7 +54,8 @@ struct VerbProvider: ResultProvider {
             return LauncherResult(
                 id: "verb:\(verb.keyword)", title: verb.showing?() ?? verb.title, subtitle: ":" + verb.keyword, icon: verb.icon,
                 score: score, actionTitle: verb.run != nil ? "Run" : "Choose", action: verb.run ?? {},
-                completion: verb.targets != nil ? ":\(verb.keyword) " : nil, repeats: verb.repeats, confirm: verb.confirm)
+                // One that runs and takes text too (`:awake`, `:awake 2h`) runs on Enter; typing after it gives the rest.
+                completion: verb.targets != nil && verb.run == nil ? ":\(verb.keyword) " : nil, repeats: verb.repeats, confirm: verb.confirm)
         }
     }
 }
@@ -155,7 +156,8 @@ extension Verb {
             Verb(keyword: "wifi", title: "Toggle Wi-Fi", icon: .symbol("wifi"),
                  showing: { wifiIsOn() ? "Turn Wi-Fi Off" : "Turn Wi-Fi On" }, run: { toggleWiFi() }),
             Verb(keyword: "awake", title: "Keep Awake", icon: .symbol("sun.max"),
-                 showing: { KeepAwake.isOn ? "Stop Keeping Awake" : "Keep Awake" }, run: { KeepAwake.shared.toggle() }),
+                 showing: { KeepAwake.isOn ? "Stop Keeping Awake" : "Keep Awake" }, run: { KeepAwake.shared.toggle() },
+                 targets: { text in await MainActor.run { awakeRows(text) } }),
             Verb(keyword: "eject", title: "Eject Disk", icon: .symbol("eject"), targets: { ejectRows($0) }),
             // Sound
             Verb(keyword: "play", title: "Play or Pause", icon: .symbol("playpause.fill"), run: { pressMediaKey(NX_KEYTYPE_PLAY) }),

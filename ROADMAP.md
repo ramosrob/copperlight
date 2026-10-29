@@ -32,7 +32,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Your day:** meetings beyond today, free slots to copy, and the next meeting in the menu bar; lists, priorities and
   places in `add todo` and `add event`; what's playing in the empty launcher; screenshots and downloads by date, and
   pasting the latest.
-- **The Mac:** `:awake 2h`, `:awake until 18:00`; connecting paired
+- **The Mac:** connecting paired
   Bluetooth devices (`:connect airpods`); `:input` for the microphone; the Wi-Fi password, and a QR code for guests; Stage Manager on and off; dismiss notifications.
 - **Extending it:** script rows with live output and a choice of arguments; `copperlight choose`, lines from a
   pipe as rows; a URL scheme and Shortcuts actions; a
@@ -48,7 +48,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 - **Next release:** what you picked for what you typed comes first the next time you type it (`ss` → Slack); Tab on a
   file, an app or a clipboard item for what you can do with it (open with, reveal, copy the path or the file, trash;
-  hide, quit, relaunch; open a link, Large Type, a QR code), its preview beside it; `speed`, an internet speed test.
+  hide, quit, relaunch; open a link, Large Type, a QR code), its preview beside it; `speed`, an internet speed test; `:awake 2h`, `:awake until 18:00`.
 - **v0.9:** colors by their shape (`#c87533`, `rgb(…)`, `hsl(…)`) with a swatch, and `pick color`; `qr`
   codes; date math (`days until dec 25`, `in 3 weeks`, a date's weekday and week), answered before you finish typing;
   `{cursor}` in snippets; currency after math (`39*8 usd`); contacts (Enter messages, Tab for call, FaceTime, WhatsApp,
