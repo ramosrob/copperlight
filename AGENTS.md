@@ -18,7 +18,7 @@ code is laid out, the rules a change has to fit) first. This file only adds what
   seconds too.
 - In an actor provider, write `modeResults` as `async`, like the protocol: a synchronous one loses to the protocol
   extension's default, which only calls `results`.
-- Don't rebuild what macOS already does well: ROADMAP.md's "Not planned" lists what's been ruled out and why.
+- Say so up front when macOS already does something well: ROADMAP.md's "Maybe, someday" lists what it covers today.
 - A feature is done when the docs say it: [FEATURES.md](FEATURES.md), [docs/guide.md](docs/guide.md),
   [docs/configuration.md](docs/configuration.md) for a config key, the README when it's worth showing, and
   ROADMAP.md.

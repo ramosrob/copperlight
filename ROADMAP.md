@@ -10,6 +10,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   `{date}` inside url and shell commands.
 - **Your own fallback rows:** choose what the last rows offer when nothing matches: several search engines, or any of
   your commands.
+- **Weather:** now, the next hours and 5 days on a card, for where you are or a city you choose in Settings.
 - **Updates,** for 1.0: tell you when a new version is out, and install it.
 
 ## Later
@@ -28,6 +29,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   their apps too.
 - **Files and apps:** `:move to`, `:rename`, `:duplicate`, `:compress`, AirDrop and `:info` on a file; the files selected in
   Finder as what the hotkey acts on; `:uninstall` (asks first); `:upgrade`; volume per app.
+- **Sports and flights:** scores and the next games of your teams; a flight's status from its number.
 - **Your day:** meetings beyond today, free slots to copy, and the next meeting in the menu bar; lists, priorities and
   places in `add todo` and `add event`; what's playing in the empty launcher; screenshots and downloads by date, and
   pasting the latest.
@@ -35,7 +37,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Extending it:** script rows with live output and a choice of arguments; `copperlight choose`, lines from a
   pipe as rows; a URL scheme and Shortcuts actions; a
   starter library of commands, and importers for snippets and quicklinks from other apps.
-- **Look and feel:** text size, and which screen it opens on; other languages for the interface (what you type stays
+- **Look and feel:** themes and custom colors; text size, and which screen it opens on; other languages for the interface (what you type stays
   as it is); switching the keyboard layout from the field; a double-tapped modifier as the hotkey (still one hotkey).
 - **Usage stats**, kept on your Mac.
 - **Homebrew:** `brew install` through Copperlight's own tap.
@@ -47,7 +49,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Next release:** answers in their own shape: a stock across the whole card, a QR code big beside what you can do
   with it (copy, save to Downloads, copy the link), a color on a band with its contrast, a step lighter and darker;
   the speed test's result, download and upload big; a dictionary entry across the card; a person's card beside every
-  way to reach them.
+  way to reach them; a calculation on a band, what you typed = the answer, with what a percentage hid.
 - **v0.10:** what you picked for what you typed comes first the next time you type it (`ss` → Slack); Tab on a
   file, an app or a clipboard item for what you can do with it (open with, reveal, copy the path or the file, trash;
   an app's recent documents, hide, quit, relaunch; open a link, Large Type, a QR code), its preview beside it; `speed`, an internet speed test; `:awake 2h`, `:awake until 18:00`; `colors`, the colors you picked; installing an app you don't have
@@ -82,26 +84,10 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **v0.2:** search the menus of the app you're in (`:export pdf`); System Settings pages as rows (`bluetooth`, `dark
   mode`); community script commands work as they are.
 
-## Not planned
+## Maybe, someday
 
-- **An AI assistant, chat or agents.** Copperlight has no AI service, and won't. On-device models (Apple Intelligence,
-  Vision) are fine, and macOS's Writing Tools already rewrite text in every app.
-- **Accounts, cloud sync, team sharing or telemetry,** and apps for other devices. Your config is one plain file: keep
-  it in git or any synced folder. Universal Clipboard already moves copies between your devices.
-- **Web answers while you type,** weather, sports or flight status. They would send what you type to a service.
-- **Link previews and favicons for copied links.** Fetching them would tell those sites what you copied.
-- **An extension store or runtime,** custom views for extensions, or a visual workflow editor. Commands, snippets and
-  scripts in a folder cover it, with nothing to install and nothing running unsandboxed; the Shortcuts app does visual
-  automation.
-- **More global hotkeys, ⌘K menus, Vim keys or a file buffer.** One hotkey opens Copperlight, and every action has its
-  own row or `:` command.
-- **Watching what you type elsewhere:** snippets that expand anywhere, or merging copies with a double ⌘C. It would
-  mean watching every key. macOS's Text Replacements (System Settings › Keyboard) expand text anywhere; snippets are
-  pasted from the launcher, where `{date}`, `{clipboard}` and `{query}` work.
-- **Favorites pinned by hand.** Use decides the order.
-- **Themes and custom colors.** Copperlight has its own look, from the icon.
-- **What macOS already does well:** the contents of Mail, Messages and Notes (Spotlight searches them), a grid of
-  every app (Spotlight's Apps view), password manager items (their own quick access), resizing and converting images
-  (Finder's Quick Actions), dictation, blocking apps and sites (Screen Time and Focus), quitting idle apps (App Nap),
-  switching Spaces (⌃1–9) and an app's windows (⌘`), answering invitations (Calendar), speaking text (a two-line `say`
-  script), and hiding the menu bar icon (System Settings › Menu Bar).
+What macOS already does well today, so not soon: the contents of Mail, Messages and Notes (Spotlight searches them),
+a grid of every app (Spotlight's Apps view), password manager items (their own quick access), resizing and converting
+images (Finder's Quick Actions), dictation, blocking apps and sites (Screen Time and Focus), quitting idle apps (App
+Nap), switching Spaces (⌃1–9) and an app's windows (⌘`), answering invitations (Calendar), speaking text (a two-line
+`say` script), and hiding the menu bar icon (System Settings › Menu Bar).

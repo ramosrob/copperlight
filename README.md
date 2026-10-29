@@ -164,7 +164,7 @@ A taste of what the field understands. Enter does the obvious thing: opens, copi
 
 ### Calculate and convert
 
-The answer appears as you type; Enter copies it.
+The answer appears big as you type, with what a percentage hid beside it; Enter copies it.
 
 | Type | You get |
 |---|---|
@@ -358,7 +358,7 @@ included. Every setting is in
 | [Everything it does](FEATURES.md) | Every feature on one page |
 | [Why it works this way](SPEC.md) | The principles behind it |
 | [Developing](DEVELOPMENT.md) | Building, testing, releasing, and the rules a change has to fit |
-| [Roadmap](ROADMAP.md) | What's next, what's later, and what's not planned |
+| [Roadmap](ROADMAP.md) | What's next, what's later, and what's maybe someday |
 
 ## Support Copperlight
 
