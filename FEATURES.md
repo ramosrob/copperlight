@@ -344,6 +344,9 @@ preview pane. From 3 letters, a name's start finds it too (`pas` → the paste t
   row with the color's swatch, the one you typed last. Tab shows it big. Enter copies it.
 - **`pick color`** (or `color picker`, `eyedropper`): macOS's magnifier; click anywhere on the screen and its hex is
   copied, and the launcher comes back with it, the other notations a row away.
+- **`colors`** (or `colours`, `my colors`, `recent colors`): the colors you picked, newest first, the last 30, each
+  with its swatch, its RGB and when; Enter copies the hex, Tab shows it big with every notation. None yet: Pick Color.
+  Kept in `state.json`.
 - **QR codes:** `qr https://copperlight.app` (`qr` ⇥ is the QR Code chip) shows the code beside the list, and `qr`
   alone makes one of what you copied. Enter copies the picture. Made on your Mac.
 - **Text from the screen** (`copy text`, or `ocr`, `scan text`): drag over any part of the screen and its text is
@@ -446,7 +449,7 @@ first time per launch; after that, a notification says where it is.
 ## Where things live
 
 All in `~/.config/copperlight/`: `config.toml` (your settings, hot reloaded; a mistake shows as an error row),
-`note.txt`, `notes/` (the other notes), `state.json` (frecency, what you picked for what you typed, recent queries, saved layouts, the timer, the apps you opened and when), `clipboard.sqlite` (history, readable only
+`note.txt`, `notes/` (the other notes), `state.json` (frecency, what you picked for what you typed, recent queries, saved layouts, the timer, the apps you opened and when, the colors you picked), `clipboard.sqlite` (history, readable only
 by you), `rates.json` (currency rates), `apps.json` (what each app does) and `homebrew-apps.json` (Homebrew's list,
 trimmed), `photos.sqlite` (the text in your photos), `scripts/` (on the shell's PATH).
 

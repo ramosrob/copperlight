@@ -207,7 +207,9 @@ printf 'On-call: %s\n' "$1"
 too) shows in the other two notations, each row with the color's swatch, the one you typed last. Tab shows it big.
 Enter copies it. `pick color` (also `color picker`, `eyedropper`) opens macOS's magnifier: click anywhere on any
 screen and its hex is copied, and the launcher comes back with that color typed, so the other notations are a row
-away. Esc cancels. Colors are sRGB, what hex codes mean on the web.
+away. Esc cancels. Colors are sRGB, what hex codes mean on the web. Every color you pick is kept (the last 30, in
+`state.json`): `colors` (or `my colors`) lists them, newest first, each with its swatch and when you picked it. Enter
+copies its hex; Tab shows it big, in hex, RGB and HSL.
 
 **QR codes:** `qr https://copperlight.app` offers the code (Tab or Enter), and in the QR Code chip it shows beside the
 list as you type. `qr` alone makes one of what you copied. Enter copies the picture (PNG). Made on your Mac; up to

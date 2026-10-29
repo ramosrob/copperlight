@@ -193,7 +193,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         providers: ([(commands, .commands), (ScriptProvider(), .scripts), (snippets, .snippets), (builtins, nil),
                      (EmojiProvider(), .quickTools), (DefineProvider(), .quickTools), (SpellProvider(), .quickTools),
                      (translate, .quickTools), (StockProvider(), .quickTools), (meetings, nil), (reminders, nil), (contacts, nil), (TextToolProvider(), .quickTools),
-                     (ColorProvider(show: { [unowned self] in panel.show(typing: $0) }), .quickTools), (QRCodeProvider(), .quickTools), (LargeTypeProvider(), .quickTools),
+                     (ColorProvider(show: { [unowned self] in panel.show(typing: $0) }, store: .shared), .quickTools), (QRCodeProvider(), .quickTools), (LargeTypeProvider(), .quickTools),
                      (ScreenTextProvider(show: { [unowned self] in panel.show(typing: $0) }), .quickTools), (capture, .notes), (apps, nil),
                      (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
                      (TimeZoneProvider(), .quickTools), (DateMathProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools),

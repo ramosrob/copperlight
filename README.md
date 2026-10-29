@@ -75,7 +75,7 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Processes**<br>`cpu`, `memory` | What's using the processor or memory, the busiest first, with each one's app icon. Enter ends a process, or quits an app, after asking. |
 | **Keep awake**<br>`:awake`, `:awake 2h` | Keeps your Mac and its displays awake until you say so, or for a while (`:awake 2h`, `:awake until 18:00`), with a sun in the menu bar while it's on. |
 | **Text tools**<br>`json`, `uuid`, `b64`, `hex` | Format JSON, make a UUID or a password, encode text, convert colors and timestamps. |
-| **Colors**<br>`#c87533`, `pick color` | A color in hex, RGB and HSL, with its swatch. Pick one off the screen and its hex is copied. |
+| **Colors**<br>`#c87533`, `pick color`, `colors` | A color in hex, RGB and HSL, with its swatch. Pick one off the screen and its hex is copied; `colors` lists the ones you picked. |
 | **QR codes**<br>`qr` | A QR code of a link or any text, or of what you copied, ready to paste. |
 | **Text from the screen**<br>`copy text` | Drag over anything, a video, a picture, an error you can't select, and its text is copied, read on your Mac. A link in a QR code opens. |
 | **Spelling**<br>`spell definately` | The word spelled right, and the other guesses; a sentence comes back corrected. |
@@ -190,6 +190,7 @@ The answer appears as you type; Enter copies it.
 | `json`, `upper`, `snake`, `b64`, `sha256` | The clipboard formatted, converted or hashed; or type the text after it: `upper hello` |
 | `uuid`, `password 32`, `lorem 3` | A UUID, a password, placeholder text |
 | `unix 1700000000`, `#ff8800` | `2023-11-14T22:13:20Z`, `rgb(255, 136, 0)` and `hsl(32, 100%, 50%)` |
+| `pick color`, `colors` | A color off the screen, its hex copied; `colors` lists the ones you picked, newest first |
 | `qr`, `qr https://copperlight.app` | A QR code of what you copied, or of what you type, beside the results |
 | `copy text` | The text in any part of the screen you drag over, copied; a QR code's link opens |
 | `large 555-0100`, `large` | The text across the screen, huge; `large` alone shows what you copied |

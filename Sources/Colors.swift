@@ -72,31 +72,67 @@ func parseColor(_ text: String) -> (color: RGBColor, notation: ColorNotation)? {
     return nil
 }
 
+/// A color picked off the screen, kept for `colors` in state.json: the last 30, newest first.
+struct PickedColor: Codable, Equatable, Sendable {
+    static let stateSection = "colors"
+    static let limit = 30
+    var hex: String
+    var at: Date
+}
+
+/// Keeps a picked color, on top, once.
+@MainActor func rememberColor(_ color: RGBColor, in store: StateStore, at date: Date = .now) {
+    let kept = store.get(PickedColor.stateSection, as: [PickedColor].self) ?? []
+    store.set(PickedColor.stateSection, Array(([PickedColor(hex: color.hex, at: date)] + kept.filter { $0.hex != color.hex }).prefix(PickedColor.limit)))
+}
+
 /// A color typed in one notation (`#c87533`, `rgb(…)`, `hsl(…)`) in the others, each row with its swatch; Enter
 /// copies. `pick color` picks one off the screen with macOS's magnifier: its hex is copied and the launcher comes back
-/// showing it, so the other notations are a row away.
+/// showing it, so the other notations are a row away. Picked colors are kept: `colors` lists them, newest first.
 struct ColorProvider: ResultProvider {
     /// Opens the launcher with this typed in.
     var show: @MainActor @Sendable (String) -> Void = { _ in }
+    /// Where picked colors are kept; nil: not kept.
+    var store: StateStore? = nil
 
     func results(for query: String) async -> [LauncherResult] {
         if let (color, typed) = parseColor(query) {
             let notations = ColorNotation.allCases.filter { $0 != typed } + [typed]
             return notations.enumerated().map { index, notation in row(color, notation, score: 50 - Double(index) / 10) }
         }
-        let lower = query.lowercased()
+        let lower = query.lowercased().trimmingCharacters(in: .whitespaces)
+        if lower == "colors" || lower == "colours" || otherNameScore(lower, "Your Colors") != nil { return await keptRows() }
         guard let score = lower.count >= 3 && "pick color".hasPrefix(lower) ? 50 : fuzzyScore(query, "Pick Color") ?? otherNameScore(query, "Pick Color")
         else { return [] }
-        return [LauncherResult(id: "builtin:pick color", title: "Pick Color", subtitle: "Click anywhere on the screen to copy its color",
-                               icon: .symbol("eyedropper"), score: score, actionTitle: "Pick", action: { [show] in
+        return [pickRow(subtitle: "Click anywhere on the screen to copy its color", score: score)]
+    }
+
+    private func pickRow(subtitle: String, score: Double) -> LauncherResult {
+        LauncherResult(id: "builtin:pick color", title: "Pick Color", subtitle: subtitle, icon: .symbol("eyedropper"), score: score,
+                       actionTitle: "Pick", action: { [show, store] in
             NSColorSampler().show { picked in
                 guard let color = picked.flatMap(RGBColor.init) else { return } // Esc: nothing picked
                 Task { @MainActor in
                     copyToClipboard(color.hex)
+                    if let store { rememberColor(color, in: store) }
                     show(color.hex)
                 }
             }
-        })]
+        })
+    }
+
+    /// `colors`: the colors you picked, newest first, each with its swatch and when; Enter copies its hex, Tab shows it
+    /// big in each notation. None yet: Pick Color.
+    private func keptRows() async -> [LauncherResult] {
+        let kept = await MainActor.run { [store] in store?.get(PickedColor.stateSection, as: [PickedColor].self) ?? [] }
+        let now = Date.now
+        let rows = kept.enumerated().compactMap { index, picked -> LauncherResult? in
+            guard let color = parseColor(picked.hex)?.color else { return nil }
+            return LauncherResult(id: "color:kept:\(picked.hex)", title: picked.hex, subtitle: color.rgb, accessory: shortAge(picked.at, now: now),
+                                  icon: .color(color), score: 50 - Double(index) / 1000, actionTitle: "Copy", action: { copyToClipboard(picked.hex) },
+                                  previewImage: { swatch(color) }, details: [("Hex", color.hex), ("RGB", color.rgb), ("HSL", color.hsl)])
+        }
+        return rows.isEmpty ? [pickRow(subtitle: "Your colors show here once you’ve picked some", score: 50)] : rows
     }
 
     private func row(_ color: RGBColor, _ notation: ColorNotation, score: Double) -> LauncherResult {

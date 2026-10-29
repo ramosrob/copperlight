@@ -3072,3 +3072,25 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     try await Task.sleep(for: .milliseconds(1500))
     #expect(!KeepAwake.isOn)
 }
+
+// MARK: Your colors
+
+@MainActor @Test func pickedColorsAreKept() async throws {
+    let store = StateStore(file: try tempStateFile())
+    let colors = ColorProvider(store: store)
+    let empty = try #require(await colors.results(for: "colors").first)
+    #expect(empty.title == "Pick Color" && empty.subtitle == "Your colors show here once you’ve picked some")
+
+    let now = Date(timeIntervalSince1970: Date.now.timeIntervalSince1970.rounded(.down)) // state.json keeps seconds
+    rememberColor(RGBColor(red: 200, green: 117, blue: 51), in: store, at: now - 7200)
+    rememberColor(RGBColor(red: 0, green: 0, blue: 0), in: store, at: now - 60)
+    rememberColor(RGBColor(red: 200, green: 117, blue: 51), in: store, at: now) // again: back on top, once
+    let rows = await colors.results(for: "colors")
+    #expect(rows.map(\.title) == ["#c87533", "#000000"]) // newest first
+    #expect(rows[0].subtitle == "rgb(200, 117, 51)" && rows[0].accessory == "now" && rows[0].actionTitle == "Copy")
+    #expect(rows[0].previewImage != nil && rows[0].details.map(\.0) == ["Hex", "RGB", "HSL"]) // Tab: big, in each notation
+    #expect(await colors.results(for: "colours").count == 2)
+    #expect(await colors.results(for: "my colors").count == 2)
+    for gray in 0..<40 { rememberColor(RGBColor(red: gray, green: gray, blue: gray), in: store, at: now) }
+    #expect(store.get(PickedColor.stateSection, as: [PickedColor].self)?.count == PickedColor.limit) // the last 30
+}
