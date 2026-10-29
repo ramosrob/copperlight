@@ -416,7 +416,8 @@ Automation, if you said no). Read when the launcher opens, kept in memory only.
 nickname or company. The row shows their number and email; Enter messages them in Messages (their mobile number,
 else their first number, else their email), or opens their card if they have neither. Tab goes into the person, the
 Contact chip: Message, Call (through your iPhone), FaceTime and WhatsApp (when it's installed) for each number, Email
-for each address, Copy for each, and Open in Contacts, with their card beside the list (numbers, emails, birthday).
+for each address, Copy for each, and Open in Contacts, beside their card: their initials, name, job and company,
+and their numbers, emails and birthday.
 `contact` ⇥ alone lists everyone. The first time, `contacts` (below the Contacts app) has a row that asks to read
 them. Read on your Mac when the launcher opens, at most every 2 minutes, kept in memory only.
 

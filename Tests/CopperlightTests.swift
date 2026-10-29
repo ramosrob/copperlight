@@ -2790,7 +2790,7 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
 // MARK: Contacts
 
 @MainActor @Test func contacts() async throws {
-    let ana = Person(id: "1", name: "Ana Silva", organization: "Acme", phones: [.init(label: "mobile", value: "+351 912 345 678")],
+    let ana = Person(id: "1", name: "Ana Silva", organization: "Acme", jobTitle: "Product Designer", phones: [.init(label: "mobile", value: "+351 912 345 678")],
                      emails: [.init(label: "work", value: "ana@acme.com")], birthday: DateComponents(month: 3, day: 4))
     let bob = Person(id: "2", name: "Bob Stone", nickname: "Bobby", emails: [.init(label: "home", value: "bob@example.com")])
     let carla = Person(id: "3", name: "Carla Dias")
@@ -2819,8 +2819,13 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(actions.map(\.title) == ["Message", "Call", "FaceTime", "WhatsApp", "Email", "Copy +351 912 345 678",
                                      "Copy ana@acme.com", "Open in Contacts"])
     #expect(actions[0].subtitle == "+351 912 345 678 · mobile" && actions[4].subtitle == "ana@acme.com · work")
-    #expect(actions.allSatisfy { $0.preview == "Ana Silva\nAcme" })
-    #expect(actions[0].details.map(\.0) == ["mobile", "work", "Birthday"] && actions[0].details[2].1 == "March 4")
+    // The card beside them, on every row of theirs; a person among other results keeps the list as it is.
+    guard case .person(let card)? = actions.first?.answer else { Issue.record("no card beside the actions"); return }
+    #expect(card.initials == "AS" && card.name == "Ana Silva" && card.job == "Product Designer" && card.company == "Acme")
+    #expect(card.details.map(\.0) == ["mobile", "work", "birthday"] && card.details[2].1 == "March 4")
+    #expect(actions.allSatisfy { $0.answer != nil && !$0.hasPreview } && row.answer == nil)
+    let company = personCard(Person(id: "4", name: "Northwind", organization: "Northwind")) // a company's own card
+    #expect(company.initials == "N" && company.company.isEmpty)
     #expect(await ContactsProvider(people: [ana], whatsApp: false).modeResults(for: "contact ana").allSatisfy { $0.title != "WhatsApp" })
     // In the chip: nothing typed lists everyone; a name that fits one person, their actions.
     #expect(await contacts.modeResults(for: "contact").map(\.title) == ["Ana Silva", "Bob Stone", "Carla Dias"])

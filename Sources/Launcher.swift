@@ -644,7 +644,7 @@ private struct LauncherView: View {
     /// The panel's max height minus the field, the gap between the pieces and the card's padding.
     private static let maxListHeight = LauncherPanel.maxHeight - fieldHeight - gap - 2 * cardPadding
     private static let previewWidth: CGFloat = 360
-    private static let pictureSize: CGFloat = 232, bandHeight: CGFloat = 132
+    private static let pictureSize: CGFloat = 232, bandHeight: CGFloat = 132, personWidth: CGFloat = 236
 
     @Bindable var model: SearchModel
     let placeholder: String
@@ -692,6 +692,13 @@ private struct LauncherView: View {
                             }
                         }
                         .frame(height: Self.pictureSize)
+                        .padding(14)
+                    case .person(let card)?: // their card, with every way to reach them beside it
+                        HStack(alignment: .top, spacing: 14) {
+                            PersonTile(card: card).frame(width: Self.personWidth)
+                            list.frame(height: min(Self.maxListHeight + 2 * Self.cardPadding - 28, listHeight))
+                        }
+                        .fixedSize(horizontal: false, vertical: true) // as tall as the taller: the card, or the rows
                         .padding(14)
                     case .stock(let card)?: StockCardView(card: card).padding(18) // the whole card: its one row is Enter
                     case .speed(let test, let tested)?: SpeedCardView(test: test, tested: tested).padding(18)

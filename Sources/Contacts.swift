@@ -12,6 +12,7 @@ struct Person: Equatable, Sendable {
     var name: String
     var nickname = ""
     var organization = ""
+    var jobTitle = ""
     var phones: [Handle] = []
     var emails: [Handle] = []
     var birthday: DateComponents? = nil
@@ -33,27 +34,31 @@ private let actionIcons = ["Message": "message", "Call": "phone", "FaceTime": "v
 /// Their card in the Contacts app.
 func contactCardURL(_ id: String) -> URL? { URL(string: "addressbook://" + id) }
 
-/// The card beside a person's rows: their name and company, and under them each number, email and their birthday.
-private func card(_ person: Person) -> (text: String, details: [(String, String)]) {
+/// The card beside a person's rows: their initials, name, job and company, and under them each number, email and their
+/// birthday.
+func personCard(_ person: Person) -> PersonCard {
     let birthday = person.birthday.flatMap { day in
         Calendar.current.date(from: DateComponents(year: 2000, month: day.month, day: day.day))?.formatted(.dateTime.month(.wide).day())
     }
     let details = (person.phones + person.emails).map { ($0.label.isEmpty ? "other" : $0.label, $0.value) }
-        + (birthday.map { [("Birthday", $0)] } ?? [])
-    return ([person.name, person.organization].filter { !$0.isEmpty }.joined(separator: "\n"), details)
+        + (birthday.map { [("birthday", $0)] } ?? [])
+    let words = person.name.split(separator: " ")
+    let initials = String([words.first?.first, words.count > 1 ? words.last?.first : nil].compactMap(\.self)).uppercased()
+    let company = person.organization == person.name ? "" : person.organization // a company's own card
+    return PersonCard(initials: initials, name: person.name, job: person.jobTitle, company: company, details: details)
 }
 
 /// Everyone in Contacts, by name. Empty without access.
 func loadPeople() -> [Person] {
     guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else { return [] }
     let keys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName)]
-        + ([CNContactNicknameKey, CNContactOrganizationNameKey, CNContactPhoneNumbersKey, CNContactEmailAddressesKey, CNContactBirthdayKey] as [CNKeyDescriptor])
+        + ([CNContactNicknameKey, CNContactOrganizationNameKey, CNContactJobTitleKey, CNContactPhoneNumbersKey, CNContactEmailAddressesKey, CNContactBirthdayKey] as [CNKeyDescriptor])
     let label = { (raw: String?) in raw.map { CNLabeledValue<NSString>.localizedString(forLabel: $0) } ?? "" }
     var people: [Person] = []
     try? CNContactStore().enumerateContacts(with: CNContactFetchRequest(keysToFetch: keys)) { contact, _ in
         let name = CNContactFormatter.string(from: contact, style: .fullName) ?? contact.organizationName
         guard !name.isEmpty else { return }
-        people.append(Person(id: contact.identifier, name: name, nickname: contact.nickname, organization: contact.organizationName,
+        people.append(Person(id: contact.identifier, name: name, nickname: contact.nickname, organization: contact.organizationName, jobTitle: contact.jobTitle,
                              phones: contact.phoneNumbers.map { .init(label: label($0.label), value: $0.value.stringValue) },
                              emails: contact.emailAddresses.map { .init(label: label($0.label), value: $0.value as String) },
                              birthday: contact.birthday))
@@ -63,7 +68,7 @@ func loadPeople() -> [Person] {
 
 /// People from Contacts, from 2 letters: every word typed starts a word of their name, nickname or company. Enter
 /// messages them (a number, else an email, else their card opens); Tab goes into the Contact chip, every way to reach
-/// them (message, call, FaceTime, WhatsApp when it's installed, email, copy) with their card beside it. Read on the Mac
+/// them (message, call, FaceTime, WhatsApp when it's installed, email, copy) beside their card. Read on the Mac
 /// when the launcher opens, at most every 2 minutes, kept in memory only; reading them needs access, asked for from a
 /// row (`contacts`), never while typing.
 actor ContactsProvider: ResultProvider {
@@ -154,7 +159,7 @@ actor ContactsProvider: ResultProvider {
 
     /// In the chip: each way to reach them, by number, then by email, then copying them, then their card.
     private func actionRows(_ person: Person) -> [LauncherResult] {
-        let (text, details) = card(person)
+        let card = personCard(person)
         var rows: [(title: String, subtitle: String, url: URL?, copy: String?)] = []
         for phone in person.phones {
             let number = dialable(phone.value), subtitle = [phone.value, phone.label].filter { !$0.isEmpty }.joined(separator: " · ")
@@ -176,7 +181,7 @@ actor ContactsProvider: ResultProvider {
                            actionTitle: row.copy != nil ? "Copy" : row.title == "Open in Contacts" ? "Open" : row.title, action: {
                 if let copy = row.copy { return copyToClipboard(copy) }
                 if let url = row.url { NSWorkspace.shared.open(url) }
-            }, preview: text, previewStyle: .prose, details: details)
+            }, answer: .person(card))
         }
     }
 }

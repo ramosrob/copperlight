@@ -1,13 +1,22 @@
 import SwiftUI
 
-/// A result drawn big in place of the preview pane: a picture (a QR code) with its actions beside it, a stock across the
-/// whole card, or a color on a band over its rows.
+/// A result drawn big in place of the preview pane: a picture (a QR code) or a person with their actions beside it, a
+/// stock across the whole card, or a color on a band over its rows.
 enum Answer: Sendable {
     case picture(CGImage, kicker: String, title: String, subtitle: String)
     case stock(StockCard)
     case color(RGBColor)
     case speed(SpeedTest, tested: Date)
     case entry(DictionaryEntry)
+    case person(PersonCard)
+}
+
+/// A person's card, its text ready to show.
+struct PersonCard: Sendable {
+    var initials: String
+    var name: String
+    var job: String, company: String // either can be empty
+    var details: [(String, String)] // each number and email under its label, then their birthday
 }
 
 /// A stock's card, its text ready to show.
@@ -49,6 +58,43 @@ struct PictureTile: View {
             .padding(10)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.white, in: .rect(cornerRadius: 16, style: .continuous))
+    }
+}
+
+/// Their initials in a circle, their name, job and company, and under a rule how to reach them.
+struct PersonTile: View {
+    let card: PersonCard
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(card.initials).font(.system(size: 30, weight: .semibold)).foregroundStyle(scheme == .dark ? Color.copper : Color.copperDeep)
+                .frame(width: 84, height: 84).background(Color.copper.opacity(0.2), in: Circle())
+                .overlay(Circle().strokeBorder(Color.copper.opacity(0.35))).padding(.bottom, 10)
+            Text(card.name).font(.system(size: 20, weight: .semibold)).lineLimit(2).multilineTextAlignment(.center)
+            // "Product Designer · Northwind" on a line, else each on its own: never a "·" starting the second line.
+            let line = [card.job, card.company].filter { !$0.isEmpty }
+            ViewThatFits(in: .horizontal) {
+                Text(line.joined(separator: " · ")).lineLimit(1)
+                VStack(spacing: 2) { ForEach(line, id: \.self) { Text($0).lineLimit(1) } }
+            }
+            .font(.system(size: 13)).foregroundStyle(.secondary)
+            if !card.details.isEmpty {
+                Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1).padding(.top, 14).padding(.bottom, 8)
+                // ponytail: the first 5; the rows beside list every one
+                ForEach(Array(card.details.prefix(5).enumerated()), id: \.offset) { _, detail in
+                    HStack(spacing: 10) {
+                        Text(detail.0).foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                        Text(detail.1).monospacedDigit().lineLimit(1).truncationMode(.middle)
+                    }
+                    .font(.system(size: 12.5)).padding(.vertical, 2)
+                }
+            }
+        }
+        .padding(.horizontal, 18).padding(.vertical, 20)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16, style: .continuous))
     }
 }
 
