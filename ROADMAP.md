@@ -47,7 +47,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
-- **Next release:** answers in their own shape: a stock across the whole card, a QR code big beside what you can do
+- **v0.11:** answers in their own shape: a stock across the whole card, a QR code big beside what you can do
   with it (copy, save to Downloads, copy the link), a color on a band with its contrast, a step lighter and darker;
   the speed test, download and upload climbing big as they're measured; a dictionary entry across the card; a person's card beside every
   way to reach them; a calculation on a band, what you typed = the answer, with what a percentage hid; a currency
