@@ -84,6 +84,44 @@ func readProcesses() -> [ProcessUsage] {
     notify("Couldn't end \(name)", error == EPERM ? "It belongs to another user" : String(cString: strerror(error)))
 }
 
+/// What `networkQuality` measured: download and upload in bits a second, latency idle and under load in milliseconds.
+struct SpeedTest: Equatable, Sendable {
+    var down: Double, up: Double
+    var idle: Double, loaded: Double
+    var connection: String // "Wi-Fi", "Ethernet", "Cellular", or the interface's name
+}
+
+/// `networkQuality -c` output. Its responsiveness is in round trips a minute (RPM): 60 000 / RPM is the latency, in
+/// milliseconds, while the line is busy.
+func parseSpeedTest(_ json: String) -> SpeedTest? {
+    guard let object = (try? JSONSerialization.jsonObject(with: Data(json.utf8))) as? [String: Any],
+          let down = object["dl_throughput"] as? Double, let up = object["ul_throughput"] as? Double,
+          let idle = object["base_rtt"] as? Double, let rpm = object["responsiveness"] as? Double, rpm > 0
+    else { return nil }
+    // Per sample, how it was connected: the most common.
+    let types = ((object["other"] as? [String: Any])?["interface-type"] as? [String: Int]) ?? [:]
+    let connection = switch types.max(by: { $0.value < $1.value })?.key {
+    case "wifi": "Wi-Fi"
+    case "wiredEthernet": "Ethernet"
+    case "cellular": "Cellular"
+    default: object["interface_name"] as? String ?? "Network"
+    }
+    return SpeedTest(down: down, up: up, idle: idle, loaded: 60_000 / rpm, connection: connection)
+}
+
+/// "328 Mbps", "1.25 Gbps", "850 Kbps", "4.2 Mbps".
+func speedText(_ bitsPerSecond: Double) -> String {
+    if bitsPerSecond >= 1e9 { return formatNumber(bitsPerSecond / 1e9, decimals: 0...2) + " Gbps" }
+    if bitsPerSecond >= 1e6 { return formatNumber(bitsPerSecond / 1e6, decimals: bitsPerSecond < 1e7 ? 0...1 : 0...0) + " Mbps" }
+    return formatNumber(bitsPerSecond / 1e3, decimals: 0...0) + " Kbps"
+}
+
+/// The result row's title and subtitle.
+func speedSummary(_ test: SpeedTest) -> (title: String, subtitle: String) {
+    ("\(speedText(test.down)) down · \(speedText(test.up)) up",
+     "Latency \(Int(test.idle.rounded())) ms, \(Int(test.loaded.rounded())) ms under load · \(test.connection)")
+}
+
 struct BatteryStatus: Equatable, Sendable {
     var percent: Int
     var charging: Bool
@@ -184,8 +222,8 @@ func publicIP() async -> String? {
     return !ip.isEmpty && ip.count <= 45 && ip.allSatisfy({ $0.isHexDigit || $0 == "." || $0 == ":" }) ? ip : nil
 }
 
-/// `ip`, `battery`, `disk`, `port 3000`, `cpu` and `memory`: the Mac's own numbers, typed by name. All read on this
-/// Mac, but the public IP. `port` is a chip (Tab): what's listening on a port, or on any, and Enter ends it. `cpu` and
+/// `ip`, `battery`, `disk`, `port 3000`, `cpu`, `memory` and `speed`: the Mac's own numbers, typed by name. All read on
+/// this Mac, but the public IP and the speed test, on Enter. `port` is a chip (Tab): what's listening on a port, or on any, and Enter ends it. `cpu` and
 /// `memory` list your processes, the busiest first, and Enter ends one (an app quits); their chips list them all.
 struct LookupProvider: ResultProvider {
     var battery: @Sendable () -> BatteryStatus? = readBattery
@@ -221,6 +259,7 @@ struct LookupProvider: ResultProvider {
         if let score = named(lower, keyword: "ip", title: "IP Address") { return ipRows(score) }
         if let score = named(lower, keyword: "battery", title: "Battery", from: 4) { return [batteryRow(score)] }
         if let score = named(lower, keyword: "disk", title: "Disk Space") { return diskRows(score) }
+        if let score = named(lower, keyword: "speed", title: "Test Internet Speed", from: 5) { return [speedRow(score)] }
         return []
     }
 
@@ -247,6 +286,32 @@ struct LookupProvider: ResultProvider {
                                       score: .infinity, actionTitle: "Copy", action: { copyToClipboard(ip) })
             })
         return local + [lookUp]
+    }
+
+    /// `speed`: Enter runs macOS's own `networkQuality` (about 20 seconds, against Apple's servers), the time so far
+    /// ticking on the row; Esc stops it. Then download, upload and latency, idle and under load; Enter copies them.
+    private func speedRow(_ score: Double) -> LauncherResult {
+        LauncherResult(id: "speed", title: "Test Internet Speed", subtitle: "Download, upload and latency, with Apple’s servers",
+                       icon: .symbol("speedometer"), score: score, actionTitle: "Test", action: {}, output: { progress in
+            let started = Date.now
+            let ticker = Task {
+                while !Task.isCancelled {
+                    await progress(LauncherResult(id: "speed", title: "Testing internet speed…", subtitle: "\(Int(Date.now.timeIntervalSince(started))) s · Esc stops it",
+                                                  icon: .symbol("speedometer"), score: .infinity, actionTitle: "", action: {}))
+                    try? await Task.sleep(for: .seconds(1))
+                }
+            }
+            let run = await runTool(URL(filePath: "/usr/bin/networkQuality"), ["-c"], timeout: 90)
+            ticker.cancel()
+            await ticker.value // its last "Testing…" lands before the result, not over it
+            guard let test = parseSpeedTest(run.output) else {
+                return LauncherResult(id: "speed", title: "Couldn’t test the speed", subtitle: "Offline, or Apple’s servers didn’t answer",
+                                      icon: .symbol("exclamationmark.triangle"), score: .infinity, actionTitle: "", action: {})
+            }
+            let (title, subtitle) = speedSummary(test)
+            return LauncherResult(id: "speed", title: title, subtitle: subtitle, icon: .symbol("speedometer"), score: .infinity,
+                                  actionTitle: "Copy", action: { copyToClipboard("\(title) · \(subtitle)") })
+        })
     }
 
     private func batteryRow(_ score: Double) -> LauncherResult {

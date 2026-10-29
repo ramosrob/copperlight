@@ -55,6 +55,7 @@ files and the text in photos. Everything else on this page is on.
 | `stopwatch` | The stopwatch | Starts or stops it |
 | `ip`, `battery`, `disk` | Your IP addresses (and the public one, asked on Enter), the battery, free space per disk | Copies the IP, opens Battery or Storage settings |
 | `port`, `port 3000` | Your processes listening on TCP ports | Ends that process (asks first) |
+| `speed` | An internet speed test (macOS's `networkQuality`) | Runs it, then copies the result |
 | `cpu`, `memory`, `cpu chrome` | Your processes, the busiest first by CPU or by memory | Ends it, or quits an app (asks first) |
 | `:layout save work`, `:layout work` | Every window on screen, saved by name | Saves them, or puts them back |
 
@@ -198,6 +199,10 @@ files and the text in photos. Everything else on this page is on.
   shows Chrome's). Typed, the 8 busiest; `cpu` ⇥ or `memory` ⇥, the chip, lists them all, and `cpu chrome` narrows
   them by name. Enter ends a process after asking (SIGTERM), or quits an app, which can ask to save. Copperlight and
   other users' processes aren't listed.
+- **`speed`** (also `speedtest`, `internet speed`, `bandwidth`): Enter runs macOS's own `networkQuality` against
+  Apple's servers, about 20 seconds, the time so far ticking on the row (Esc stops it). Then download and upload
+  ("322 Mbps down · 243 Mbps up"), the latency idle and under load, and how you're connected; Enter copies it.
+  Nothing is sent until Enter.
 
 ## Your browser
 

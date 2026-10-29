@@ -41,6 +41,7 @@ let otherNames: [String: [String]] = [
     "Large Type": ["big text", "large text", "show big", "huge text"],
     "Processes by CPU": ["kill process", "end process", "processes", "top processes", "cpu usage"],
     "Processes by Memory": ["ram", "memory usage"],
+    "Test Internet Speed": ["speedtest", "speed test", "internet speed", "network speed", "bandwidth"],
     "Pick Color": ["color picker", "colour picker", "pick colour", "eyedropper", "eye dropper"],
     // Lookups
     "IP Address": ["my ip", "public ip", "local ip", "ip address", "what is my ip"],

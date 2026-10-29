@@ -71,6 +71,7 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Music and sound**<br>`:play`, `:mute`, `:output` | Play, pause and skip whatever is playing, mute, set the volume, and switch between speakers and headphones. |
 | **Stocks**<br>`stock AAPL` | The price now, today's change and a 7-day chart, beside the results. Enter opens the stock on Yahoo Finance. |
 | **Lookups**<br>`ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery and its health, free space on each disk, and what's listening on a port, with Enter to end it. |
+| **Speed test**<br>`speed` | Your internet's download and upload speed and its latency, measured by macOS's own tool against Apple's servers, when you press Enter. |
 | **Processes**<br>`cpu`, `memory` | What's using the processor or memory, the busiest first, with each one's app icon. Enter ends a process, or quits an app, after asking. |
 | **Keep awake**<br>`:awake` | Keeps your Mac and its displays awake until you say so, with a sun in the menu bar while it's on. |
 | **Text tools**<br>`json`, `uuid`, `b64`, `hex` | Format JSON, make a UUID or a password, encode text, convert colors and timestamps. |
@@ -209,6 +210,7 @@ The answer appears as you type; Enter copies it.
 | `:shortcut name`, `:shortcut name some text` | Your Shortcuts, Focus modes included; text after the name is its input |
 | `bluetooth`, `displays`, `dark mode` | That page of System Settings |
 | `ip`, `battery`, `disk`, `port 3000` | Your IP addresses, the battery, free space, and what's listening on a port (Enter ends it) |
+| `speed` | Your internet speed: download, upload and latency, about 20 seconds after Enter |
 | `cpu`, `memory`, `cpu chrome` | Your processes, the busiest first; Enter ends one (an app quits), after asking. Tab lists them all |
 
 ### Your day
@@ -301,7 +303,8 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
   `[apps] online = false` turns those off. Links and searches open in your browser.
 - **Stock prices only when you ask:** in the Stock chip (`stock aapl`, then Tab), the ticker goes to Yahoo Finance
   once you pause typing, and nothing else. Typing alone never sends it. Likewise your public IP: the `ip` row asks
-  api.ipify.org only when you press Enter on Public IP.
+  api.ipify.org only when you press Enter on Public IP, and `speed` tests against Apple's servers only when you press
+  Enter on it.
 - **What it keeps stays on your Mac**, in `~/.config/copperlight/`: your config, notes, state and clipboard history
   (SQLite, readable only by you; deleted items are overwritten). Copies marked as passwords, and copies made in
   password managers, are never recorded.

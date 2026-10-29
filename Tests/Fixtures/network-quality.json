@@ -1,0 +1,13 @@
+{
+  "base_rtt" : 50.329254150390625,
+  "dl_bytes_transferred" : 733183463,
+  "dl_throughput" : 327886304,
+  "interface_name" : "en0",
+  "other" : {
+    "interface-type" : { "wifi" : 153 },
+    "protocols_seen" : { "h2" : 153 }
+  },
+  "responsiveness" : 194.52857971191406,
+  "ul_bytes_transferred" : 441516031,
+  "ul_throughput" : 252750960
+}

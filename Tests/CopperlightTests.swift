@@ -3019,3 +3019,22 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(Array(actions.suffix(4)) == ["Open Link", "Large Type", "QR Code", "Delete from History"])
     #expect(actions.contains("Copy Without Pasting") == AXIsProcessTrusted()) // without Accessibility, Enter copies already
 }
+
+// MARK: Speed test
+
+@Test func speedTest() async throws {
+    // What `networkQuality -c` printed (Tests/Fixtures/network-quality.json, a recording trimmed to what's read).
+    let json = try String(contentsOf: URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/network-quality.json"),
+                          encoding: .utf8)
+    let test = try #require(parseSpeedTest(json))
+    #expect(test == SpeedTest(down: 327_886_304, up: 252_750_960, idle: 50.329254150390625, loaded: 60_000 / 194.52857971191406,
+                              connection: "Wi-Fi"))
+    #expect(speedText(327_886_304) == "328 Mbps" && speedText(1_250_000_000) == "1.25 Gbps" && speedText(850_000) == "850 Kbps")
+    let (title, subtitle) = speedSummary(test)
+    #expect(title == "328 Mbps down · 253 Mbps up" && subtitle == "Latency 50 ms, 308 ms under load · Wi-Fi")
+    #expect(parseSpeedTest("") == nil && parseSpeedTest("{}") == nil)
+
+    let row = try #require(await LookupProvider().results(for: "speed").first)
+    #expect(row.title == "Test Internet Speed" && row.actionTitle == "Test" && row.output != nil) // runs on Enter only
+    #expect(await LookupProvider().results(for: "speedtest").first?.title == "Test Internet Speed")
+}

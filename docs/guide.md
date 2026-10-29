@@ -363,6 +363,12 @@ narrows them by name; `cpu` ⇥ or `memory` ⇥, the chip, lists every one. Ente
 `kill` does (SIGTERM); on an app itself (not a helper inside it) it quits the app instead, so it can ask to save.
 `kill process` and `processes` find it too. Copperlight and another user's processes aren't listed.
 
+**Speed test:** `speed` (also `speedtest`, `internet speed`) offers Test Internet Speed. Enter runs macOS's own
+`networkQuality`, which measures your connection against Apple's servers for about 20 seconds, the time so far ticking
+on the row; Esc stops it. Then the row says the download and upload speed ("322 Mbps down · 243 Mbps up"), the
+latency when the line is idle and when it's busy (what calls and games feel), and whether it's Wi-Fi, Ethernet or
+cellular. Enter copies it. Typing `speed` sends nothing.
+
 **Bookmarks and history:** from 2 letters, pages from your browser where each word you typed starts a word of
 the title or the address (`copperlight git`; `30c` doesn't match inside "HP30138C"): up to 4 bookmarks, then the 4 most
 recently visited, the same title on a site only once, ranked just above files. The browser is
