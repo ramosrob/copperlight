@@ -47,8 +47,8 @@ targets:
         INFOPLIST_KEY_NSAppleEventsUsageDescription: "Copperlight lists your browser's open tabs, so Enter switches to one instead of opening it again, and runs the Mac commands you type (:empty trash, :dark mode)."
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Copperlight shows today's meetings when you type “meetings”, with Join for video calls."
         OTHER_LDFLAGS: ["-weak_framework", "FoundationModels"] # macOS 26 only; the app runs on 15
-        MARKETING_VERSION: "0.9"
-        CURRENT_PROJECT_VERSION: "9"
+        MARKETING_VERSION: "0.10"
+        CURRENT_PROJECT_VERSION: "10"
       configs:
         # The copy `make test` and `make run` build is its own app to macOS, with its own Accessibility switch: one app
         # ID with two signatures (yours, the release's) shares one switch, and the last copy to run took it.

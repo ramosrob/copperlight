@@ -44,7 +44,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
-- **Next release:** what you picked for what you typed comes first the next time you type it (`ss` → Slack); Tab on a
+- **v0.10:** what you picked for what you typed comes first the next time you type it (`ss` → Slack); Tab on a
   file, an app or a clipboard item for what you can do with it (open with, reveal, copy the path or the file, trash;
   an app's recent documents, hide, quit, relaunch; open a link, Large Type, a QR code), its preview beside it; `speed`, an internet speed test; `:awake 2h`, `:awake until 18:00`; `colors`, the colors you picked; installing an app you don't have
   with Homebrew, from its row; `:connect airpods`, your paired Bluetooth devices.
