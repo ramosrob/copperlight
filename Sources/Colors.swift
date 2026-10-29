@@ -91,8 +91,10 @@ struct ColorProvider: ResultProvider {
                                icon: .symbol("eyedropper"), score: score, actionTitle: "Pick", action: { [show] in
             NSColorSampler().show { picked in
                 guard let color = picked.flatMap(RGBColor.init) else { return } // Esc: nothing picked
-                copyToClipboard(color.hex)
-                show(color.hex)
+                Task { @MainActor in
+                    copyToClipboard(color.hex)
+                    show(color.hex)
+                }
             }
         })]
     }

@@ -2787,7 +2787,9 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
 @MainActor @Test func spelling() async throws {
     #expect(spellings(of: "definately", language: "en").first == "definitely") // a word: its guesses, the best first
     #expect(spellings(of: "definitely", language: "en").isEmpty)
-    #expect(spellings(of: "I recieved the leter", language: "en") == ["I received the letter"]) // words: the text, corrected
+    // Words: the text, corrected. Misspellings with one fix: which guess comes first for "leter" (letter, later, Peter)
+    // differs from Mac to Mac.
+    #expect(spellings(of: "I recieved it seperately", language: "en") == ["I received it separately"])
 
     let rows = SpellProvider(language: "en")
     let row = try #require(await rows.results(for: "spell definately").first)
