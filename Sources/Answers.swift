@@ -11,6 +11,17 @@ enum Answer: Sendable {
     case person(PersonCard)
     case calculation(String, result: String, note: String?)
     case currency(CurrencyCard)
+    case meeting(MeetingCard)
+}
+
+/// The meeting to join, its text ready to show.
+struct MeetingCard: Sendable {
+    var soon: String // "in 6 min", "Now"
+    var calendar: String, title: String
+    var when: String // "10:30–11:00 · Google Meet"
+    var initials: [String] // the first 4 people coming
+    var names: String // "Ana, Mario, Bia, Rui +1"
+    var note: String?
 }
 
 /// A conversion, its text ready to show.
@@ -340,6 +351,58 @@ private struct BandFlags: View {
             }
         }
         .frame(height: height)
+    }
+}
+
+/// How soon, the meeting's title, times and call, then who's coming and a line of its notes.
+struct MeetingBand: View {
+    let card: MeetingCard
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let quiet = Color.primary.opacity(scheme == .dark ? 0.62 : 0.6)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Text(card.soon).font(.system(size: 12.5, weight: .semibold)).monospacedDigit()
+                    .foregroundStyle(scheme == .dark ? Color.copper : Color.copperDeep)
+                    .padding(.horizontal, 10).frame(height: 24).background(Color.copper.opacity(0.2), in: Capsule())
+                Kicker(text: "Next meeting")
+                Spacer()
+                Text(card.calendar).font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+            Text(card.title).font(.system(size: 26, weight: .semibold)).lineLimit(1)
+            Text(card.when).font(.system(size: 14)).monospacedDigit().foregroundStyle(quiet)
+            if !card.initials.isEmpty || card.note != nil {
+                HStack(spacing: 10) {
+                    HStack(spacing: -5) {
+                        ForEach(Array(card.initials.enumerated()), id: \.offset) { index, initials in Avatar(initials: initials, tint: index) }
+                    }
+                    Text(card.names).font(.system(size: 13)).foregroundStyle(quiet).lineLimit(1).layoutPriority(1)
+                    Spacer(minLength: 12)
+                    if let note = card.note { Text(note).font(.system(size: 13)).foregroundStyle(.secondary).lineLimit(1) }
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(.horizontal, 22).padding(.vertical, 18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Someone's initials in a small circle, each person in the row a different quiet tint.
+private struct Avatar: View {
+    let initials: String, tint: Int
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let hue = [0.07, 0.57, 0.72, 0.38][tint % 4], dark = scheme == .dark
+        Text(initials).font(.system(size: 10.5, weight: .semibold))
+            .foregroundStyle(Color(hue: hue, saturation: dark ? 0.3 : 0.6, brightness: dark ? 0.92 : 0.42))
+            .frame(width: 28, height: 28)
+            .background(Color(hue: hue, saturation: dark ? 0.35 : 0.22, brightness: dark ? 0.32 : 0.92), in: Circle())
+            .overlay(Circle().strokeBorder(dark ? Color(white: 0.19) : .white, lineWidth: 2))
     }
 }
 

@@ -2591,6 +2591,29 @@ private struct Speak: ResultProvider {
     #expect(preview.details.first { $0.0 == "Link" }?.1 == call.absoluteString)
 }
 
+/// The meeting to join now, on a band over its rows: how soon, its title, times and call, who's coming and a line of
+/// its notes; Join and Open in Calendar under it.
+@Test func meetingBand() {
+    let now = Date(timeIntervalSince1970: 1_000_000), call = URL(string: "https://meet.google.com/abc-defg-hij")!
+    var review = CalendarItem(title: "Design review", start: now + 6 * 60, end: now + 36 * 60, link: call, calendar: "Work", id: "e1")
+    review.people = ["Ana Ribeiro", "Mario Costa", "bia@northwind.example", "Rui Lopes", "Leo Dias"]
+    review.notes = "The new onboarding flow, first pass\n\n-::~:~::~:~:~:~:~:~:~:~:~\nJoin with Google Meet: https://meet.google.com/abc-defg-hij\nOr dial: (US) +1 555-0100"
+    let rows = joinRows(review, now: now, browser: Config.Browser(), score: 100)
+    #expect(rows.map(\.title) == ["Join Google Meet", "Open in Calendar"] && rows[0].subtitle == "meet.google.com/abc-defg-hij")
+    #expect(rows[0].actionTitle == "Join" && rows.allSatisfy { $0.answer != nil && !$0.hasPreview })
+    guard case .meeting(let card)? = rows.first?.answer else { Issue.record("no band"); return }
+    let hours = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
+    #expect(card.soon == "in 6 min" && card.calendar == "Work" && card.title == "Design review")
+    #expect(card.when == "\(hours(review.start))–\(hours(review.end)) · Google Meet")
+    #expect(card.initials == ["AR", "MC", "B", "RL"] && card.names == "Ana, Mario, bia, Rui +1")
+    #expect(card.note == "The new onboarding flow, first pass")
+    review.start = now - 120
+    if case .meeting(let going)? = joinRows(review, now: now, browser: Config.Browser(), score: 100).first?.answer { #expect(going.soon == "Now") }
+    // The notes' own first line, never a call's invitation.
+    #expect(eventNote("Join Zoom Meeting\nhttps://acme.zoom.us/j/123") == nil && eventNote(nil) == nil)
+    #expect(eventNote("________________\nMicrosoft Teams meeting") == nil && eventNote("\n  Bring the bikes  \nand helmets") == "Bring the bikes")
+}
+
 /// `meetings`, `agenda`, `events`: today's events. `calendar`, typed whole, too, but under the Calendar app.
 @Test func eventWords() async {
     let meetings = MeetingsProvider()

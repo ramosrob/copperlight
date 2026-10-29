@@ -82,11 +82,41 @@ func eventPreview(_ item: CalendarItem, now: Date = .now) -> (text: String, deta
     return (text, details.compactMap { label, value in value.map { (label, $0) } })
 }
 
+/// The first line of an event's own notes, before any call's invitation (a divider, a link, "Join …"). nil: none.
+func eventNote(_ notes: String?) -> String? {
+    for line in (notes ?? "").split(whereSeparator: \.isNewline).map({ $0.trimmingCharacters(in: .whitespaces) }) {
+        if line.contains("://") || line.contains(#/^[^\p{L}\d\s]{5,}/#) || line.contains(#/(?i)^(join|microsoft teams|or dial|meeting id)\b/#) {
+            return nil
+        }
+        if line.contains(where: \.isLetter) { return String(line.prefix(80)) }
+    }
+    return nil
+}
+
+/// The meeting to join now on a band (how soon, its title, times and call, who's coming, a line of its notes), and
+/// its rows under it: Join, then Open in Calendar.
+func joinRows(_ item: CalendarItem, now: Date = .now, browser: Config.Browser, score: Double) -> [LauncherResult] {
+    let hours = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
+    let service = item.link.map(callService)
+    let people = item.people.prefix(4).map { String($0.split(separator: "@").first ?? "") } // an address alone: its name part
+    let card = MeetingCard(soon: eventBadge(item, now: now) ?? startsIn(item.start, end: item.end, now: now), calendar: item.calendar,
+                           title: item.title, when: "\(hours(item.start))–\(hours(item.end))" + (service.map { " · \($0)" } ?? ""),
+                           initials: people.map(initials),
+                           names: people.map { String($0.split(separator: " ").first ?? "") }.joined(separator: ", ")
+                               + (item.people.count > 4 ? " +\(item.people.count - 4)" : ""),
+                           note: eventNote(item.notes))
+    return [LauncherResult(id: "meeting:\(item.id)", title: "Join " + (service ?? "Call"),
+                           subtitle: item.link.map { ($0.host() ?? "") + $0.path() } ?? "", icon: .symbol("video"), score: score,
+                           actionTitle: "Join", action: item.link.map { webOpener($0, browser: browser) } ?? openCalendar, answer: .meeting(card)),
+            LauncherResult(id: "meeting:\(item.id):calendar", title: "Open in Calendar", icon: .symbol("calendar"), score: score - 0.001,
+                           actionTitle: "Open", action: openCalendar, answer: .meeting(card))]
+}
+
 /// `meetings`, `agenda`, `events` (and `calendar`, below the Calendar app): the rest of today's events from Calendar,
 /// all-day ones aside, soonest first, a copper badge on one that's soon or going, its details a Tab away. Enter joins a
 /// video call (Meet, Zoom, Teams, Webex), opening web links where `[browser]` says; otherwise it opens Calendar. Reading
-/// events needs full Calendars access, asked for from a row, not while typing. The empty launcher shows the meeting
-/// about to start (`upNext`), or with `[meetings] show_on_open`, the day's events.
+/// events needs full Calendars access, asked for from a row, not while typing. The meeting to join now (`nextMeeting`)
+/// comes first, on its band. The empty launcher shows it (`upNext`), or with `[meetings] show_on_open`, the day's events.
 actor MeetingsProvider: ResultProvider {
     private var store: EKEventStore? // made once access is granted: one made before it sees no events
     private var browser = Config.Browser()
@@ -118,13 +148,20 @@ actor MeetingsProvider: ResultProvider {
             badge: badge, preview: preview.text, previewStyle: .prose, details: preview.details)
     }
 
+    /// The meeting to join now on its band, then the other events.
+    private func rows(_ items: [CalendarItem], base: Double, now: Date) -> [LauncherResult] {
+        guard let next = nextMeeting(items, now: now) else { return items.enumerated().map { row($1, score: base - Double($0) / 100, now: now) } }
+        let others = items.filter { $0.id != next.id || $0.start != next.start }
+        return joinRows(next, now: now, browser: browser, score: base) + others.enumerated().map { row($1, score: base - Double($0 + 1) / 100, now: now) }
+    }
+
     /// For the empty launcher: the meeting to join now, if any; with `show_on_open`, the day's next events. Never asks
     /// for access: opening the launcher shouldn't.
     func upNext() -> [LauncherResult] {
         let now = Date.now
         guard let items = today(now: now) else { return [] }
-        if showsOnOpen { return items.prefix(5).enumerated().map { row($1, score: 100 - Double($0) / 100, now: now) } }
-        return nextMeeting(items, now: now).map { [row($0, score: 100, now: now)] } ?? []
+        if showsOnOpen { return rows(Array(items.prefix(5)), base: 100, now: now) }
+        return nextMeeting(items, now: now).map { joinRows($0, now: now, browser: browser, score: 100) } ?? []
     }
 
     func results(for query: String) async -> [LauncherResult] {
@@ -155,7 +192,7 @@ actor MeetingsProvider: ResultProvider {
         let now = Date.now
         let items = today(now: now) ?? []
         guard !items.isEmpty else { return [message("No more meetings today", "", "Open Calendar", openCalendar)] }
-        return items.enumerated().map { row($1, score: base - Double($0) / 100, now: now) }
+        return rows(items, base: base, now: now)
     }
 }
 

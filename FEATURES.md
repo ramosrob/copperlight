@@ -71,9 +71,10 @@ files and the text in photos. Everything else on this page is on.
 - **Keys:** ↑ ↓ move, Enter runs, Tab fills in (or opens the preview), Esc hides (or backs out of a question or an output). No other
   modifiers: anything else is a `:` command.
 - **The next meeting, waiting:** from 10 minutes before a meeting with a call (Meet, Zoom, Teams, Webex) until 10
-  minutes after it started, the empty launcher shows it, with a copper badge ("in 4 min", "Now"); Enter joins, Tab
-  shows its details. With `[meetings] show_on_open` (Settings › General › Calendar), the empty launcher lists the day's
-  next five events instead. It needs Calendars access already given (`meetings` asks): opening the launcher never asks.
+  minutes after it started, the empty launcher shows it on a band: how soon ("in 4 min", "Now"), its title, times
+  and call, who's coming (initials and first names) and the first line of its own notes (never the call's invitation).
+  Under it, Join (Enter) and Open in Calendar; `meetings` puts it first the same way. With `[meetings] show_on_open`
+  (Settings › General › Calendar), the empty launcher lists the day's next five events, that one on its band first. It needs Calendars access already given (`meetings` asks): opening the launcher never asks.
   Typing hides it.
 - **Due reminders, waiting:** the reminders that are overdue, due within the hour, or due today with no time, soonest
   deadline first, with a copper badge ("Overdue", "in 20 min", "Today"). Enter completes one and keeps the launcher

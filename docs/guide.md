@@ -435,9 +435,10 @@ web links where `[browser]` says, or opens Calendar. The first time, the row ask
 access; `add event` only asked to add).
 
 **The next meeting:** a few minutes before a meeting with a call, there's no need to type: from 10 minutes before it
-starts until 10 minutes after, the empty launcher shows that meeting with its badge, and Enter joins. Settings ›
-General › Calendar › Show today's events when the launcher opens (`[meetings] show_on_open`) lists the day's next
-five events there instead, with or without a call. Either only once Calendars access is given; opening the launcher
+starts until 10 minutes after, the empty launcher shows that meeting on a band: how soon it starts, its title, times
+and call, who's coming and the first line of its notes. Enter joins; the row under it opens Calendar. `meetings` puts
+it first the same way. Settings › General › Calendar › Show today's events when the launcher opens (`[meetings]
+show_on_open`) lists the day's next five events there instead, with or without a call. Either only once Calendars access is given; opening the launcher
 never asks. Typing hides it.
 
 **Due reminders:** the empty launcher lists the reminders that are overdue, due within the hour, or due today with no

@@ -35,6 +35,12 @@ private let actionIcons = ["Message": "message", "Call": "phone", "FaceTime": "v
 /// Their card in the Contacts app.
 func contactCardURL(_ id: String) -> URL? { URL(string: "addressbook://" + id) }
 
+/// "Ana Ribeiro" → "AR", "Northwind" → "N": the first letters of the first and last words.
+func initials(_ name: String) -> String {
+    let words = name.split(separator: " ")
+    return String([words.first?.first, words.count > 1 ? words.last?.first : nil].compactMap(\.self)).uppercased()
+}
+
 /// The card beside a person's rows: their initials, name, job and company, and under them each number, email and their
 /// birthday.
 func personCard(_ person: Person) -> PersonCard {
@@ -43,11 +49,9 @@ func personCard(_ person: Person) -> PersonCard {
     }
     let details = (person.phones + person.emails).map { ($0.label.isEmpty ? "other" : $0.label, $0.value) }
         + (birthday.map { [("birthday", $0)] } ?? [])
-    let words = person.name.split(separator: " ")
-    let initials = String([words.first?.first, words.count > 1 ? words.last?.first : nil].compactMap(\.self)).uppercased()
     let company = person.organization == person.name ? "" : person.organization // a company's own card
     let photo = person.photo.flatMap { NSImage(data: $0)?.cgImage(forProposedRect: nil, context: nil, hints: nil) }
-    return PersonCard(initials: initials, name: person.name, job: person.jobTitle, company: company, details: details, photo: photo)
+    return PersonCard(initials: initials(person.name), name: person.name, job: person.jobTitle, company: company, details: details, photo: photo)
 }
 
 /// Their photo in Contacts, small. nil: none, or no access.

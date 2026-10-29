@@ -56,7 +56,7 @@ func runTool(_ tool: URL, _ arguments: [String], in folder: URL? = nil, input: S
             while true {
                 let polled = poll(&ready, 1, 250)
                 if polled > 0 {
-                    let count = read(masterFD, &buffer, buffer.count)
+                    let count = Darwin.read(masterFD, &buffer, buffer.count) // not the closure below, which a newer compiler finds first
                     if count <= 0 { break }
                     try? output?.write(contentsOf: Data(buffer[..<count]))
                 } else if polled < 0 || !process.isRunning { break }
