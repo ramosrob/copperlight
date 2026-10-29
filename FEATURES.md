@@ -147,7 +147,7 @@ files and the text in photos. Everything else on this page is on.
 - **Dates:** `days until dec 25`, `weeks since jan 1`, `in 3 weeks`, `100 days from today`, `3 days ago`, `30 days
   after dec 25`, `dec 25 + 2 weeks`, `monday in 3 weeks` (that week's Monday), `time in 4 hours`. A date alone (`dec
   25`, `next friday`, `2026-12-25`, `christmas`) shows its weekday, how far it is and its week. Before you finish, `in
-  3` answers in 3 hours, days, weeks and months, `3 weeks` from now and ago, and `days` offers until or since a date
+  3` answers in 3 days, weeks, months and hours, `3 weeks` from now and ago, and `days` offers until or since a date
   (Tab). Enter copies it.
 
 ## The Mac's numbers

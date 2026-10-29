@@ -91,6 +91,20 @@ Copperlight asks only when you use the chip.
 
 <p align="center"><img src="docs/media/stocks.png" width="600" alt="The Stock chip with aapl: Apple's price, today's change and a 7-day chart"></p>
 
+**Dates, the way you'd ask.** `days until christmas`, `in 3 weeks`, `monday in 3 weeks`, `time in 4 hours`; `dec 25`
+alone says it's a Friday. Before you finish typing, `in 3` already answers in days, weeks, months and hours.
+
+<p align="center"><img src="docs/media/dates.png" width="600" alt="in 3 typed: the dates in 3 days, 3 weeks and 3 months, and the time in 3 hours, each with how far it is"></p>
+
+**Colors.** `#c87533`, `rgb(…)` or `hsl(…)` in the other two, each with its swatch, and Tab shows it big. `pick
+color` takes one off the screen and copies its hex.
+
+<p align="center"><img src="docs/media/colors.png" width="600" alt="#c87533 typed: its RGB, HSL and hex rows with copper swatches, and the color big beside them"></p>
+
+**QR codes.** `qr` ⇥ and a link, or nothing for what you copied: the code is beside the list, and Enter copies it.
+
+<p align="center"><img src="docs/media/qr.png" width="600" alt="The QR Code chip with https://copperlight.app and its QR code beside the list"></p>
+
 **Math and money.** The answer appears as you type: percentages, currencies at today's rate, units and time zones. Enter copies it.
 
 <p align="center"><img src="docs/media/convert.png" width="600" alt="Converting 25 US dollars to euros at the ECB's rate"></p>

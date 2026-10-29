@@ -291,7 +291,7 @@ since jan 1`; `in 3 weeks`, `3 weeks from now`, `100 days from today`, `3 days a
 90 minutes`. A date alone shows its weekday, how far it is and its week number (as your Mac's calendar counts them):
 `dec 25`, `25 december 2027`, `2026-12-25`, `tomorrow`, `next friday` (the one after this week's, as macOS reads it),
 `last friday`, `christmas`, `new year`. Without a year it's the next one, or the last one after `since`. A weekday's
-name alone ranks low, under an app with that name. While you type, `in 3` answers in 3 hours, days, weeks and months,
+name alone ranks low, under an app with that name. While you type, `in 3` answers in 3 days, weeks, months and hours,
 `3 weeks` from now and ago, each with its phrase at the right edge, and `days` or `weeks` offers until or since a
 date: Tab, then the date. Enter copies the answer.
 

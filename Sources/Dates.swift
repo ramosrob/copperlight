@@ -150,11 +150,11 @@ private func plainQuestion(_ query: String) -> String {
     return text.hasSuffix("?") ? text.dropLast().trimmingCharacters(in: .whitespaces) : text
 }
 
-/// A phrase on its way, so nobody has to know them first: `in 3` answers in 3 hours, days, weeks and months, `3 weeks`
+/// A phrase on its way, so nobody has to know them first: `in 3` answers in 3 days, weeks, months and hours, `3 weeks`
 /// from now and ago; `days` and `weeks` offer until and since a date, a Tab away from typing it.
 func dateSuggestions(_ query: String, now: Date = .now, calendar: Calendar = .current, locale: Locale = .current) -> [DateAnswer] {
     let text = plainQuestion(query)
-    let ends: [String] = if text.wholeMatch(of: #/in (a|an|\d{1,5})/#) != nil { ["hours", "days", "weeks", "months"] }
+    let ends: [String] = if text.wholeMatch(of: #/in (a|an|\d{1,5})/#) != nil { ["days", "weeks", "months", "hours"] }
         else if let match = text.wholeMatch(of: #/(?:a|an|\d{1,5}) ([a-z]+)/#), unit(match.1) != nil { ["from now", "ago"] }
         else { [] }
     if !ends.isEmpty {

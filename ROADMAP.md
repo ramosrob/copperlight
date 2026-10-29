@@ -47,7 +47,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 ## Done
 
-- **Next release:** colors by their shape (`#c87533`, `rgb(…)`, `hsl(…)`) with a swatch, and `pick color`; `qr`
+- **v0.9:** colors by their shape (`#c87533`, `rgb(…)`, `hsl(…)`) with a swatch, and `pick color`; `qr`
   codes; date math (`days until dec 25`, `in 3 weeks`, a date's weekday and week), answered before you finish typing;
   `{cursor}` in snippets; currency after math (`39*8 usd`).
 - **v0.8:** `timer until 15:30`; a stopwatch; what's running (the pomodoro, the timer, the stopwatch) waiting

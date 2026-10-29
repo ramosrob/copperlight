@@ -1209,8 +1209,8 @@ private func testPNG(width: Int, height: Int, red: CGFloat = 1) -> Data {
     }
     // A phrase on its way: its likely ends, answered already; the start of a question, a Tab away from its rest.
     let suggest = { (query: String) in Copperlight.dateSuggestions(query, now: now, calendar: calendar, locale: us) }
-    #expect(suggest("in 3").map(\.accessory) == ["in 3 hours", "in 3 days", "in 3 weeks", "in 3 months"])
-    #expect(suggest("in 3")[2].title == "Wednesday, November 18, 2026")
+    #expect(suggest("in 3").map(\.accessory) == ["in 3 days", "in 3 weeks", "in 3 months", "in 3 hours"])
+    #expect(suggest("in 3")[1].title == "Wednesday, November 18, 2026")
     #expect(suggest("3 weeks").map(\.title) == ["Wednesday, November 18, 2026", "Wednesday, October 7, 2026"])
     #expect(suggest("3 weeks").map(\.accessory) == ["3 weeks from now", "3 weeks ago"])
     #expect(suggest("days").map(\.completion) == ["days until ", "days since "] && suggest("days s").map(\.completion) == ["days since "])
