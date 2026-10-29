@@ -171,7 +171,7 @@ The answer appears big as you type, with what a percentage hid beside it; Enter 
 | `20% of 150`, `150 + 20%`, `20% off 80` | `30`, `180`, `64` |
 | `30 is what % of 150`, `10k * 3` | `20%`, `30000`; Tab puts the answer in the field, to keep going |
 | `255 in hex` | `0xFF` |
-| `25 usd to eur`, `39*8 usd` | The amount in euros, at today's rate |
+| `25 usd to eur`, `39*8 usd` | The amount in euros, at today's rate, big, with both flags behind it |
 | `10 km in mi`, `30c` | `6.21 mi`, `86 °F` |
 | `3pm lisbon in sf`, `now in tokyo` | The time there |
 | `days until dec 25`, `in 3 weeks` | `58 days`, the date in 3 weeks; `dec 25` alone says it's a Friday |

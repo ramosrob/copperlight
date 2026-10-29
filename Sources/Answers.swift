@@ -10,6 +10,15 @@ enum Answer: Sendable {
     case entry(DictionaryEntry)
     case person(PersonCard)
     case calculation(String, result: String, note: String?)
+    case currency(CurrencyCard)
+}
+
+/// A conversion, its text ready to show.
+struct CurrencyCard: Sendable {
+    var from: String, fromName: String, fromCode: String // "$25.00", "US Dollar", "USD"
+    var to: String, toName: String, toCode: String
+    var rate: String // "1 USD = 0.8593 EUR"
+    var when: String // "ECB rate, today"
 }
 
 /// A person's card, its text ready to show.
@@ -264,6 +273,72 @@ struct CalculationBand: View {
 
     private var answer: some View {
         Text(result).font(.system(size: 56, weight: .semibold)).monospacedDigit().lineLimit(1)
+    }
+}
+
+/// What you had → what it makes, big, and the rate under it, centered between the two flags, faint at each end.
+struct CurrencyBand: View {
+    let card: CurrencyCard
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        // Darker than .secondary: the flags' colors sit behind the outer words.
+        let quiet = Color.primary.opacity(scheme == .dark ? 0.7 : 0.66)
+        VStack(spacing: 8) {
+            Kicker(text: "Currency")
+            HStack(alignment: .bottom, spacing: 18) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(card.from).font(.system(size: 26, weight: .medium)).monospacedDigit()
+                    Text(card.fromName).font(.system(size: 12.5)).foregroundStyle(quiet)
+                }
+                .padding(.bottom, 4)
+                Image(systemName: "arrow.right").font(.system(size: 22, weight: .medium)).foregroundStyle(Color.copper).padding(.bottom, 16)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(card.to).font(.system(size: 56, weight: .semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
+                    Text(card.toName).font(.system(size: 12.5)).foregroundStyle(quiet)
+                }
+            }
+            Text("\(card.rate) · \(card.when)").font(.system(size: 12.5)).monospacedDigit().foregroundStyle(quiet)
+        }
+        // A soft halo of the band's own shade, lifting the words off the flags.
+        .shadow(color: scheme == .dark ? .black.opacity(0.55) : .white.opacity(0.9), radius: 10)
+        .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 16)
+        .frame(maxWidth: .infinity)
+        .background { BandFlags(from: flagPicture(flag(card.fromCode)), to: flagPicture(flag(card.toCode))).opacity(scheme == .dark ? 0.13 : 0.2) }
+        .background(Color.primary.opacity(0.04))
+        .clipShape(.rect(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Both flags whole, as tall as the band: where it's from at the left edge, what it makes at the right, each fading
+/// toward the middle.
+private struct BandFlags: View {
+    let from: CGImage?, to: CGImage?
+
+    var body: some View {
+        GeometryReader { geometry in
+            let height = geometry.size.height * 1.12 // just past the top and bottom, where a flag's wave curls
+            HStack(spacing: 0) {
+                flag(from, height: height, fading: .trailing)
+                Spacer(minLength: 0)
+                flag(to, height: height, fading: .leading)
+            }
+            .padding(.horizontal, -6) // and past the sides
+            .frame(height: geometry.size.height)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func flag(_ picture: CGImage?, height: CGFloat, fading edge: UnitPoint) -> some View {
+        Group {
+            if let picture {
+                Image(decorative: picture, scale: 1).resizable().interpolation(.high).scaledToFit()
+                    .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.62), .init(color: .clear, location: 1)],
+                                         startPoint: edge == .trailing ? .leading : .trailing, endPoint: edge))
+            }
+        }
+        .frame(height: height)
     }
 }
 

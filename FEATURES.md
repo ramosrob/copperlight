@@ -177,7 +177,9 @@ files and the text in photos. Everything else on this page is on.
   - Hex and binary: `0xff + 1`, `0b1010 * 2`; `255 in hex` (0xFF), `0xff in dec`, `(2^8 - 1) to binary`; `0xff`
     alone shows 255.
   - `ans`: the last result you copied with Enter (`ans * 2`, `ans in hex`). Forgotten on quit.
-- **Currency:** `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`. Without a target, it converts to
+- **Currency:** `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`. On a band: what you had → what it makes, big,
+  with the currency names, the rate (`1 USD = 0.8593 EUR`), the ECB's date, and both flags faintly behind, one at each end.
+  Enter copies it as money (€21.48); the row below copies the number alone (21.48). Without a target, it converts to
   `[currency] default_target`, and that currency itself converts to USD. Math before it works too: `39*8 usd`. ECB
   rates, cached for a day, so it works offline.
 - **Stocks:** `stock AAPL`, `stock MGLU3.SA`, `stock ^BVSP`, `stock BTC-USD` (Yahoo Finance's tickers; `sto` ⇥ is the

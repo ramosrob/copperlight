@@ -709,6 +709,12 @@ private struct LauncherView: View {
                             list.frame(height: min(Self.maxListHeight - Self.bandHeight - 6, listHeight))
                         }
                         .padding(Self.cardPadding)
+                    case .currency(let card)?: // a band over its rows
+                        VStack(spacing: 6) {
+                            CurrencyBand(card: card)
+                            list.frame(height: min(Self.maxListHeight - Self.bandHeight - 6, listHeight))
+                        }
+                        .padding(Self.cardPadding)
                     case .color(let color)?: // a band over its rows
                         VStack(spacing: 6) {
                             ColorBand(color: color).frame(height: Self.bandHeight)

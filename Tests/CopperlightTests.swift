@@ -120,6 +120,28 @@ func currencyRejects(_ input: String) {
     #expect(convert(CurrencyQuery(amount: 1, from: "XYZ", to: "EUR"), rates: rates) == nil)
 }
 
+@Test func currencyBand() throws {
+    let rates = ["EUR": 1, "USD": 1.1638, "JPY": 170]
+    let now = try #require(Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 29, hour: 12)))
+    let rows = currencyRows(CurrencyQuery(amount: 25, from: "USD", to: "EUR"), rates: rates, date: "2026-10-29", now: now)
+    // Enter copies it as money; the number alone a row below, for a spreadsheet.
+    #expect(rows.map(\.title) == ["Copy €21.48", "Copy 21.48"] && rows[1].subtitle == "The number alone, for a spreadsheet")
+    guard case .currency(let card)? = rows.first?.answer else { Issue.record("no band"); return }
+    #expect(card.from == "$25.00" && card.fromName == "US Dollar" && card.to == "€21.48" && card.toName == "Euro")
+    #expect(card.rate == "1 USD = 0.8593 EUR" && card.when == "ECB rate, today" && rows.allSatisfy { $0.answer != nil })
+    let older = currencyRows(CurrencyQuery(amount: 1, from: "EUR", to: "JPY"), rates: rates, date: "2026-10-28", now: now)
+    if case .currency(let card)? = older.first?.answer { #expect(card.when == "ECB rate, yesterday" && card.to == "¥170") }
+    if case .currency(let card)? = currencyRows(CurrencyQuery(amount: 1, from: "EUR", to: "USD"), rates: rates, date: "2026-10-23", now: now).first?.answer {
+        #expect(card.when == "ECB rate of Oct 23")
+    }
+    #expect(currencyRows(CurrencyQuery(amount: 1, from: "XYZ", to: "EUR"), rates: rates, date: "2026-10-29").isEmpty)
+    // The flags behind it, from the code's first two letters: EUR is the EU's.
+    #expect(flag("USD") == "🇺🇸" && flag("EUR") == "🇪🇺" && flag("BRL") == "🇧🇷")
+    // Drawn whole, cut to the flag itself: wider than tall, with no empty margin around it.
+    let picture = try #require(flagPicture("🇺🇸"))
+    #expect(Double(picture.width) / Double(picture.height) > 1.2 && flagPicture("") == nil)
+}
+
 // MARK: Search merging
 
 private struct Echo: ResultProvider {
