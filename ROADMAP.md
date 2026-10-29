@@ -10,12 +10,30 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   `{date}` inside url and shell commands.
 - **Your own fallback rows:** choose what the last rows offer when nothing matches: several search engines, or any of
   your commands.
-- **Updates,** for 1.0: tell you when a new version is out, and install it.
+
+## 1.0
+
+1.0 means it updates itself, your settings won't break under you, and it works for everyone, in their language and
+with VoiceOver.
+
+- **Updates:** tell you when a new version is out, and install it, checking that it's really Copperlight first.
+- **Settings for everything:** turn any feature on or off, rename its keyword (even the `:` prefix), and set its
+  options, in Settings and in config.toml. Off means off: no rows, no background work, no network, no permission
+  asks.
+- **Settings that last:** every config.toml key and the saved state settled before 1.0; after it, old keys keep
+  working.
+- **Other languages:** the whole interface, rows, Settings and docs in other languages; what you type stays as it is.
+- **VoiceOver:** every row, chip and answer card read out properly.
+- **A privacy page:** every permission Copperlight can ask for, what each one turns on, and every server it ever
+  contacts.
+- **Sturdier:** with permissions refused, on several screens, in other number and date formats, on Intel, and after
+  weeks of clipboard history; Copy Diagnostics in About, for reporting a problem without crash reports.
+- **If it's ready:** `brew install` through Copperlight's own tap.
+
+Roughly in that order, then a few weeks of daily use with fixes only.
 
 ## Later
 
-- **Settings for everything:** turn any feature on or off, rename its keyword (even the `:` prefix), and set its
-  options, in Settings and in config.toml.
 - **Calculating:** `2rem in px`.
 - **Finding:** `:look` for a full-size preview; kinds, dates and tags in the files chip (`f pdf invoice`, `f last
   week`); folders listed newest first; symbols by name (→, ⌘, ™) and a default emoji skin tone; songs, albums and
@@ -38,12 +56,8 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Extending it:** script rows with live output and a choice of arguments; `copperlight choose`, lines from a
   pipe as rows; a URL scheme and Shortcuts actions; a
   starter library of commands, and importers for snippets and quicklinks from other apps.
-- **Look and feel:** themes and custom colors; text size, and which screen it opens on; other languages for the interface (what you type stays
-  as it is); switching the keyboard layout from the field; a double-tapped modifier as the hotkey (still one hotkey).
+- **Look and feel:** themes and custom colors; text size, and which screen it opens on; switching the keyboard layout from the field; a double-tapped modifier as the hotkey (still one hotkey).
 - **Usage stats**, kept on your Mac.
-- **Homebrew:** `brew install` through Copperlight's own tap.
-- **A privacy page:** every permission Copperlight can ask for, what each one turns on, and every server it ever
-  contacts.
 
 ## Done
 
