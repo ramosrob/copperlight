@@ -17,8 +17,8 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Calculating:** `2rem in px`; crypto in conversions (`0.1 btc in eur`).
 - **Finding:** `:look` for a full-size preview; kinds, dates and tags in the files chip (`f pdf invoice`, `f last
   week`); folders listed newest first; symbols by name (→, ⌘, ™) and a default emoji skin tone; songs, albums and
-  playlists from your Music library; Safari's Reading List and iCloud Tabs; recent files, and an app's recent documents
-  a Tab away from its row; the text inside files back, as its own chip.
+  playlists from your Music library; Safari's Reading List and iCloud Tabs; recent files; the text inside files back, as its own
+  chip.
 - **Clipboard:** pin items; copied files; copied images found by their text, and QR codes read from them; `:plain` and
   `:clear 15 min` in clipboard history; save an item as a snippet; paste in sequence, one older item each time.
 - **Text:** more placeholders (`{uuid}`, `{clipboard 1}`, a snippet inside another) with modifiers (`|upper`), and
@@ -47,7 +47,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 
 - **Next release:** what you picked for what you typed comes first the next time you type it (`ss` → Slack); Tab on a
   file, an app or a clipboard item for what you can do with it (open with, reveal, copy the path or the file, trash;
-  hide, quit, relaunch; open a link, Large Type, a QR code), its preview beside it; `speed`, an internet speed test; `:awake 2h`, `:awake until 18:00`; `colors`, the colors you picked; installing an app you don't have
+  an app's recent documents, hide, quit, relaunch; open a link, Large Type, a QR code), its preview beside it; `speed`, an internet speed test; `:awake 2h`, `:awake until 18:00`; `colors`, the colors you picked; installing an app you don't have
   with Homebrew, from its row.
 - **v0.9:** colors by their shape (`#c87533`, `rgb(…)`, `hsl(…)`) with a swatch, and `pick color`; `qr`
   codes; date math (`days until dec 25`, `in 3 weeks`, a date's weekday and week), answered before you finish typing;

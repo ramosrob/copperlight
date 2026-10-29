@@ -294,7 +294,7 @@ actor AppIndex {
 }
 
 /// `items` without repeats, in order.
-private func uniqued(_ items: [String]) -> [String] {
+func uniqued(_ items: [String]) -> [String] {
     var seen = Set<String>()
     return items.filter { seen.insert($0).inserted }
 }

@@ -276,7 +276,7 @@ final class SearchModel {
         if stepped == nil, let row = selected, let actions = row.actions {
             let from = selection
             Task {
-                let rows = await actions().map { var action = $0; action.section = row.title; return action }
+                let rows = await actions().map { var action = $0; action.section = action.section ?? row.title; return action }
                 guard self.selected?.id == row.id, !rows.isEmpty else { return } // typed on, or moved, meanwhile
                 stepped = (rows, from)
                 selection = 0

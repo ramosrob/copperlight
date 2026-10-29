@@ -53,9 +53,40 @@ func fileActionRows(_ path: String, terminal: String?) -> [LauncherResult] {
     }
 }
 
-/// Tab on an app: open it, and while it runs hide, quit, force quit (asks first) or relaunch it; reveal it or copy its
-/// path. Its icon, version and where it is show beside them.
-@MainActor func appActionRows(_ path: String) -> [LauncherResult] {
+/// The kinds of file an app says it opens (its Info.plist's document types), as type identifiers.
+func documentTypes(_ app: String) -> [String] {
+    let types = Bundle(url: URL(filePath: app))?.object(forInfoDictionaryKey: "CFBundleDocumentTypes") as? [[String: Any]] ?? []
+    return uniqued(types.flatMap { type in
+        (type["LSItemContentTypes"] as? [String] ?? [])
+            + (type["CFBundleTypeExtensions"] as? [String] ?? []).compactMap { UTType(filenameExtension: $0)?.identifier }
+    })
+}
+
+/// Spotlight: files of exactly these kinds that have been opened.
+func recentDocumentsQuery(_ types: [String]) -> String {
+    "kMDItemLastUsedDate == * && (" + types.map { "kMDItemContentType == \"\($0)\"" }.joined(separator: " || ") + ")"
+}
+
+/// An app's recent documents: files in your home folder of the kinds the Mac opens in it, the most recently opened
+/// first (the Mac's own Open Recent lists are out of reach without Full Disk Access). Apps' own files in ~/Library are
+/// left out, but not your cloud drives there.
+@MainActor func recentDocuments(of app: String, limit: Int = 5) async -> [FileHit] {
+    guard let id = Bundle(url: URL(filePath: app))?.bundleIdentifier else { return [] }
+    // ponytail: by kind, one query; a single file set to open elsewhere (Get Info › Open with) still shows.
+    let types = documentTypes(app).filter { type in
+        UTType(type).flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) }.flatMap { Bundle(url: $0)?.bundleIdentifier } == id
+    }
+    guard !types.isEmpty else { return [] }
+    let library = NSHomeDirectory() + "/Library/"
+    let hits = await SpotlightSearch().run(recentDocumentsQuery(types), scopes: [.homeDirectory])
+    return Array(hits.filter {
+        !$0.path.hasPrefix(library) || $0.path.hasPrefix(library + "CloudStorage/") || $0.path.hasPrefix(library + "Mobile Documents/")
+    }.prefix(limit))
+}
+
+/// Tab on an app: its recent documents (Enter opens one in it), then open it, and while it runs hide, quit, force quit
+/// (asks first) or relaunch it; reveal it or copy its path. Its icon, version and where it is show beside them.
+@MainActor func appActionRows(_ path: String, recent: [FileHit] = []) -> [LauncherResult] {
     let url = URL(filePath: path), bundle = Bundle(url: url)
     let name = FileManager.default.displayName(atPath: path).replacing(#/\.app$/#, with: "")
     let running = NSWorkspace.shared.runningApplications.first { $0.bundleURL?.path == url.path } // a bundle URL ends in "/"
@@ -74,7 +105,16 @@ func fileActionRows(_ path: String, terminal: String?) -> [LauncherResult] {
     let version = bundle?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
     let details = [("Version", version), ("Where", shortParentPath(path)), ("Running", running.map { _ in "Yes" } ?? "No")]
         .compactMap { label, value in value.map { (label, $0) } }
-    return rows.enumerated().map { index, row in
+    let documents = recent.enumerated().map { index, file in
+        let preview = filePreview(file.path), document = URL(filePath: file.path)
+        return LauncherResult(id: "recent:\(path):\(file.path)", title: file.name, subtitle: shortParentPath(file.path),
+                              accessory: file.lastUsed.map { shortAge($0) } ?? "", icon: .file(file.path), score: 51 - Double(index) / 100,
+                              actionTitle: "Open in \(name)",
+                              action: { NSWorkspace.shared.open([document], withApplicationAt: url, configuration: .init()) },
+                              section: "Recent Documents", preview: preview.load == nil ? file.name : nil, previewStyle: .prose,
+                              loadPreview: preview.load, previewImage: preview.image, details: preview.details)
+    }
+    return documents + rows.enumerated().map { index, row in
         LauncherResult(id: "actions:\(path):\(row.title)", title: row.title, subtitle: "", icon: .symbol(row.symbol), score: 50 - Double(index) / 100,
                        actionTitle: row.title, action: row.action, confirm: row.confirm, preview: name, previewStyle: .prose,
                        previewImage: {

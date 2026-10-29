@@ -87,8 +87,10 @@ files and the text in photos. Everything else on this page is on.
   - A file: Open (in its app), Open With… (fills in `:open with`), Reveal in Finder, Copy Path, Copy File (to paste
     in Finder or an email), Open in Terminal, Move to Trash (asks first). Beside them: a text file's start, a picture
     or a PDF's first page, and where it is, its kind, size and when it changed.
-  - An app: Open, and while it runs Hide, Quit, Force Quit (asks first) and Relaunch; Reveal in Finder, Copy Path.
-    Beside them: its icon, version and where it is.
+  - An app: its recent documents first, the files in your home folder of the kinds the Mac opens in it, the most
+    recently opened first (five at most, each with how long ago and its preview); Enter opens one in it. Then Open,
+    and while it runs Hide, Quit, Force Quit (asks first) and Relaunch; Reveal in Finder, Copy Path. Beside them: its
+    icon, version and where it is.
   - A clipboard item: Paste (or Copy without Accessibility), Copy Without Pasting; for text, Open Link (a web
     address), Large Type and QR Code (the code beside the list, Enter copies it); for a picture, Open in Preview and
     Save to Downloads; Delete from History.

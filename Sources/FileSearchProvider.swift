@@ -149,7 +149,7 @@ struct FileContentProvider: ResultProvider {
 
 /// One NSMetadataQuery, run until its first full set of results is in. NSMetadataQuery delivers
 /// through the main run loop, hence the main actor.
-@MainActor private final class SpotlightSearch {
+@MainActor final class SpotlightSearch {
     /// Spotlight hands back the most recently used first; ranking looks at this many.
     private static let candidates = 500
     private let query = NSMetadataQuery()

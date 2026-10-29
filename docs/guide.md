@@ -295,9 +295,13 @@ of the list, under its name, with its preview beside it. Esc goes back to the li
 searches again. A file (in a search, or a folder's listing): Open (the row says in which app), Open With… (fills in
 `:open with`, to pick the app), Reveal in Finder, Copy Path, Copy File (the file itself, to paste in Finder, an email
 or a chat), Open in Terminal (its folder, in `[files] terminal`), Move to Trash (asks first); beside them a text
-file's start, a picture or a PDF's first page, and where it is, its kind, size and when it changed. An app: Open, and
-while it runs Hide, Quit, Force Quit (asks first) and Relaunch; Reveal in Finder, Copy Path; beside them its icon,
-version and where it is. A clipboard item: Paste (Copy, without Accessibility), Copy Without Pasting; for text, Open
+file's start, a picture or a PDF's first page, and where it is, its kind, size and when it changed. An app: its recent
+documents first, then Open, and while it runs Hide, Quit, Force Quit (asks first) and Relaunch; Reveal in Finder, Copy
+Path; beside them its icon, version and where it is. Its recent documents are the files in your home folder of the
+kinds the Mac opens in it (TextEdit: text and Word files; Preview: pictures and PDFs, unless they open elsewhere), the
+most recently opened first, five at most, from Spotlight: each says how long ago, its preview beside it, and Enter
+opens it in that app. The app's own Open Recent list is kept where macOS lets in only apps with Full Disk Access, which
+Copperlight doesn't ask for; an app's own files in `~/Library` are left out, but not your cloud drives there. A clipboard item: Paste (Copy, without Accessibility), Copy Without Pasting; for text, Open
 Link if it's a web address, Large Type, and QR Code, the code beside the list (Enter copies the picture); for a
 picture, Open in Preview and Save to Downloads; and Delete from History.
 

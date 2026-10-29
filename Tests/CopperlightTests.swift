@@ -3041,6 +3041,39 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(actions.contains("Copy Without Pasting") == AXIsProcessTrusted()) // without Accessibility, Enter copies already
 }
 
+@MainActor @Test func appRecentDocuments() async throws {
+    #expect(documentTypes("/System/Applications/Preview.app").contains("com.adobe.pdf"))
+    #expect(documentTypes("/System/Applications/Calculator.app").isEmpty)
+    let query = recentDocumentsQuery(["com.adobe.pdf", "public.png"])
+    // Those very kinds: a .swift file is plain text too, but it opens in a code editor, not in TextEdit.
+    #expect(query == #"kMDItemLastUsedDate == * && (kMDItemContentType == "com.adobe.pdf" || kMDItemContentType == "public.png")"#)
+    #expect(NSPredicate(fromMetadataQueryString: query) != nil)
+    #expect(await recentDocuments(of: "/System/Applications/Calculator.app").isEmpty) // it opens no documents
+
+    let folder = FileManager.default.temporaryDirectory.appending(path: "copperlight-recent-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let path = folder.appending(path: "Quarterly report.pdf").path
+    try Data("%PDF-1.4".utf8).write(to: URL(filePath: path))
+    let file = FileHit(path: path, name: "Quarterly report.pdf", lastUsed: .now - 7200)
+    struct App: ResultProvider {
+        let file: FileHit
+        func results(for query: String) async -> [LauncherResult] {
+            [LauncherResult(id: "/System/Applications/Preview.app", title: "Preview", icon: .symbol("doc"), score: 1, action: {},
+                            actions: { [file] in await MainActor.run { appActionRows("/System/Applications/Preview.app", recent: [file]) } })]
+        }
+    }
+    let model = SearchModel(providers: [App(file: file)])
+    model.query = "prev"
+    try await Task.sleep(for: .milliseconds(100))
+    model.complete() // Tab: its recent documents first, then what you can do with it
+    try await Task.sleep(for: .milliseconds(50))
+    let first = try #require(model.rows.first)
+    #expect(first.title == "Quarterly report.pdf" && first.section == "Recent Documents" && first.actionTitle == "Open in Preview")
+    #expect(first.accessory == "2h") // when it was last opened
+    #expect(model.rows.dropFirst().first.map { [$0.title, $0.section] } == ["Open", "Preview"])
+}
+
 // MARK: Speed test
 
 @Test func speedTest() async throws {
