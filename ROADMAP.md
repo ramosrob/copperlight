@@ -34,7 +34,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 - **Your day:** meetings beyond today, free slots to copy, and the next meeting in the menu bar; lists, priorities and
   places in `add todo` and `add event`; what's playing in the empty launcher; screenshots and downloads by date, and
   pasting the latest.
-- **The Mac:** processes by CPU and memory, with Enter to end one; `:awake 2h`, `:awake until 18:00`; connecting paired
+- **The Mac:** `:awake 2h`, `:awake until 18:00`; connecting paired
   Bluetooth devices (`:connect airpods`); `:input` for the microphone; `speed`, an internet speed test with macOS's own
   tool; the Wi-Fi password, and a QR code for guests; Stage Manager on and off; dismiss notifications.
 - **Extending it:** script rows with live output and a choice of arguments; `copperlight choose`, lines from a
@@ -55,7 +55,7 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
   email, copy); open browser tabs, Enter switching to one; `copy text` from any part of the screen, and the link in a
   QR code there; `spell`; reminders that are due, and the apps you open around this time, waiting in the empty
   launcher; Large Type; `20% off 80`, `30 is what % of 150`, `10k * 3`, and Tab to keep going with a result; script
-  filters (`@output rows`).
+  filters (`@output rows`); `cpu` and `memory`, your processes the busiest first, Enter ending one.
 - **v0.8:** `timer until 15:30`; a stopwatch; what's running (the pomodoro, the timer, the stopwatch) waiting
   in the empty launcher, its time ticking.
 - **v0.7:** the preview opens with Tab in the general search, so the list keeps its width; the next meeting, waiting

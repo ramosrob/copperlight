@@ -39,6 +39,8 @@ let otherNames: [String: [String]] = [
     "Copy Text from Screen": ["ocr", "scan text", "grab text", "extract text", "live text", "screen text", "text recognition",
                               "read text"],
     "Large Type": ["big text", "large text", "show big", "huge text"],
+    "Processes by CPU": ["kill process", "end process", "processes", "top processes", "cpu usage"],
+    "Processes by Memory": ["ram", "memory usage"],
     "Pick Color": ["color picker", "colour picker", "pick colour", "eyedropper", "eye dropper"],
     // Lookups
     "IP Address": ["my ip", "public ip", "local ip", "ip address", "what is my ip"],

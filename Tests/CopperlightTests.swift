@@ -2896,3 +2896,34 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(rows[0].subtitle == "The handbook" && rows[0].actionTitle == "Open" && rows[2].actionTitle == "Copy") // a link opens
     #expect(await provider.results(for: "links ana").map(\.title) == ["Docs", "Wiki", "On-call: ana"])
 }
+
+// MARK: Processes by CPU and memory
+
+@MainActor @Test func processesByCPUAndMemory() async throws {
+    let output = """
+        90001  23.8 2218656 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)
+        90002  14.0  708624 node
+        90003   0.4 2279200 /Applications/Xcode.app/Contents/MacOS/Xcode
+        bad line
+        """
+    let processes = parseProcesses(output)
+    #expect(processes.map(\.pid) == [90001, 90002, 90003] && processes[0].cpu == 23.8 && processes[0].memory == 2_218_656 * 1024)
+    #expect(processes[0].name == "Google Chrome Helper (Renderer)" && processes[0].app == "/Applications/Google Chrome.app")
+    #expect(processes[1].name == "node" && processes[1].app == nil)
+
+    let lookups = LookupProvider(processes: { processes })
+    let cpu = await lookups.results(for: "cpu")
+    #expect(cpu.map(\.title) == ["Google Chrome Helper (Renderer)", "node", "Xcode"]) // the busiest first
+    #expect(cpu[0].subtitle.hasPrefix("23.8% CPU · ") && cpu[0].subtitle.hasSuffix(" · pid 90001"))
+    #expect(cpu[0].actionTitle == "End Process" && cpu[0].confirm == "End Google Chrome Helper (Renderer) (pid 90001)?")
+    #expect(cpu[2].actionTitle == "Quit" && cpu[2].confirm == "Quit Xcode?") // an app itself quits, asking to save
+    let memory = await lookups.results(for: "memory")
+    #expect(memory.map(\.title) == ["Xcode", "Google Chrome Helper (Renderer)", "node"] && memory[0].subtitle.hasSuffix("0.4% CPU · pid 90003"))
+    #expect(await lookups.results(for: "cpu chrome").map(\.title) == ["Google Chrome Helper (Renderer)"]) // narrowed by name
+    #expect(await lookups.modeResults(for: "memory no").map(\.title) == ["node"])
+    #expect(await lookups.results(for: "mem").first?.completion == "memory ")
+    #expect(await lookups.results(for: "kill process").first?.completion == "cpu ")
+    #expect(await lookups.results(for: "ram").first?.completion == "memory ")
+    let live = readProcesses() // from ps, Copperlight (which runs these tests) left out
+    #expect(!live.isEmpty && !live.contains { $0.pid == getpid() })
+}

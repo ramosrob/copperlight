@@ -55,6 +55,7 @@ files and the text in photos. Everything else on this page is on.
 | `stopwatch` | The stopwatch | Starts or stops it |
 | `ip`, `battery`, `disk` | Your IP addresses (and the public one, asked on Enter), the battery, free space per disk | Copies the IP, opens Battery or Storage settings |
 | `port`, `port 3000` | Your processes listening on TCP ports | Ends that process (asks first) |
+| `cpu`, `memory`, `cpu chrome` | Your processes, the busiest first by CPU or by memory | Ends it, or quits an app (asks first) |
 | `:layout save work`, `:layout work` | Every window on screen, saved by name | Saves them, or puts them back |
 
 ## The launcher
@@ -87,7 +88,7 @@ files and the text in photos. Everything else on this page is on.
 - **Some rows fill in instead of run,** and their key is Tab: Tab on `Translate` types `translate `, on `Quit
   Application` `:quit `, on a folder its path (Enter does the same). With a name typed whole (`translate`), Tab fills
   it in whatever row is selected.
-- **A name that takes text becomes a chip:** `translate `, `define `, `spell `, `emoji `, `stock `, `qr `, `large `, `contact `, `tabs `, `pomo `, `timer `, `port `, `note `, `add todo `, `:quit `, `:!`,
+- **A name that takes text becomes a chip:** `translate `, `define `, `spell `, `emoji `, `stock `, `qr `, `large `, `contact `, `tabs `, `pomo `, `timer `, `port `, `cpu `, `memory `, `note `, `add todo `, `:quit `, `:!`,
   `f `, a script filter's name. Tab turns the name into a copper chip at the start of the field, keeping what you typed after it
   (`stock aapl` ⇥); the field shows what comes after it with a hint while empty, and only that feature answers (no
   search row). Typing never makes a chip, so `stock apple` still finds `stock_Apple.pdf`. Delete in the empty
@@ -179,6 +180,11 @@ files and the text in photos. Everything else on this page is on.
 - **`port`** (a chip, with Tab): your processes listening on TCP ports, from `lsof`; `port 3000` or `port 30` those
   on a port starting with it, `port node` by name. Enter ends the process (asks first). Other users' processes
   aren't listed: you couldn't end them anyway.
+- **`cpu` and `memory`** (also `kill process`, `processes`, `ram`): your processes, from `ps`, the busiest first by
+  recent CPU or by memory, each with its CPU, memory and pid, and the icon of the app it belongs to (a Chrome Helper
+  shows Chrome's). Typed, the 8 busiest; `cpu` ⇥ or `memory` ⇥, the chip, lists them all, and `cpu chrome` narrows
+  them by name. Enter ends a process after asking (SIGTERM), or quits an app, which can ask to save. Copperlight and
+  other users' processes aren't listed.
 
 ## Your browser
 

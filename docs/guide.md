@@ -30,7 +30,7 @@ name (`invoice`), text inside a file or a picture (`29.99`), an app by what it d
 searches the web), `~/code/copperlight` or `/Applications` (lists the folder), `:` (every command), `:min`, `:quit saf`, `:window term`, `:!git status`. The selected row says what Enter does.
 
 **Chips:** a name that takes text (`translate `, `define `, `spell `, `emoji `, `stock `, `qr `, `large `, `contact `, `tabs `, `pomo `, `timer `, `port `, `note `, `add todo `, `add event `, `add note `,
-`:quit `, `:window `, `:output `, `:!`, `f `, and your script filters' names) turns into a copper chip at the start of the field when you press Tab:
+`:quit `, `:window `, `:output `, `:!`, `f `, `cpu `, `memory `, and your script filters' names) turns into a copper chip at the start of the field when you press Tab:
 `tra` Tab is the Translate chip, and `stock aapl` Tab is the Stock chip with `aapl` after it. Typing never makes one,
 so `stock apple` still finds `stock_Apple.pdf`. The field then holds what follows, with a hint while it's empty, and
 only that feature answers, so there's no search row in the way. Delete in the empty field turns the chip back
@@ -339,6 +339,12 @@ asks api.ipify.org only when you press Enter on it. `battery` (from `batt`) show
 each disk mounted, as Finder counts it; Enter opens Storage settings. `port` (`por` ⇥ for the Port chip) lists your
 processes listening on TCP ports, `port 3000` (or `port 30`, `port node`) narrows them, and Enter ends one, after
 asking. Another user's processes aren't listed.
+
+**Processes:** `cpu` lists your 8 busiest processes by recent CPU use, `memory` (from `mem`, or `ram`) by memory, each
+with its CPU, memory and pid, and the icon of the app it belongs to: a Chrome Helper shows Chrome's. `cpu chrome`
+narrows them by name; `cpu` ⇥ or `memory` ⇥, the chip, lists every one. Enter ends a process after asking, the way
+`kill` does (SIGTERM); on an app itself (not a helper inside it) it quits the app instead, so it can ask to save.
+`kill process` and `processes` find it too. Copperlight and another user's processes aren't listed.
 
 **Bookmarks and history:** from 2 letters, pages from your browser where each word you typed starts a word of
 the title or the address (`copperlight git`; `30c` doesn't match inside "HP30138C"): up to 4 bookmarks, then the 4 most

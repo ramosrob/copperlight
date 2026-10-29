@@ -41,6 +41,42 @@ func listeningProcesses() -> [Listener] {
     return parseListeners(String(decoding: data, as: UTF8.self))
 }
 
+/// A process of yours and what it's using, from `ps`.
+struct ProcessUsage: Equatable, Sendable {
+    var pid: Int32
+    var cpu: Double // percent of one core, recent, as Activity Monitor shows it
+    var memory: Int64 // resident, in bytes
+    var path: String // its executable, or its name alone
+    var name: String { (path as NSString).lastPathComponent }
+    /// The app it belongs to: the outermost .app in its path (a Chrome Helper is Chrome's).
+    var app: String? { path.range(of: ".app/").map { String(path[..<$0.lowerBound]) + ".app" } }
+    /// The app itself rather than a helper inside it: quitting it lets it ask to save.
+    var isApp: Bool { app.map { path == "\($0)/Contents/MacOS/\(name)" } ?? false }
+}
+
+/// `ps -o pid=,pcpu=,rss=,comm=` output: the path, last, may have spaces.
+func parseProcesses(_ output: String) -> [ProcessUsage] {
+    output.split(separator: "\n").compactMap { line in
+        let parts = line.split(separator: " ", maxSplits: 3)
+        guard parts.count == 4, let pid = Int32(parts[0]), let cpu = Double(parts[1]), let kilobytes = Int64(parts[2]) else { return nil }
+        return ProcessUsage(pid: pid, cpu: cpu, memory: kilobytes * 1024, path: parts[3].trimmingCharacters(in: .whitespaces))
+    }
+}
+
+/// Your processes but Copperlight, from `ps` (another user's you couldn't end anyway). Quick enough for every keystroke.
+func readProcesses() -> [ProcessUsage] {
+    let process = Process(), output = Pipe()
+    process.executableURL = URL(filePath: "/bin/ps")
+    process.arguments = ["-x", "-U", String(getuid()), "-o", "pid=,pcpu=,rss=,comm="]
+    process.standardOutput = output
+    process.standardError = FileHandle.nullDevice
+    guard (try? process.run()) != nil else { return [] }
+    let data = output.fileHandleForReading.readDataToEndOfFile() // read before waiting, so a full pipe can't stall it
+    process.waitUntilExit()
+    // Not ps itself, nor Copperlight, busy for a moment each time it opens.
+    return parseProcesses(String(decoding: data, as: UTF8.self)).filter { $0.pid != process.processIdentifier && $0.pid != getpid() }
+}
+
 /// Ends a process the way `kill` does, asking it to quit (SIGTERM).
 @MainActor func endProcess(_ pid: Int32, _ name: String) {
     guard kill(pid, SIGTERM) != 0 else { return }
@@ -148,18 +184,36 @@ func publicIP() async -> String? {
     return !ip.isEmpty && ip.count <= 45 && ip.allSatisfy({ $0.isHexDigit || $0 == "." || $0 == ":" }) ? ip : nil
 }
 
-/// `ip`, `battery`, `disk` and `port 3000`: the Mac's own numbers, typed by name. All read on this Mac, but the
-/// public IP. `port` is a chip (Tab): what's listening on a port, or on any, and Enter ends it.
+/// `ip`, `battery`, `disk`, `port 3000`, `cpu` and `memory`: the Mac's own numbers, typed by name. All read on this
+/// Mac, but the public IP. `port` is a chip (Tab): what's listening on a port, or on any, and Enter ends it. `cpu` and
+/// `memory` list your processes, the busiest first, and Enter ends one (an app quits); their chips list them all.
 struct LookupProvider: ResultProvider {
     var battery: @Sendable () -> BatteryStatus? = readBattery
     var volumes: @Sendable () -> [VolumeSpace] = readVolumes
     var addresses: @Sendable () -> [(address: String, interface: String)] = localAddresses
     var listeners: @Sendable () -> [Listener] = listeningProcesses
+    var processes: @Sendable () -> [ProcessUsage] = readProcesses
 
-    var modes: [Mode] { [Mode(prefix: "port ", title: "Port", icon: .symbol("network"), hint: "A port number, like 3000")] }
+    var modes: [Mode] {
+        [Mode(prefix: "port ", title: "Port", icon: .symbol("network"), hint: "A port number, like 3000"),
+         Mode(prefix: "cpu ", title: "Processes by CPU", icon: .symbol("cpu"), hint: "A name, or nothing for all"),
+         Mode(prefix: "memory ", title: "Processes by Memory", icon: .symbol("memorychip"), hint: "A name, or nothing for all")]
+    }
 
-    func results(for query: String) async -> [LauncherResult] {
+    /// In the CPU and Memory chips, every process; typed without them, the 8 busiest.
+    func modeResults(for query: String) async -> [LauncherResult] { await results(for: query, limit: 100) }
+
+    func results(for query: String) async -> [LauncherResult] { await results(for: query, limit: 8) }
+
+    private func results(for query: String, limit: Int) async -> [LauncherResult] {
         let lower = query.lowercased().trimmingCharacters(in: .whitespaces)
+        for (keyword, byMemory) in [("cpu", false), ("memory", true)] where lower == keyword || lower.hasPrefix(keyword + " ") {
+            return processRows(lower.dropFirst(keyword.count).trimmingCharacters(in: .whitespaces), byMemory: byMemory, limit: limit)
+        }
+        if let start = startRow(query, keyword: "memory", title: "Processes by Memory", hint: "What’s using memory, the most first", symbol: "memorychip")
+            ?? startRow(query, keyword: "cpu", title: "Processes by CPU", hint: "What’s using the processor, the busiest first", symbol: "cpu") {
+            return [start]
+        }
         if lower == "port" || lower.hasPrefix("port ") { return portRows(lower.dropFirst(4).trimmingCharacters(in: .whitespaces)) }
         if let start = startRow(query, keyword: "port", title: "Port", hint: "What’s listening on a port: port 3000", symbol: "network") {
             return [start]
@@ -217,6 +271,28 @@ struct LookupProvider: ResultProvider {
                 action: {
                     if startup { settingsPage("com.apple.settings.Storage") } else { NSWorkspace.shared.open(URL(filePath: volume.path)) }
                 })
+        }
+    }
+
+    /// Your processes named with `filter`'s words, the busiest first by CPU or by memory. Enter ends one, after asking;
+    /// an app (not a helper inside one) quits instead, so it can ask to save.
+    private func processRows(_ filter: String, byMemory: Bool, limit: Int) -> [LauncherResult] {
+        let words = typedWords(filter)
+        let found = processes().filter { process in words.allSatisfy { wordStarts(process.name).contains($0) } }
+            .sorted { byMemory ? $0.memory > $1.memory : $0.cpu > $1.cpu }.prefix(limit)
+        guard !found.isEmpty else {
+            return [LauncherResult(id: "process:none", title: "No process named “\(filter)”", icon: .symbol("cpu"), score: 50,
+                                   actionTitle: "", action: {})]
+        }
+        return found.enumerated().map { index, process in
+            let cpu = "\(formatNumber(process.cpu, decimals: 1...1))% CPU", memory = process.memory.formatted(.byteCount(style: .memory))
+            let (pid, name, isApp) = (process.pid, process.name, process.isApp)
+            return LauncherResult(
+                id: "process:\(pid)", title: name, subtitle: (byMemory ? [memory, cpu] : [cpu, memory]).joined(separator: " · ") + " · pid \(pid)",
+                icon: process.app.map { .file($0) } ?? .symbol("gearshape"), score: 50 - Double(index) / 1000,
+                actionTitle: isApp ? "Quit" : "End Process", action: {
+                    if isApp, let app = NSRunningApplication(processIdentifier: pid) { app.terminate() } else { endProcess(pid, name) }
+                }, confirm: isApp ? "Quit \(name)?" : "End \(name) (pid \(pid))?")
         }
     }
 

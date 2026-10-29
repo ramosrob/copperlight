@@ -143,7 +143,7 @@ Sources/
                             panel + SwiftUI view, opening with the selected text
   Actions.swift             `:` commands: windows (Accessibility), running apps, files, the Mac; the selected text
   Layouts.swift             `:layout save work`, `:layout work`: the windows on screen, kept in state.json and put back
-  Lookups.swift             `ip`, `battery`, `disk`, `port 3000`: getifaddrs, IOKit power sources, volumes, lsof
+  Lookups.swift             `ip`, `battery`, `disk`, `port 3000`, `cpu`, `memory`: getifaddrs, IOKit power sources, volumes, lsof, ps
   Controls.swift            `:play`, `:mute`, `:output`, `:wifi`, `:awake`: media keys, CoreAudio, CoreWLAN, power
   Stocks.swift              `stock AAPL`: Yahoo Finance's chart data, the price row and the 7-day chart
   Menus.swift               `:export pdf`: the menus of the app in front (Accessibility), their shortcuts
