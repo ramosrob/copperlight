@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/hero.webp" width="740" alt="Typing into Copperlight: a currency conversion, an app, a time zone and a window command">
+  <img src="docs/media/hero.webp" width="740" alt="Typing into Copperlight: the weather in Lisbon, 25 usd to eur, a stock, a contact, 150 + 20%, a definition, the internet speed and a color, each answer taking the whole card in its own shape, then the next meeting in the empty launcher">
 </p>
 
 Press <kbd>⌥ Space</kbd> anywhere, type, press <kbd>Enter</kbd>. Copperlight opens apps and files, does math and
