@@ -190,6 +190,8 @@ final class SearchModel {
     @ObservationIgnored var keepsAppOpens = true
     /// `[answers] cards`: off, an answer is a plain row like the rest.
     var showsCards = true
+    /// How many times the panel came up: each one springs the view in.
+    var opens = 0
     /// `[keywords]`: your words for the built-in ones, "t" → "translate", ";" → ":".
     @ObservationIgnored var keywords: [String: String] = [:]
 
@@ -504,14 +506,26 @@ final class LauncherPanel: NSPanel {
 
     /// `text`: the selection in the app you were in, typed and selected, so typing replaces it.
     func show(typing text: String? = nil) {
-        begin(with: text)
+        var instantly = Transaction()
+        instantly.disablesAnimations = true // the last time's rows don't shrink away as it comes in
+        withTransaction(instantly) { begin(with: text) }
         let mouse = NSEvent.mouseLocation
         if let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) ?? NSScreen.main {
             // Top edge where a full-height panel centered on the screen would have it.
             let area = screen.visibleFrame
             setFrameTopLeftPoint(NSPoint(x: area.midX - frame.width / 2, y: area.midY + Self.maxHeight / 2 + Self.margin))
         }
+        guard !isVisible else { return makeKeyAndOrderFront(nil) }
+        // It fades in while the view springs up from a touch smaller. Hiding stays instant: fading out, it would
+        // still take the keys you type next.
+        model.opens += 1
+        alphaValue = 0
         makeKeyAndOrderFront(nil)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            animator().alphaValue = 1
+        }
     }
 
     /// A new search: an empty field, or `text` in it, selected.
@@ -790,6 +804,16 @@ private struct LauncherView: View {
             }
         }
         .fixedSize(horizontal: false, vertical: true) // its natural height, at the top of the window
+        // The card grows and shrinks to its rows instead of snapping; the rows themselves change at once (`list`).
+        .animation(.smooth(duration: 0.2), value: CardShape(height: listHeight, preview: model.showsPreview, answer: model.answer != nil))
+        .keyframeAnimator(initialValue: 1.0, trigger: model.opens) { content, scale in
+            content.scaleEffect(scale, anchor: .top)
+        } keyframes: { _ in
+            KeyframeTrack {
+                MoveKeyframe(0.96)
+                SpringKeyframe(1, duration: 0.3, spring: Spring(duration: 0.3, bounce: 0.15))
+            }
+        }
         .padding(LauncherPanel.margin)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         // Only this view's own panel: hearing another one (the note, clipboard history) set `focused` while this
@@ -824,6 +848,13 @@ private struct LauncherView: View {
                         .id(result.id)
                     }
                 }
+                .transaction { $0.animation = nil } // typing never waits on an animation: only the card and the wash move
+                .background(alignment: .top) {
+                    if model.selected != nil {
+                        SelectionWash().frame(height: Self.rowHeight).offset(y: offset(of: model.selection))
+                            .animation(.snappy(duration: 0.16), value: model.selection)
+                    }
+                }
             }
             // Rows fade out at an edge with more beyond it, instead of being cut.
             .onScrollGeometryChange(for: ScrollEdges.self) { geometry in
@@ -842,7 +873,9 @@ private struct LauncherView: View {
             .onChange(of: model.selection) { old, index in
                 // One row past the selection in the direction it moved, so the selected row never sits in the fade.
                 let rows = model.rows, ahead = index + (index > old ? 1 : index < old ? -1 : 0)
-                if rows.indices.contains(index) { proxy.scrollTo(rows[min(max(ahead, 0), rows.count - 1)].id) }
+                guard rows.indices.contains(index) else { return }
+                // A row at a time glides, with the wash; a jump (a new search, back to the top) doesn't.
+                withAnimation(abs(index - old) == 1 ? .snappy(duration: 0.16) : nil) { proxy.scrollTo(rows[min(max(ahead, 0), rows.count - 1)].id) }
             }
         }
     }
@@ -853,10 +886,22 @@ private struct LauncherView: View {
         return section
     }
 
+    /// Where row `index` starts in the list, below the rows and headers before it (and its own header).
+    private func offset(of index: Int) -> CGFloat {
+        guard model.rows.indices.contains(index) else { return 0 }
+        let headers = (0...index).filter { sectionStarting(at: $0) != nil }.count
+        return CGFloat(index) * Self.rowHeight + CGFloat(headers) * Self.sectionHeight
+    }
+
     private var listHeight: CGFloat {
         let headers = model.rows.indices.filter { sectionStarting(at: $0) != nil }.count
         return CGFloat(model.rows.count) * Self.rowHeight + CGFloat(headers) * Self.sectionHeight
     }
+}
+
+/// What the card's size follows: a change animates it.
+private struct CardShape: Equatable {
+    var height: CGFloat, preview: Bool, answer: Bool
 }
 
 /// Whether the list has rows hidden above or below what's in view.
@@ -905,13 +950,12 @@ struct Keycap: View {
     }
 }
 
-/// Title and subtitle; on the right, an item's age (clipboard). The selected row is washed in the icon's
-/// colors and says what Enter does, in place of the age.
+/// Title and subtitle; on the right, an item's age (clipboard). The selected row says what Enter does, in place of
+/// the age (its wash is the list's, `SelectionWash`).
 private struct ResultRow: View {
     let result: LauncherResult
     let selected: Bool
     var offersPreview = false // "Preview ⇥": Tab opens the pane beside the list
-    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         HStack(spacing: 13) {
@@ -952,15 +996,6 @@ private struct ResultRow: View {
         }
         .padding(.horizontal, 12)
         .frame(height: LauncherView.rowHeight)
-        .background {
-            if selected {
-                let dark = scheme == .dark
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(LinearGradient(colors: [.copper.opacity(dark ? 0.24 : 0.13), .copperDeep.opacity(dark ? 0.15 : 0.10)],
-                                         startPoint: .leading, endPoint: .trailing))
-                    .strokeBorder(Color.copper.opacity(dark ? 0.35 : 0.22), lineWidth: 0.5)
-            }
-        }
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
@@ -971,6 +1006,19 @@ private struct ResultRow: View {
         case .up(let start): Text(timerInterval: start...Date.distantFuture, countsDown: false)
         case nil: result.badge.map { Text(verbatim: $0) }
         }
+    }
+}
+
+/// The selected row's wash in the icon's colors, under the rows: one for the list, so it glides from row to row.
+private struct SelectionWash: View {
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let dark = scheme == .dark
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(LinearGradient(colors: [.copper.opacity(dark ? 0.24 : 0.13), .copperDeep.opacity(dark ? 0.15 : 0.10)],
+                                 startPoint: .leading, endPoint: .trailing))
+            .strokeBorder(Color.copper.opacity(dark ? 0.35 : 0.22), lineWidth: 0.5)
     }
 }
 
