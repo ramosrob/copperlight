@@ -60,6 +60,13 @@ Roughly in that order, then a few weeks of daily use with fixes only.
 
 ## Done
 
+- **v0.12:** settings for everything: Settings › Features turns any feature off, Settings › Launcher sets what the
+  empty launcher shows and what it learns (with Forget) and whether answers take their own shape, Settings ›
+  Keywords gives any keyword words of your own (`t` for translate, even `;` for `:`), and Settings › General › Look
+  trades copper for your Mac's accent color or any color. `week` and `next week`, your week at a glance. A launcher
+  that springs open, grows its card out of the field and glides from row to row (in place, with Reduce Motion), a
+  keystroke's rows within a frame, and a slip forgiven (`slcak` finds Slack). The weather and a stock show their
+  card while they load; the clipboard is looked at less while you're away.
 - **v0.11:** answers in their own shape: a stock across the whole card, a QR code big beside what you can do
   with it (copy, save to Downloads, copy the link), a color on a band with its contrast, a step lighter and darker;
   the speed test, download and upload climbing big as they're measured; a dictionary entry across the card; a person's card beside every

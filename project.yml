@@ -47,10 +47,10 @@ targets:
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Copperlight shows the weather where you are when you type “weather”. Only a rounded location, about a kilometer, goes to the weather service."
         INFOPLIST_KEY_NSContactsUsageDescription: "Copperlight finds people in your contacts as you type their name, to message, call or email them. They stay on this Mac."
         INFOPLIST_KEY_NSAppleEventsUsageDescription: "Copperlight lists your browser's open tabs, so Enter switches to one instead of opening it again, and runs the Mac commands you type (:empty trash, :dark mode)."
-        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Copperlight shows today's meetings when you type “meetings”, with Join for video calls."
+        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Copperlight shows today's meetings when you type “meetings”, with Join for video calls, and your week when you type “week”."
         OTHER_LDFLAGS: ["-weak_framework", "FoundationModels"] # macOS 26 only; the app runs on 15
-        MARKETING_VERSION: "0.11"
-        CURRENT_PROJECT_VERSION: "11"
+        MARKETING_VERSION: "0.12"
+        CURRENT_PROJECT_VERSION: "12"
       configs:
         # The copy `make test` and `make run` build is its own app to macOS, with its own Accessibility switch: one app
         # ID with two signatures (yours, the release's) shares one switch, and the last copy to run took it.
