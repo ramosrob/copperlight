@@ -87,8 +87,13 @@ struct StockCard: Sendable {
 
     /// The card's shape while the price comes: the ticker, the rest in gray bars.
     static func loading(_ symbol: String) -> StockCard {
-        StockCard(kicker: symbol, price: "$100.00", change: "▲ 1.00% today", up: true, corner: "Today, 16:00 · Nasdaq", closes: (0..<32).map { 1 + sin(Double($0) / 4) / 20 + Double($0) / 300 }, // a soft wave
-                  previousClose: nil, facts: [("Previous close", "$100.00"), ("7 days", "+1.00%")], action: "Open in Yahoo Finance", loading: true)
+        // A soft wave, typed out step by step: inline, it took CI's compiler too long to type-check.
+        let wave: [Double] = (0..<32).map { (i: Int) -> Double in
+            let x = Double(i)
+            return 1 + sin(x / 4) / 20 + x / 300
+        }
+        return StockCard(kicker: symbol, price: "$100.00", change: "▲ 1.00% today", up: true, corner: "Today, 16:00 · Nasdaq", closes: wave,
+                         previousClose: nil, facts: [("Previous close", "$100.00"), ("7 days", "+1.00%")], action: "Open in Yahoo Finance", loading: true)
     }
 }
 
