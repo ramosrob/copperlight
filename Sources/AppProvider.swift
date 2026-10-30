@@ -3,8 +3,10 @@ import AppKit
 /// Fuzzy subsequence match, case- and diacritic-insensitive; spaces in the query are ignored.
 /// Returns nil when there's no match, about 1 for a prefix or word-initials match, less for
 /// scattered matches. Shorter texts win ties. Picks the best alignment, not the first one, so
-/// "vsc" hits the word starts in "Visual Studio Code".
-func fuzzyScore(_ query: String, _ text: String) -> Double? {
+/// "vsc" hits the word starts in "Visual Studio Code". With nothing in order, a slip is forgiven (`typoScore`).
+func fuzzyScore(_ query: String, _ text: String) -> Double? { inOrderScore(query, text) ?? typoScore(query, text) }
+
+private func inOrderScore(_ query: String, _ text: String) -> Double? {
     // Most names can't match: when both are plain ASCII, a byte scan for the letters in order says so before the
     // folding below, a string per character, does (that took 30 ms for 2,000 names).
     if query.utf8.allSatisfy({ $0 < 128 }), text.utf8.allSatisfy({ $0 < 128 }) {
@@ -38,6 +40,49 @@ func fuzzyScore(_ query: String, _ text: String) -> Double? {
     guard let score = best.max(), score > -.infinity else { return nil }
     let perfect = 4 + 3 * Double(q.count - 1)
     return score / perfect - 0.001 * Double(t.count - q.count)
+}
+
+/// A slip forgiven: a letter wrong, extra or missing, or two swapped ("slcak" → Slack, "calender" → Calendar); two
+/// from 8 letters ("photsohop" → Photoshop). Compared with the text from its start or a word's, spaces left out. The
+/// first letter has to be right, typing past the end isn't a slip ("notes" isn't Note), and it scores under any real
+/// match, so it only leads when nothing else does.
+private func typoScore(_ query: String, _ text: String) -> Double? {
+    // Most names are no: shorter than what's typed, or no word in them starts with its first letter. Said by a byte
+    // scan for plain ASCII, before any folding: folding the query for every name took 20 ms.
+    if query.utf8.allSatisfy({ $0 < 128 }), text.utf8.allSatisfy({ $0 < 128 }) {
+        let typed = Array(query.lowercased().utf8.filter { $0 != 32 }), bytes = Array(text.lowercased().utf8)
+        let wordy = { (b: UInt8) in (48...57).contains(b) || (97...122).contains(b) }
+        guard typed.count >= 4, bytes.count >= typed.count,
+              bytes.indices.contains(where: { bytes[$0] == typed[0] && ($0 == 0 || !wordy(bytes[$0 - 1])) }) else { return nil }
+    }
+    let fold = { (s: String) in Array(s.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)) }
+    let q = fold(query).filter { $0 != " " }
+    guard q.count >= 4, q.count <= 30, text.count >= q.count else { return nil }
+    let t = fold(text), slips = q.count >= 8 ? 2 : 1
+    for start in t.indices where t[start] == q[0] && (start == 0 || !t[start - 1].isLetter && !t[start - 1].isNumber) {
+        let rest = t[start...].filter { $0 != " " }
+        guard rest.count >= q.count else { continue }
+        if let count = slipsBetween(q, Array(rest.prefix(q.count + slips)), most: slips) {
+            return 0.05 / Double(max(count, 1)) - 0.0001 * Double(t.count)
+        }
+    }
+    return nil
+}
+
+/// The fewest slips (a letter wrong, extra or missing, two swapped) that make `typed` the start of `text`, if at most
+/// `most`: optimal string alignment.
+private func slipsBetween(_ typed: [Character], _ text: [Character], most: Int) -> Int? {
+    let (n, m) = (typed.count, text.count)
+    guard m >= n - most else { return nil }
+    var d = (0...n).map { i in (0...m).map { j in i == 0 ? j : j == 0 ? i : 0 } }
+    for i in 1...n {
+        for j in 1...m {
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (typed[i - 1] == text[j - 1] ? 0 : 1))
+            if i > 1, j > 1, typed[i - 1] == text[j - 2], typed[i - 2] == text[j - 1] { d[i][j] = min(d[i][j], d[i - 2][j - 2] + 1) }
+        }
+    }
+    let fewest = d[n][max(0, n - most)...min(m, n + most)].min() ?? .max
+    return fewest <= most ? fewest : nil
 }
 
 actor AppProvider: ResultProvider {

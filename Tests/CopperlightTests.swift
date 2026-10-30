@@ -3783,3 +3783,22 @@ private struct Patient: ResultProvider {
     #expect(start.duration(to: .now) < .milliseconds(16), "\(start.duration(to: .now))")
     #expect(fuzzyScore("vsc", "Visual Studio Code") != nil && fuzzyScore("SAF", "Safari") != nil && fuzzyScore("cafe", "Café Menu") != nil)
 }
+
+// MARK: Typos
+
+/// One slip still finds it: a letter wrong, extra, or two swapped (a missing one already does, in order); two in a
+/// long name. At the start of the name or of a word in it, the first letter right, and always under a real match.
+@Test func typos() {
+    for (typed, name) in [("slcak", "Slack"), ("safaro", "Safari"), ("saffar", "Safari"), ("crhome", "Google Chrome"),
+                          ("spotifu", "Spotify"), ("photsohop", "Adobe Photoshop 2026"), ("visualstudo", "Visual Studio Code"),
+                          ("teminal", "Terminal"), ("calender", "Calendar"), ("slak", "Slack")] {
+        #expect(fuzzyScore(typed, name) != nil, "\(typed) → \(name)")
+    }
+    #expect(fuzzyScore("slcak", "Slack")! < fuzzyScore("sk", "Slack")!) // under a real match, however scattered
+    #expect(fuzzyScore("photsohop", "Adobe Photoshop 2026")! > fuzzyScore("photsohop", "Photo Booth Shop") ?? 0)
+    #expect(fuzzyScore("xlack", "Slack") == nil) // the first letter has to be right
+    #expect(fuzzyScore("scl", "Slack") == nil) // too short to guess
+    #expect(fuzzyScore("safarii", "Safari") == nil && fuzzyScore("notes", "Note") == nil) // typed past its end: another word
+    #expect(fuzzyScore("sfaaro", "Safari") == nil) // two slips in a short name
+    #expect(fuzzyScore("tume", "Safari") == nil && fuzzyScore("time in tokyo", "Tide") == nil)
+}

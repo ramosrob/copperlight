@@ -146,7 +146,10 @@ Keywords, or `[keywords]` (`translate = "t"`, `commands = ";"`).
 ## Finding things
 
 - **Apps:** everything in `/Applications`, `/System/Applications`, `~/Applications` and one level of subfolders
-  (Utilities). Fuzzy: `vsc` finds Visual Studio Code. Re-scanned each time the launcher opens.
+  (Utilities). Fuzzy: `vsc` finds Visual Studio Code. A slip is forgiven, from 4 letters, the first one right: a
+  letter wrong, extra or two swapped (`slcak` finds Slack, `calender` Calendar; two slips from 8 letters), below any
+  real match. The same goes for commands, System Settings pages and everything else found by name. Re-scanned each
+  time the launcher opens.
 - **Apps by what they do** (from 3 letters): `draw` finds Affinity, `noise` Krisp, `docker` OrbStack, `chat`
   WhatsApp, with the matching word beside the name. From an index of each app (`apps.json`): its category,
   publisher and the documents it opens; online, Homebrew's description and the homepage's summary, or the App

@@ -352,6 +352,12 @@ library takes a while the first time, and photos only in iCloud are downloaded a
 3 letters, photos with the typed text show with "Text in photo" and the photo in the preview; `29.99` finds 29,99
 too. Enter opens a copy in Preview (Photos doesn't let other apps show one of its photos). Kept in `photos.sqlite`.
 
+**Typos:** a name finds its app from a few letters in order (`vsc`, `ss`), and from 4 letters a slip is forgiven:
+a letter wrong, extra or missing, or two swapped (`slcak` → Slack, `calender` → Calendar, `xcdoe` → Xcode; two
+slips from 8 letters). The first letter has to be right, and typing past the end of a name isn't a slip (`notes`
+isn't Note). A slip ranks under any real match, so it only leads when nothing else does. Commands, System Settings
+pages and everything else found by name forgive it too.
+
 **Apps by what they do:** `draw` finds Affinity, `noise` Krisp, `docker` OrbStack, with the word that matched beside
 the name. Copperlight keeps an index of each app, `apps.json`: its App Store category, publisher and the documents it
 opens; online, Homebrew's one-line description and the app homepage's own summary, or the App Store's description for
