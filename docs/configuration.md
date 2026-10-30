@@ -3,7 +3,7 @@
 Everything is optional: Copperlight works with no config at all. **Settings…** in the menu bar edits the same file.
 
 `~/.config/copperlight/config.toml` is created with commented examples on first run. **Settings…** in the menu bar
-edits it for you: the hotkey, which features are on, currency, pomodoro, clipboard, file search, browser, and your commands and
+edits it for you: the hotkey, which features are on, what the empty launcher shows and learns, answer cards, currency, pomodoro, clipboard, file search, browser, and your commands and
 snippets. It changes only the lines it needs and keeps your comments, and a change it can't make
 cleanly (dotted keys, inline tables) isn't saved. Or edit the file in any editor: saved changes apply
 immediately. If the file doesn't parse, the launcher pins an error row at the top saying where the problem is
@@ -39,7 +39,8 @@ online = true                  # default: app descriptions from Homebrew's publi
                                # by what they do, and with Homebrew installed, apps you don't have to install from
                                # their row. false keeps it all on this Mac. Settings › Files › Apps.
 suggestions = true             # default: the apps you open around this time of day (on 3 days or more of the last 4
-                               # weeks) wait in the empty launcher, learned from what you open with it.
+                               # weeks) wait in the empty launcher, learned from what you open with it. false: they
+                               # aren't shown, and what you open isn't kept for them. Settings › Launcher.
 
 [pomodoro]
 default_minutes = 25           # default, 1–240
@@ -47,7 +48,24 @@ break_minutes = 5              # default, 1–240
 
 [meetings]
 show_on_open = false           # default. true: the empty launcher lists today's next events. false: only a meeting
-                               # with a call, from 10 minutes before it starts. Settings › General › Calendar.
+                               # with a call, from 10 minutes before it starts. Settings › Launcher › Calendar.
+show_next = true               # default. false (with show_on_open false): not even that meeting
+
+[reminders]
+show_due = true                # default: reminders that are due wait in the empty launcher. Settings › Launcher.
+
+[timers]
+show_running = true            # default: a pomodoro, timer, stopwatch or :awake waits in the empty launcher while it
+                               # runs, its time ticking. Settings › Launcher.
+
+[learning]
+picked = true                  # default: the rows you pick rise, and come first for what you typed (ss → Slack)
+recent = true                  # default: ↑ in the empty field brings back what you ran. Off, nothing new is kept and
+                               # what's in state.json isn't used. Settings › Launcher, which can also forget it.
+
+[answers]
+cards = true                   # default: an answer that reads better big takes the whole card in its own shape (a
+                               # stock, the weather, a color). false: plain rows like the rest. Settings › Launcher.
 
 [weather]
 city = "Lisbon"                # optional: "weather" with nothing typed, when Location Services is off for Copperlight.

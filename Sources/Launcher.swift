@@ -184,6 +184,12 @@ final class SearchModel {
     @ObservationIgnored private let idle: (@Sendable () async -> [LauncherResult])?
     /// The query ↑ brought back, and where it is in `recent`: ↑ again goes on from there.
     @ObservationIgnored private var recalled: (index: Int, query: String)?
+    /// `[learning]`: off, picks and queries are neither kept nor used (what's kept stays, for when it's on again).
+    @ObservationIgnored var learning = Config.Learning()
+    /// `[apps] suggestions`: the apps opened from here are kept, with the time, only for those.
+    @ObservationIgnored var keepsAppOpens = true
+    /// `[answers] cards`: off, an answer is a plain row like the rest.
+    var showsCards = true
 
     /// `searchesEmptyQuery`: ask providers about "" too (the clipboard lists everything), instead of showing nothing.
     /// `exclusive`: a query starting with one of these prefixes ("f ") goes to that provider alone.
@@ -203,7 +209,7 @@ final class SearchModel {
 
     /// Enter ran a row: keep its query for ↑, newest first, once. Only the launcher's (clipboard history has no store).
     func remember() {
-        guard let state, !query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        guard let state, learning.recent, !query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         recent = Array(([RecentQuery(query: query, chip: mode != nil)] + recent.filter { $0.query != query }).prefix(RecentQuery.limit))
         state.set(RecentQuery.stateSection, recent)
     }
@@ -215,6 +221,7 @@ final class SearchModel {
         if query.isEmpty { next = 0 }
         else if let recalled, recalled.query == query, selection == 0 { next = recalled.index + 1 }
         else { return false }
+        guard learning.recent else { return false }
         guard recent.indices.contains(next) else { return !query.isEmpty }
         let entry = recent[next]
         if entry.chip { fill(entry.query) } else { modeMatch = nil; query = entry.query }
@@ -226,16 +233,34 @@ final class SearchModel {
     /// path) is kept with the time too, for the empty launcher's suggestions.
     func picked(_ id: String) {
         guard let state else { return }
-        frecency = Frecency.picking(id, in: frecency, at: .now)
-        state.set(Frecency.stateSection, frecency)
-        // A few letters, not a sentence to translate: those would never come back the same.
-        if case let typed = Self.learnedKey(query), !typed.isEmpty, typed.count <= 15 {
-            learned = Frecency.picking("\(typed)\t\(id)", in: learned, at: .now)
-            state.set(Self.learnedSection, learned)
+        if learning.picked {
+            frecency = Frecency.picking(id, in: frecency, at: .now)
+            state.set(Frecency.stateSection, frecency)
+            // A few letters, not a sentence to translate: those would never come back the same.
+            if case let typed = Self.learnedKey(query), !typed.isEmpty, typed.count <= 15 {
+                learned = Frecency.picking("\(typed)\t\(id)", in: learned, at: .now)
+                state.set(Self.learnedSection, learned)
+            }
         }
-        guard id.hasPrefix("/"), id.hasSuffix(".app") else { return }
+        guard keepsAppOpens, id.hasPrefix("/"), id.hasSuffix(".app") else { return }
         let opens = (state.get(AppOpen.stateSection, as: [AppOpen].self) ?? []) + [AppOpen(app: id, at: .now)]
         state.set(AppOpen.stateSection, Array(opens.suffix(AppOpen.limit)))
+    }
+
+    enum Learned { case picks, queries, appOpens }
+
+    /// Settings › Launcher's Forget: deletes what was kept, here and in state.json.
+    func forget(_ what: Learned) {
+        switch what {
+        case .picks:
+            (frecency, learned) = ([:], [:])
+            state?.set(Frecency.stateSection, frecency)
+            state?.set(Self.learnedSection, learned)
+        case .queries:
+            (recent, recalled) = ([], nil)
+            state?.set(RecentQuery.stateSection, recent)
+        case .appOpens: state?.set(AppOpen.stateSection, [AppOpen]())
+        }
     }
 
     /// The chip showing, and whose: set by Tab or Enter only (`fill`, `complete`), never by typing.
@@ -335,7 +360,7 @@ final class SearchModel {
     /// Only for a row with something to show: never an empty pane, and never beside an answer.
     var showsPreview: Bool { answer == nil && (selected?.hasPreview ?? false) && (previewsByDefault || previewOpen) }
     /// The answer of the row you're on, or else of the first row: moving to the search row under a color keeps its band.
-    var answer: Answer? { selected?.answer ?? rows.first?.answer }
+    var answer: Answer? { showsCards ? selected?.answer ?? rows.first?.answer : nil }
     var selected: LauncherResult? { rows.indices.contains(selection) ? rows[selection] : nil }
 
     func move(_ delta: Int) {
@@ -368,7 +393,8 @@ final class SearchModel {
         let inMode = modeMatch != nil
         let providers = modeMatch.map { [$0.provider] }
             ?? exclusive.filter { query.hasPrefix($0.key) }.max { $0.key.count < $1.key.count }.map { [$0.value] } ?? providers
-        let (frecency, learned, now, typed) = (frecency, learned, Date.now, self.query.lowercased())
+        let (frecency, learned, now, typed) = learning.picked ? (frecency, learned, Date.now, self.query.lowercased())
+            : ([:], [:], Date.now, self.query.lowercased())
         let learnedKey = Self.learnedKey(self.query)
         settling = true
         task = Task {

@@ -229,7 +229,7 @@ The answer appears big as you type, with what a percentage hid beside it; Enter 
 
 | Type | You get |
 |---|---|
-| `meetings`, `agenda`, `events` | The rest of today's events, a copper badge on what's soon; Tab shows the details (call link, people, notes), Enter joins the call. A few minutes before a call, it's already there when you open the launcher (or all of today, with Settings › General › Calendar) |
+| `meetings`, `agenda`, `events` | The rest of today's events, a copper badge on what's soon; Tab shows the details (call link, people, notes), Enter joins the call. A few minutes before a call, it's already there when you open the launcher (or all of today, with Settings › Launcher › Calendar) |
 | `add todo call mom tomorrow 5pm` | A reminder, due and alerting then |
 | `due` | Reminders due today and overdue; Enter completes one. What's due soon waits when you open the launcher |
 | `add event fri 10am dentist` | An event in your calendar |

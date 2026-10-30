@@ -66,6 +66,19 @@ import SwiftUI
         })
     }
 
+    /// What the empty launcher shows of your calendar, in `[meetings]`'s two keys.
+    enum OnOpen: Hashable { case today, next, nothing }
+
+    var meetingsOnOpen: Binding<OnOpen> {
+        Binding(get: { self.config.meetings.showOnOpen ? .today : self.config.meetings.showNext ? .next : .nothing }, set: { choice in
+            let (today, next) = (choice == .today, choice != .nothing)
+            self.save({ $0.meetings.showOnOpen = today; $0.meetings.showNext = next }, {
+                $0.set("show_on_open", in: "meetings", to: .bool(today))
+                $0.set("show_next", in: "meetings", to: .bool(next))
+            })
+        })
+    }
+
     func strings(_ path: WritableKeyPath<Config, [String]>, _ table: String, _ key: String) -> Binding<[String]> {
         binding(path, table, key) { .strings($0) }
     }
@@ -107,10 +120,11 @@ import SwiftUI
 final class SettingsWindow: AppWindow {
     let model: SettingsModel
 
-    init(showWelcome: @escaping @MainActor () -> Void) {
+    init(showWelcome: @escaping @MainActor () -> Void, forget: @escaping @MainActor (SearchModel.Learned) -> Void) {
         let model = SettingsModel()
         self.model = model
-        super.init(title: "Copperlight Settings", style: .miniaturizable, content: SettingsView(model: model, showWelcome: showWelcome))
+        super.init(title: "Copperlight Settings", style: .miniaturizable,
+                   content: SettingsView(model: model, showWelcome: showWelcome, forget: forget))
         // A real toolbar holds the pane's title, and content scrolling under it fades out instead of running behind it.
         toolbar = NSToolbar()
         toolbarStyle = .unified
@@ -119,7 +133,7 @@ final class SettingsWindow: AppWindow {
 }
 
 private enum Pane: String, CaseIterable, Identifiable {
-    case general = "General", features = "Features", clipboard = "Clipboard", search = "Files", browser = "Browser",
+    case general = "General", launcher = "Launcher", features = "Features", clipboard = "Clipboard", search = "Files", browser = "Browser",
          commands = "Commands", snippets = "Snippets", about = "About"
 
     var id: Self { self }
@@ -132,6 +146,7 @@ private enum Pane: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .general: "gearshape.fill"
+        case .launcher: "magnifyingglass"
         case .features: "switch.2"
         case .clipboard: "doc.on.clipboard.fill"
         case .search: "folder.fill"
@@ -146,6 +161,7 @@ private enum Pane: String, CaseIterable, Identifiable {
 private struct SettingsView: View {
     let model: SettingsModel
     let showWelcome: @MainActor () -> Void
+    let forget: @MainActor (SearchModel.Learned) -> Void
     @State private var pane = Pane.general
 
     var body: some View {
@@ -161,6 +177,7 @@ private struct SettingsView: View {
                 Form {
                     switch pane {
                     case .general: GeneralPane(model: model, showWelcome: showWelcome)
+                    case .launcher: LauncherPane(model: model, forget: forget)
                     case .features: FeaturesPane(model: model)
                     case .clipboard: ClipboardPane(model: model)
                     case .search: FilesPane(model: model)
@@ -239,7 +256,6 @@ private struct GeneralPane: View {
         }
         if model.config.features.isOn(.currency) { currency }
         if model.config.features.isOn(.translate), !TranslateProvider.languageChoices.isEmpty { translate }
-        if model.config.features.isOn(.calendar) { calendar }
         if model.config.features.isOn(.notes) { notes }
         if model.config.features.isOn(.weather) { weather }
         if model.config.features.isOn(.pomodoro) { pomodoro }
@@ -278,14 +294,6 @@ private struct GeneralPane: View {
         }
     }
 
-    private var calendar: some View {
-        Section {
-            Toggle("Show today's events when the launcher opens", isOn: model.binding(\.meetings.showOnOpen, "meetings", "show_on_open") { .bool($0) })
-        } header: { Text("Calendar") } footer: {
-            Note("Before you type, the launcher lists what's next today, with a copper badge on what's soon. Off, it only shows a meeting with a call, from 10 minutes before it starts. Either needs Calendars access: type “meetings” once.")
-        }
-    }
-
     private var notes: some View {
         Section {
             Toggle("Style Markdown as you type", isOn: model.binding(\.notes.markdown, "notes", "markdown") { .bool($0) })
@@ -308,6 +316,71 @@ private struct GeneralPane: View {
         Section("Pomodoro") {
             Minutes(title: "Focus", value: model.binding(\.pomodoro.defaultMinutes, "pomodoro", "default_minutes") { .int($0) })
             Minutes(title: "Break", value: model.binding(\.pomodoro.breakMinutes, "pomodoro", "break_minutes") { .int($0) })
+        }
+    }
+}
+
+/// What the empty launcher shows, what the launcher learns from you, and how answers look.
+private struct LauncherPane: View {
+    let model: SettingsModel
+    let forget: @MainActor (SearchModel.Learned) -> Void
+    @State private var forgotten: Set<SearchModel.Learned> = []
+
+    var body: some View {
+        let features = model.config.features
+        Section {
+            if features.isOn(.calendar) {
+                Picker("Calendar", selection: model.meetingsOnOpen) {
+                    Text("Today's events").tag(SettingsModel.OnOpen.today)
+                    Text("A meeting about to start").tag(SettingsModel.OnOpen.next)
+                    Text("Nothing").tag(SettingsModel.OnOpen.nothing)
+                }
+            }
+            if [Feature.pomodoro, .timers, .stopwatch, .keepAwake].contains(where: features.isOn) {
+                Toggle("What's running", isOn: model.binding(\.timers.showRunning, "timers", "show_running") { .bool($0) })
+            }
+            if features.isOn(.reminders) {
+                Toggle("Reminders that are due", isOn: model.binding(\.reminders.showDue, "reminders", "show_due") { .bool($0) })
+            }
+            Forgettable(what: .appOpens, forgotten: $forgotten, forget: forget) {
+                Toggle("Apps you open around this time", isOn: model.binding(\.apps.suggestions, "apps", "suggestions") { .bool($0) })
+            }
+        } header: { Text("When it opens") } footer: {
+            Note("Before you type. A meeting about to start: one with a call, from 10 minutes before; both need Calendars access, so type “meetings” once. What's running: a pomodoro, a timer, the stopwatch, keeping awake. Apps: the ones you open around this time on most days, learned from what you open here.")
+        }
+        Section {
+            Forgettable(what: .picks, forgotten: $forgotten, forget: forget) {
+                Toggle("Rows you pick come first", isOn: model.binding(\.learning.picked, "learning", "picked") { .bool($0) })
+            }
+            Forgettable(what: .queries, forgotten: $forgotten, forget: forget) {
+                Toggle("↑ brings back what you ran", isOn: model.binding(\.learning.recent, "learning", "recent") { .bool($0) })
+            }
+        } header: { Text("Learning") } footer: {
+            Note("The rows you pick rise, and come first for what you typed: pick Slack after “ss” and “ss” is Slack from then on. Kept on this Mac, in state.json. Off, nothing new is kept and what's there isn't used. Forget deletes it.")
+        }
+        Section {
+            Toggle("Answers in their own shape", isOn: model.binding(\.answers.cards, "answers", "cards") { .bool($0) })
+        } header: { Text("Answers") } footer: {
+            Note("A stock, the weather, a person, a color: drawn big across the card. Off, they're plain rows like the rest.")
+        }
+    }
+}
+
+/// A switch with a Forget button beside it, for what the launcher keeps.
+private struct Forgettable<Content: View>: View {
+    let what: SearchModel.Learned
+    @Binding var forgotten: Set<SearchModel.Learned>
+    let forget: @MainActor (SearchModel.Learned) -> Void
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        HStack(spacing: 12) {
+            content
+            Button(forgotten.contains(what) ? "Forgotten" : "Forget") {
+                forget(what)
+                forgotten.insert(what)
+            }
+            .disabled(forgotten.contains(what))
         }
     }
 }
@@ -413,10 +486,9 @@ private struct FilesPane: View {
             Note("Where :terminal opens a folder, or a file's folder.")
         }
         Section {
-            Toggle("Suggest apps when the launcher opens", isOn: model.binding(\.apps.suggestions, "apps", "suggestions") { .bool($0) })
             Toggle("Look up app descriptions online", isOn: model.binding(\.apps.online, "apps", "online") { .bool($0) })
         } header: { Text("Apps") } footer: {
-            Note("Suggestions: the apps you open around this time of day on most days wait in the empty launcher, learned from what you open with it, on this Mac. Apps are found by what they do too: “draw”, “noise”. Copperlight indexes each app's category and the files it opens, and with Apple Intelligence on, the Mac's own model adds words. Online, it adds Homebrew's public description (the whole list is downloaded, so nothing about your apps is sent) and the App Store's for apps you got there; with Homebrew installed, an app you don't have offers to install itself.")
+            Note("Apps are found by what they do too: “draw”, “noise”. Copperlight indexes each app's category and the files it opens, and with Apple Intelligence on, the Mac's own model adds words. Online, it adds Homebrew's public description (the whole list is downloaded, so nothing about your apps is sent) and the App Store's for apps you got there; with Homebrew installed, an app you don't have offers to install itself.")
         }
     }
 }

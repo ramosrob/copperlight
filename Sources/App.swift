@@ -206,11 +206,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         exclusive: [FileSearchProvider.prefix: Gated(.files, files), VerbProvider.prefix: verbs,
                     ShellProvider.prefix: Gated(.shell, ShellProvider(state: .shared)),
                     "~": Gated(.files, PathProvider(terminal: Self.terminal(files))), "/": Gated(.files, PathProvider(terminal: Self.terminal(files)))],
-        frecency: .shared, idle: Self.upNext(meetings, reminders, clocks: { [unowned self] in
-            runningClocks(pomodoro: pomodoro, timer: countdown, stopwatch: stopwatch)
+        frecency: .shared, idle: Self.upNext(meetings, reminders, showsDue: { [unowned self] in showsDue }, clocks: { [unowned self] in
+            (showsRunning ? runningClocks(pomodoro: pomodoro, timer: countdown, stopwatch: stopwatch) : [])
                 + (suggestsApps ? suggestionRows(StateStore.shared.get(AppOpen.stateSection, as: [AppOpen].self) ?? []) : [])
         }))
-    private var suggestsApps = true
+    // What the empty launcher shows besides the meeting (config.toml; the meeting is MeetingsProvider's).
+    private var (suggestsApps, showsDue, showsRunning) = (true, true, true)
     private lazy var panel: LauncherPanel = LauncherPanel(model: model, placeholder: "Type anything")
 
     /// `[files] terminal`, asked when a file's Open in Terminal row is made.
@@ -219,9 +220,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// What the empty launcher shows: the meeting to join, a few minutes before it starts, what's counting, reminders
     /// that are due, and the apps you open around now.
     nonisolated private static func upNext(_ meetings: MeetingsProvider, _ reminders: RemindersProvider,
+                                           showsDue: @escaping @MainActor @Sendable () -> Bool,
                                            clocks: @escaping @MainActor @Sendable () -> [LauncherResult]) -> @Sendable () async -> [LauncherResult] {
         {
-            let events = Feature.calendar.isOn ? await meetings.upNext() : [], due = Feature.reminders.isOn ? await reminders.upNext() : []
+            let events = Feature.calendar.isOn ? await meetings.upNext() : []
+            let wantsDue = Feature.reminders.isOn ? await showsDue() : false
+            let due = wantsDue ? await reminders.upNext() : []
             return (events + due + (await MainActor.run { clocks() })).sorted { $0.score > $1.score }
         }
     }
@@ -311,7 +315,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func showSettings() {
-        if settings?.isVisible != true { settings = SettingsWindow(showWelcome: { [unowned self] in showWelcome() }) }
+        if settings?.isVisible != true {
+            settings = SettingsWindow(showWelcome: { [unowned self] in showWelcome() }, forget: { [unowned self] in model.forget($0) })
+        }
         settings?.show()
     }
 
@@ -392,7 +398,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notes.values.forEach { $0.restyle() }
         pomodoro.defaultMinutes = config.pomodoro.defaultMinutes
         pomodoro.breakMinutes = config.pomodoro.breakMinutes
-        suggestsApps = config.apps.suggestions
+        (suggestsApps, showsDue, showsRunning) = (config.apps.suggestions, config.reminders.showDue, config.timers.showRunning)
+        model.learning = config.learning
+        model.keepsAppOpens = config.apps.suggestions
+        model.showsCards = config.answers.cards
         // Chained so back-to-back reloads reach the providers in order.
         weather.setCity(config.weather.city ?? "")
         configUpdate = Task { [previous = configUpdate, commands, currency, translate, files, apps, web, snippets] in
@@ -402,7 +411,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await web.setBrowser(config.browser)
             await pages.setBrowser(config.browser)
             await meetings.setBrowser(config.browser)
-            await meetings.setShowsOnOpen(config.meetings.showOnOpen)
+            await meetings.setShowsOnOpen(config.meetings.showOnOpen, next: config.meetings.showNext)
             if Feature.bookmarks.isOn { await pages.refresh() }
             await currency.setDefaultTarget(config.currency.defaultTarget)
             translate.setDefaultTarget(config.translate.defaultTarget)

@@ -77,14 +77,15 @@ sent, no permission asked for.
   minutes after it started, the empty launcher shows it on a band: how soon ("in 4 min", "Now"), its title, times
   and call, who's coming (initials and first names) and the first line of its own notes (never the call's invitation).
   Under it, Join (Enter) and Open in Calendar; `meetings` puts it first the same way. With `[meetings] show_on_open`
-  (Settings › General › Calendar), the empty launcher lists the day's next five events, that one on its band first. It needs Calendars access already given (`meetings` asks): opening the launcher never asks.
-  Typing hides it.
+  (Settings › Launcher › Calendar: Today's events), the empty launcher lists the day's next five events, that one on its band first. It needs Calendars access already given (`meetings` asks): opening the launcher never asks.
+  Typing hides it. Settings › Launcher › Calendar: Nothing (`show_next = false`) keeps it away.
 - **Due reminders, waiting:** the reminders that are overdue, due within the hour, or due today with no time, soonest
   deadline first, with a copper badge ("Overdue", "in 20 min", "Today"). Enter completes one and keeps the launcher
-  open for the next. Needs full Reminders access already given (`add todo` or `due` asks).
+  open for the next. Needs full Reminders access already given (`add todo` or `due` asks). `[reminders] show_due = false`
+  (Settings › Launcher) keeps them away; `due` still lists them.
 - **Suggestions, waiting:** up to 3 apps you open around this time of day (from the launcher, within an hour of now, on
   3 days or more of the last 4 weeks), not the one you're in. Kept in `state.json`; `[apps] suggestions = false`
-  (Settings › Files › Apps) turns them off.
+  (Settings › Launcher) turns them off and stops keeping what you open; Forget deletes what's kept.
 - **Tab steps into some rows** while Enter still runs them, and the selected row names both: on a person, Actions ⇥
   (Message ↵); on a calculation, Keep Going ⇥ puts the result in the field (Copy ↵).
 - **Tab on a file, an app or a clipboard item: what you can do with it,** in place of the list under its name, with
@@ -100,7 +101,8 @@ sent, no permission asked for.
     address), Large Type and QR Code (the code beside the list, Enter copies it); for a picture, Open in Preview and
     Save to Downloads; Delete from History.
 - **↑ in the empty field brings back what you ran,** the last 50 queries, newest first; ↑ again (on the top row)
-  goes further back. Each comes back as it was run: in its chip, or typed. Kept in `state.json`.
+  goes further back. Each comes back as it was run: in its chip, or typed. Kept in `state.json`. `[learning] recent =
+  false` (Settings › Launcher) turns it off, and Forget there deletes them.
 - **It never takes focus** from the app you were in, so window commands and pastes act on that app.
 - **The selected row says what Enter does** ("Open ↵", "Paste as Markdown ↵").
 - **Some rows ask first** (`:restart`, `:empty trash`, `:clear`): Enter shows the question, Enter again does it.
@@ -116,7 +118,8 @@ sent, no permission asked for.
   No aliases or numbers to set up.
 - **What you picked for what you typed comes first:** Enter on Slack with `ss` typed, and next time `ss` puts Slack
   on top, above everything else, an exact alias included. Only for that text (case and spaces aside, up to 15
-  characters); picking another row for it takes over, and it fades like frecency.
+  characters); picking another row for it takes over, and it fades like frecency. `[learning] picked = false`
+  (Settings › Launcher) turns both off: nothing new is kept and what's kept isn't used. Forget deletes it.
 - **Other names work too:** Copperlight's own things and the Mac's apps answer to the words people also use for them,
   from 3 letters: `:turn off` finds Shut Down, `:reboot` Restart, `:kill slack` force quits Slack, `:sound 30` sets the
   volume, "task manager" Activity Monitor, "control panel" System Settings, "paste history" Clipboard History,
@@ -131,7 +134,7 @@ sent, no permission asked for.
 - **Answers in their own shape:** an answer that reads better big takes the card in place of the list and the preview,
   laid out for what it is. A stock, a dictionary entry and the speed test's result fill it (Enter opens or copies it); a QR code sits big
   on the left with its actions as rows beside it; a color is a band over its rows. Every row of the answer carries it, so it stays while you move between
-  them, and on to the search row under it.
+  them, and on to the search row under it. `[answers] cards = false` (Settings › Launcher) shows them as plain rows.
 - **The look:** two floating glass pieces, a pill search field and a results card
   under it, in the icon's copper. Long lists fade at the edges instead of being cut. Follows light and dark mode.
 
@@ -451,8 +454,9 @@ The row shows the title and date Copperlight read before you press Enter; a noti
 ## Settings
 
 **Settings…** in the menu bar, or `copperlight settings` in the launcher. A pane per group: General (hotkey, Open at
-Login, currency, translate to, pomodoro), Clipboard (how much to keep, apps not recorded), Files (folders searched, names hidden,
-app suggestions, app descriptions online or not),
+Login, currency, translate to, notes, weather, pomodoro), Launcher (what the empty launcher shows, what it learns and
+Forget, answer cards), Features (a switch for each), Clipboard (how much to keep, apps not recorded), Files (folders
+searched, names hidden, app descriptions online or not),
 Browser (where links open, which profile), Commands and Snippets (add, edit, delete), and About (version, license,
 and the open source it's built with). Every change goes straight into config.toml, editing only its own lines, comments kept;
 one it can't make cleanly is refused, and the file stays as it was. Edits made by hand show up in the window.

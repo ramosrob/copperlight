@@ -18,6 +18,10 @@ struct Config: Decodable, Equatable {
     var browser = Browser()
     var notes = Notes()
     var meetings = Meetings()
+    var reminders = Reminders()
+    var timers = Timers()
+    var learning = Learning()
+    var answers = Answers()
     var weather = Weather()
     var commands: [Command] = []
     var snippets: [Snippet] = []
@@ -111,16 +115,71 @@ struct Config: Decodable, Equatable {
         private enum CodingKeys: String, CodingKey { case markdown }
     }
 
-    /// Today's events. `show_on_open`: the empty launcher lists them; otherwise it only shows a meeting about to start.
+    /// Today's events. `show_on_open`: the empty launcher lists them; otherwise, with `show_next`, it shows a meeting
+    /// about to start.
     struct Meetings: Decodable, Equatable {
         var showOnOpen = false
+        var showNext = true
 
         init() {}
         init(from decoder: any Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             showOnOpen = try c.decodeIfPresent(Bool.self, forKey: .showOnOpen) ?? showOnOpen
+            showNext = try c.decodeIfPresent(Bool.self, forKey: .showNext) ?? showNext
         }
-        private enum CodingKeys: String, CodingKey { case showOnOpen = "show_on_open" }
+        private enum CodingKeys: String, CodingKey { case showOnOpen = "show_on_open", showNext = "show_next" }
+    }
+
+    /// `show_due`: reminders that are due wait in the empty launcher.
+    struct Reminders: Decodable, Equatable {
+        var showDue = true
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            showDue = try c.decodeIfPresent(Bool.self, forKey: .showDue) ?? showDue
+        }
+        private enum CodingKeys: String, CodingKey { case showDue = "show_due" }
+    }
+
+    /// `show_running`: a pomodoro, timer, stopwatch or `:awake` waits in the empty launcher while it runs.
+    struct Timers: Decodable, Equatable {
+        var showRunning = true
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            showRunning = try c.decodeIfPresent(Bool.self, forKey: .showRunning) ?? showRunning
+        }
+        private enum CodingKeys: String, CodingKey { case showRunning = "show_running" }
+    }
+
+    /// What the launcher learns from you, in state.json. `picked`: the rows you pick rise, and come first for what you
+    /// typed (`ss` → Slack). `recent`: ↑ in the empty field brings back what you ran.
+    struct Learning: Decodable, Equatable, Sendable {
+        var picked = true
+        var recent = true
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            picked = try c.decodeIfPresent(Bool.self, forKey: .picked) ?? picked
+            recent = try c.decodeIfPresent(Bool.self, forKey: .recent) ?? recent
+        }
+        private enum CodingKeys: String, CodingKey { case picked, recent }
+    }
+
+    /// `cards`: an answer that reads better big takes the whole card in its own shape (a stock, the weather); false:
+    /// plain rows like the rest.
+    struct Answers: Decodable, Equatable {
+        var cards = true
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            cards = try c.decodeIfPresent(Bool.self, forKey: .cards) ?? cards
+        }
+        private enum CodingKeys: String, CodingKey { case cards }
     }
 
     struct Clipboard: Decodable, Equatable {
@@ -258,11 +317,15 @@ struct Config: Decodable, Equatable {
         browser = try c.decodeIfPresent(Browser.self, forKey: .browser) ?? browser
         notes = try c.decodeIfPresent(Notes.self, forKey: .notes) ?? notes
         meetings = try c.decodeIfPresent(Meetings.self, forKey: .meetings) ?? meetings
+        reminders = try c.decodeIfPresent(Reminders.self, forKey: .reminders) ?? reminders
+        timers = try c.decodeIfPresent(Timers.self, forKey: .timers) ?? timers
+        learning = try c.decodeIfPresent(Learning.self, forKey: .learning) ?? learning
+        answers = try c.decodeIfPresent(Answers.self, forKey: .answers) ?? answers
         weather = try c.decodeIfPresent(Weather.self, forKey: .weather) ?? weather
         commands = try c.decodeIfPresent([Command].self, forKey: .commands) ?? []
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? []
     }
-    private enum CodingKeys: String, CodingKey { case hotkeys, features, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, weather, commands = "command", snippets = "snippet" }
+    private enum CodingKeys: String, CodingKey { case hotkeys, features, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, reminders, timers, learning, answers, weather, commands = "command", snippets = "snippet" }
 
     static func parse(_ text: String) throws -> Config {
         try TOMLDecoder().decode(Config.self, from: text)
@@ -336,6 +399,20 @@ struct Config: Decodable, Equatable {
         [meetings]
         show_on_open = false           # true: the empty launcher lists today's events. false: only a meeting with a call,
                                        # from 10 minutes before it starts. Needs Calendars access ("meetings" asks).
+        show_next = true               # false (with show_on_open false): not even that one
+
+        [reminders]
+        show_due = true                # reminders that are due wait in the empty launcher
+
+        [timers]
+        show_running = true            # a pomodoro, timer, stopwatch or :awake waits in the empty launcher while it runs
+
+        [learning]
+        picked = true                  # the rows you pick rise, and come first for what you typed (ss → Slack)
+        recent = true                  # ↑ in the empty field brings back what you ran. Both kept on this Mac, in state.json
+
+        [answers]
+        cards = true                   # answers take the whole card in their own shape (a stock, the weather); false: rows
 
         [weather]
         # city = "Lisbon"              # for "weather" when Location Services is off for Copperlight

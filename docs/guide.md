@@ -56,12 +56,15 @@ time, fading over a few weeks. So `s` + Enter opens Safari once you use it, and 
 What you typed counts too: the row you picked for some text comes first the next time you type exactly that, above
 everything else. Pick Slack with `ss` typed, and `ss` is Slack from then on: an abbreviation, with nothing to set up.
 Case and spaces around it don't matter; text over 15 characters isn't kept. Picking another row for the same text
-takes over, and an abbreviation you stop using fades after a few weeks.
+takes over, and an abbreviation you stop using fades after a few weeks. Settings › Launcher › Rows you pick come first
+(`[learning] picked`) turns both off, and its Forget deletes what was kept; ↑ bringing back what you ran has its own
+switch and Forget beside it.
 
 Answers take their own shape: most results are rows, with a preview beside them, but an answer that reads better big
 takes the card instead. A stock, a dictionary entry and the speed test's result fill it, a QR code sits big beside
 its actions, and a color is a band over its rows.
-The rows under or beside it work as always, and the answer stays while you move between them.
+The rows under or beside it work as always, and the answer stays while you move between them. Settings › Launcher ›
+Answers in their own shape (`[answers] cards`) turns them back into plain rows.
 
 **Commands (`:`):** `:` lists them all, and what you type after it narrows them down (`:min`, `:fq`).
 
@@ -455,15 +458,17 @@ access; `add event` only asked to add).
 **The next meeting:** a few minutes before a meeting with a call, there's no need to type: from 10 minutes before it
 starts until 10 minutes after, the empty launcher shows that meeting on a band: how soon it starts, its title, times
 and call, who's coming and the first line of its notes. Enter joins; the row under it opens Calendar. `meetings` puts
-it first the same way. Settings › General › Calendar › Show today's events when the launcher opens (`[meetings]
-show_on_open`) lists the day's next five events there instead, with or without a call. Either only once Calendars access is given; opening the launcher
+it first the same way. Settings › Launcher › Calendar picks what the empty launcher shows: Today's events (`[meetings]
+show_on_open`), the day's next five, with or without a call; A meeting about to start, as above; or Nothing
+(`show_next = false`). Either only once Calendars access is given; opening the launcher
 never asks. Typing hides it.
 
 **Due reminders:** the empty launcher lists the reminders that are overdue, due within the hour, or due today with no
 time, the soonest deadline first, each with a copper badge ("Overdue", "in 20 min", "Today") and its list. Enter
 completes one and keeps the launcher open, so you can tick off the next. `due` (or `overdue`, `todos`) lists all of
 today's and the overdue ones. Reading them needs full Reminders access, which `add todo` asks for, or the row `due`
-shows the first time; opening the launcher never asks.
+shows the first time; opening the launcher never asks. Settings › Launcher › Reminders that are due (`[reminders]
+show_due`) keeps them out of the empty launcher.
 
 **Pomodoro:** `pomo` starts `default_minutes`, `pomo 50` starts 50 minutes (1–240), `pomo break` starts
 `break_minutes` of break (`pomo break 15` for another length; a cup in the menu bar), `pomo stop` stops. While it
@@ -487,9 +492,11 @@ stop the one running, and so does `timer stop`. `tim` Tab is the Timer chip. A t
 **What's running, when you open it:** while a pomodoro, a break, a timer or the stopwatch runs, or the Mac is kept
 awake, the empty launcher lists it with its time ticking in a copper pill: left for the pomodoro, the timer and keeping
 awake for a while, so far for the stopwatch.
-Enter stops it, after asking. A meeting about to start stays above them, so Enter still joins.
+Enter stops it, after asking. A meeting about to start stays above them, so Enter still joins. Settings › Launcher ›
+What's running (`[timers] show_running`) keeps them out of it; the menu bar still shows them.
 
 **Suggestions:** below all that, the empty launcher shows up to 3 apps you open around this time of day: opened from
 the launcher within an hour of now on 3 days or more of the last 4 weeks, the most often first (a recent day counts
 more). The app you're in isn't one of them. Learned from what you open with Copperlight, kept in `state.json`;
-Settings › Files › Apps › Suggest apps when the launcher opens (`[apps] suggestions`) turns it off.
+Settings › Launcher › Apps you open around this time (`[apps] suggestions`) turns it off, and what you open stops being
+kept; Forget beside it deletes what was.

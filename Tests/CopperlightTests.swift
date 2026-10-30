@@ -3493,3 +3493,104 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     let on = try String(contentsOf: file, encoding: .utf8)
     #expect(try Config.parse(on).features.off.isEmpty && !on.contains("\ncurrency = false") && model.problem == nil)
 }
+
+// MARK: What the empty launcher shows, learning, answer cards
+
+@Test func launcherSettingsInConfig() throws {
+    let defaults = Config()
+    #expect(defaults.meetings.showNext && defaults.reminders.showDue && defaults.timers.showRunning)
+    #expect(defaults.learning.picked && defaults.learning.recent && defaults.answers.cards)
+    let config = try Config.parse("""
+        [meetings]
+        show_next = false
+        [reminders]
+        show_due = false
+        [timers]
+        show_running = false
+        [learning]
+        picked = false
+        recent = false
+        [answers]
+        cards = false
+        """)
+    #expect(!config.meetings.showNext && !config.reminders.showDue && !config.timers.showRunning)
+    #expect(!config.learning.picked && !config.learning.recent && !config.answers.cards)
+}
+
+/// Off, what you picked is neither counted nor used (it's kept, for when it's on again); Forget deletes it.
+@MainActor @Test func learningOffAndForgotten() async throws {
+    let store = StateStore(file: try tempStateFile())
+    let model = SearchModel(providers: [Fixed(rows: [("Safari", 1), ("Slack", 0.6)])], frecency: store)
+    let first = { (query: String) in
+        model.query = query
+        try await Task.sleep(for: .milliseconds(100))
+        return model.results.first?.id
+    }
+    _ = try await first("ss")
+    model.picked("Slack")
+    #expect(try await first("ss") == "Slack")
+    model.learning.picked = false
+    #expect(try await first("ss") == "Safari")
+    model.picked("/Applications/Slack.app")
+    #expect(store.get(Frecency.stateSection, as: Frecency.Table.self)?.keys.sorted() == ["Slack"])
+    model.learning.picked = true
+    #expect(try await first("ss") == "Slack")
+    model.forget(.picks)
+    #expect(try await first("ss") == "Safari")
+    #expect(store.get(Frecency.stateSection, as: Frecency.Table.self)?.isEmpty == true && store.get(SearchModel.learnedSection, as: Frecency.Table.self)?.isEmpty == true)
+
+    model.query = "safari"
+    model.remember()
+    model.learning.recent = false
+    model.query = "slack"
+    model.remember() // not kept
+    model.query = ""
+    #expect(!model.recallOlder())
+    model.learning.recent = true
+    #expect(model.recallOlder() && model.query == "safari")
+    model.forget(.queries)
+    model.query = ""
+    #expect(!model.recallOlder())
+
+    // The apps you open, for suggestions: kept only while suggestions are on, whatever learning says (Slack.app above).
+    #expect(store.get(AppOpen.stateSection, as: [AppOpen].self)?.count == 1)
+    model.forget(.appOpens)
+    model.keepsAppOpens = false
+    model.picked("/Applications/Safari.app")
+    #expect(store.get(AppOpen.stateSection, as: [AppOpen].self)?.isEmpty == true)
+    model.keepsAppOpens = true
+    model.picked("/Applications/Safari.app")
+    #expect(store.get(AppOpen.stateSection, as: [AppOpen].self)?.count == 1)
+}
+
+private struct Carded: ResultProvider {
+    func results(for query: String) async -> [LauncherResult] {
+        [LauncherResult(id: "calc", title: "2", subtitle: "1 + 1", icon: .symbol("equal"), score: 1, action: {},
+                        answer: .calculation("1 + 1", result: "2", note: nil))]
+    }
+}
+
+/// Off, an answer is a plain row like the rest: no card, and its preview may show.
+@MainActor @Test func answerCardsOff() async throws {
+    let model = SearchModel(providers: [Carded()])
+    model.query = "1+1"
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(model.answer != nil)
+    model.showsCards = false
+    #expect(model.answer == nil && model.results.first?.title == "2")
+}
+
+/// The Calendar picker: today's events, a meeting about to start, or nothing, in two keys.
+@MainActor @Test func settingsMeetingsOnOpen() throws {
+    let file = FileManager.default.temporaryDirectory.appending(path: "settings-\(UUID().uuidString).toml")
+    defer { try? FileManager.default.removeItem(at: file) }
+    try Config.example.write(to: file, atomically: true, encoding: .utf8)
+    let model = SettingsModel(file: file)
+    #expect(model.meetingsOnOpen.wrappedValue == .next)
+    for choice in [SettingsModel.OnOpen.nothing, .today, .next] {
+        model.meetingsOnOpen.wrappedValue = choice
+        let meetings = try Config.parse(String(contentsOf: file, encoding: .utf8)).meetings
+        #expect((meetings.showOnOpen, meetings.showNext) == (choice == .today, choice != .nothing), "\(choice)")
+        #expect(model.meetingsOnOpen.wrappedValue == choice && model.problem == nil)
+    }
+}

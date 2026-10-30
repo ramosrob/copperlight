@@ -121,9 +121,10 @@ actor MeetingsProvider: ResultProvider {
     private var store: EKEventStore? // made once access is granted: one made before it sees no events
     private var browser = Config.Browser()
     private var showsOnOpen = false
+    private var showsNext = true
 
     func setBrowser(_ browser: Config.Browser) { self.browser = browser }
-    func setShowsOnOpen(_ on: Bool) { showsOnOpen = on }
+    func setShowsOnOpen(_ on: Bool, next: Bool) { (showsOnOpen, showsNext) = (on, next) }
 
     /// The events left today, and the ones started in the last 10 minutes (still worth joining). Only with access.
     private func today(now: Date) -> [CalendarItem]? {
@@ -159,7 +160,7 @@ actor MeetingsProvider: ResultProvider {
     /// for access: opening the launcher shouldn't.
     func upNext() -> [LauncherResult] {
         let now = Date.now
-        guard let items = today(now: now) else { return [] }
+        guard showsOnOpen || showsNext, let items = today(now: now) else { return [] }
         if showsOnOpen { return rows(Array(items.prefix(5)), base: 100, now: now) }
         return nextMeeting(items, now: now).map { joinRows($0, now: now, browser: browser, score: 100) } ?? []
     }
