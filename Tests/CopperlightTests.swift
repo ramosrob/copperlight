@@ -3847,3 +3847,12 @@ private struct Asking: ResultProvider {
     await eventually { model.results.first?.id == "answer:c" }
     #expect(model.results.map(\.id) == ["answer:c"])
 }
+
+// MARK: At rest
+
+/// The clipboard is looked at twice a second while you're at the Mac, and every 2 s once there's been no key or mouse
+/// for a minute: away, it lets the Mac sleep more. Copying takes a key, so nothing copied is missed.
+@Test func clipboardRestsWhileYoureAway() {
+    #expect(ClipboardHistory.pollInterval(idle: 0) == 0.5 && ClipboardHistory.pollInterval(idle: 59) == 0.5)
+    #expect(ClipboardHistory.pollInterval(idle: 61) == 2)
+}

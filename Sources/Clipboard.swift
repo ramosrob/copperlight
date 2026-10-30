@@ -213,8 +213,8 @@ func clipboardSection(_ date: Date, now: Date = .now, calendar: Calendar = .curr
     var settings: Config.Clipboard? { didSet { prune() } }
     private var lastChange = NSPasteboard.general.changeCount // what's on the pasteboard at launch isn't new
     private var timer: Timer?
-    /// Clipboard history on (Settings › Features): the pasteboard is looked at twice a second. Off, not at all, and
-    /// what's copied meanwhile is never seen.
+    /// Clipboard history on (Settings › Features): the pasteboard is looked at twice a second, every 2 s while you're
+    /// away. Off, not at all, and what's copied meanwhile is never seen.
     var recording = false {
         didSet {
             guard recording != oldValue else { return }
@@ -222,11 +222,25 @@ func clipboardSection(_ date: Date, now: Date = .now, calendar: Calendar = .curr
             timer = nil
             guard recording else { return }
             lastChange = NSPasteboard.general.changeCount
-            timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-                MainActor.assumeIsolated { self?.poll() }
-            }
-            timer?.tolerance = 0.25 // lets macOS batch the wakeups
+            look()
         }
+    }
+
+    /// How long until the next look: twice a second, and every 2 s after a minute with no key or mouse, so the Mac
+    /// sleeps more while you're away. Copying takes a key, so nothing copied is missed.
+    nonisolated static func pollInterval(idle: TimeInterval) -> TimeInterval { idle > 60 ? 2 : 0.5 }
+
+    private func look() {
+        let idle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
+        let interval = Self.pollInterval(idle: idle)
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.recording else { return }
+                self.poll()
+                self.look()
+            }
+        }
+        timer?.tolerance = interval / 2 // lets macOS batch the wakeups
     }
 
     init(store: ClipboardStore) { self.store = store }

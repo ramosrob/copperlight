@@ -311,7 +311,7 @@ chip (Translate to German) when you press Tab with it first (`to ger` ⇥) or at
 download once, from System Settings → General → Language & Region → Translation Languages; until then the row
 says so and opens that page.
 
-**Clipboard history:** text and images you copy are recorded (polled twice a second). A copy with both, like
+**Clipboard history:** text and images you copy are recorded (looked for twice a second, every 2 s after a minute away from the keyboard and mouse, so the Mac sleeps more). A copy with both, like
 spreadsheet cells, is kept as text. Images (screenshots, "Copy Image") are stored as PNG, shown as a
 thumbnail in the list and full size in the preview, with their size; type `image` to list only them. Copying something already in the
 list moves it to the top. Typing filters: items containing the text, then items whose first line matches
