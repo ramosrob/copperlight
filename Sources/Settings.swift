@@ -57,6 +57,15 @@ import SwiftUI
         })
     }
 
+    /// A feature's switch: off writes `name = false` under [features]; on removes it, on being the default.
+    func feature(_ feature: Feature) -> Binding<Bool> {
+        Binding(get: { self.config.features.isOn(feature) }, set: { on in
+            guard on != self.config.features.isOn(feature) else { return }
+            self.save({ if on { $0.features.off.remove(feature) } else { $0.features.off.insert(feature) } },
+                      { $0.set(feature.rawValue, in: "features", to: on ? nil : .bool(false)) })
+        })
+    }
+
     func strings(_ path: WritableKeyPath<Config, [String]>, _ table: String, _ key: String) -> Binding<[String]> {
         binding(path, table, key) { .strings($0) }
     }
@@ -110,19 +119,20 @@ final class SettingsWindow: AppWindow {
 }
 
 private enum Pane: String, CaseIterable, Identifiable {
-    case general = "General", clipboard = "Clipboard", search = "Files", browser = "Browser",
+    case general = "General", features = "Features", clipboard = "Clipboard", search = "Files", browser = "Browser",
          commands = "Commands", snippets = "Snippets", about = "About"
 
     var id: Self { self }
 
-    /// The panes of the features that are on (Features.swift).
-    static var shown: [Pane] {
-        allCases.filter { [.clipboard: Feature.clipboard, .commands: .commands, .snippets: .snippets][$0]?.isOn ?? true }
+    /// The panes of the features that are on.
+    static func shown(_ features: Config.Features) -> [Pane] {
+        allCases.filter { [.clipboard: Feature.clipboard, .commands: .commands, .snippets: .snippets][$0].map(features.isOn) ?? true }
     }
 
     var symbol: String {
         switch self {
         case .general: "gearshape.fill"
+        case .features: "switch.2"
         case .clipboard: "doc.on.clipboard.fill"
         case .search: "folder.fill"
         case .browser: "globe"
@@ -140,7 +150,7 @@ private struct SettingsView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(Pane.shown, selection: $pane) { pane in
+            List(Pane.shown(model.config.features), selection: $pane) { pane in
                 Label { Text(pane.rawValue) } icon: { Tile(symbol: pane.symbol) }.tag(pane)
             }
             .navigationSplitViewColumnWidth(200)
@@ -151,6 +161,7 @@ private struct SettingsView: View {
                 Form {
                     switch pane {
                     case .general: GeneralPane(model: model, showWelcome: showWelcome)
+                    case .features: FeaturesPane(model: model)
                     case .clipboard: ClipboardPane(model: model)
                     case .search: FilesPane(model: model)
                     case .browser: BrowserPane(model: model)
@@ -226,6 +237,24 @@ private struct GeneralPane: View {
                 Note("The only global shortcut. Everything else is typed in the launcher.")
             }
         }
+        if model.config.features.isOn(.currency) { currency }
+        if model.config.features.isOn(.translate), !TranslateProvider.languageChoices.isEmpty { translate }
+        if model.config.features.isOn(.calendar) { calendar }
+        if model.config.features.isOn(.notes) { notes }
+        if model.config.features.isOn(.weather) { weather }
+        if model.config.features.isOn(.pomodoro) { pomodoro }
+        Section {
+            LabeledContent("Welcome screen") { Button("Show", action: showWelcome) }
+            LabeledContent("config.toml") {
+                Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([Config.file]) }
+                Button("Open") { NSWorkspace.shared.open(Config.file) }
+            }
+        } footer: {
+            Note("Everything here is saved in ~/.config/copperlight/config.toml, with your comments kept. Edit it by hand any time: changes apply when you save.")
+        }
+    }
+
+    private var currency: some View {
         Section {
             Picker("Convert to", selection: model.binding(\.currency.defaultTarget, "currency", "default_target") { .string($0) }) {
                 ForEach(Self.currencies, id: \.self) { code in
@@ -235,26 +264,37 @@ private struct GeneralPane: View {
         } header: { Text("Currency") } footer: {
             Note("For an amount without a target, like “25 usd”.")
         }
-        if !TranslateProvider.languageChoices.isEmpty { // macOS 26, once the Mac has said which languages it translates
-            Section {
-                Picker("Translate to", selection: model.text(\.translate.defaultTarget, "translate", "default_target")) {
-                    Text("Automatic").tag(String?.none)
-                    ForEach(TranslateProvider.languageChoices, id: \.key) { Text($0.name).tag(Optional($0.key)) }
-                }
-            } header: { Text("Translate") } footer: {
-                Note("For text without “to …”, like “translate bom dia”. Automatic: the first of your Mac’s languages the text isn’t in, which is also used when the text is already in this one.")
+    }
+
+    /// Only on macOS 26, once the Mac has said which languages it translates.
+    private var translate: some View {
+        Section {
+            Picker("Translate to", selection: model.text(\.translate.defaultTarget, "translate", "default_target")) {
+                Text("Automatic").tag(String?.none)
+                ForEach(TranslateProvider.languageChoices, id: \.key) { Text($0.name).tag(Optional($0.key)) }
             }
+        } header: { Text("Translate") } footer: {
+            Note("For text without “to …”, like “translate bom dia”. Automatic: the first of your Mac’s languages the text isn’t in, which is also used when the text is already in this one.")
         }
+    }
+
+    private var calendar: some View {
         Section {
             Toggle("Show today's events when the launcher opens", isOn: model.binding(\.meetings.showOnOpen, "meetings", "show_on_open") { .bool($0) })
         } header: { Text("Calendar") } footer: {
             Note("Before you type, the launcher lists what's next today, with a copper badge on what's soon. Off, it only shows a meeting with a call, from 10 minutes before it starts. Either needs Calendars access: type “meetings” once.")
         }
+    }
+
+    private var notes: some View {
         Section {
             Toggle("Style Markdown as you type", isOn: model.binding(\.notes.markdown, "notes", "markdown") { .bool($0) })
         } header: { Text("Notes") } footer: {
             Note("# headings, **bold**, *italic*, `code`, lists, - [ ] checkboxes you can click, and links. The notes stay plain text files.")
         }
+    }
+
+    private var weather: some View {
         Section {
             TextField("City", text: Binding(get: { model.config.weather.city ?? "" },
                                             set: { model.text(\.weather.city, "weather", "city").wrappedValue = $0 }),
@@ -262,18 +302,34 @@ private struct GeneralPane: View {
         } header: { Text("Weather") } footer: {
             Note("For “weather” when Location Services is off for Copperlight, or you’d rather not share where you are.")
         }
+    }
+
+    private var pomodoro: some View {
         Section("Pomodoro") {
             Minutes(title: "Focus", value: model.binding(\.pomodoro.defaultMinutes, "pomodoro", "default_minutes") { .int($0) })
             Minutes(title: "Break", value: model.binding(\.pomodoro.breakMinutes, "pomodoro", "break_minutes") { .int($0) })
         }
-        Section {
-            LabeledContent("Welcome screen") { Button("Show", action: showWelcome) }
-            LabeledContent("config.toml") {
-                Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([Config.file]) }
-                Button("Open") { NSWorkspace.shared.open(Config.file) }
+    }
+}
+
+/// A switch for each feature, by group, saying what it is.
+private struct FeaturesPane: View {
+    let model: SettingsModel
+
+    var body: some View {
+        ForEach(Feature.Group.allCases, id: \.self) { group in
+            Section {
+                ForEach(Feature.listed.filter { $0.group == group }, id: \.self) { feature in
+                    Toggle(isOn: model.feature(feature)) {
+                        Text(feature.name)
+                        Text(feature.about)
+                    }
+                }
+            } header: { Text(group.rawValue) } footer: {
+                if group == Feature.Group.allCases.last {
+                    Note("Off means off: no rows, no commands, nothing in the background, nothing sent, no permission asked for. Saved in config.toml under [features].")
+                }
             }
-        } footer: {
-            Note("Everything here is saved in ~/.config/copperlight/config.toml, with your comments kept. Edit it by hand any time: changes apply when you save.")
         }
     }
 }

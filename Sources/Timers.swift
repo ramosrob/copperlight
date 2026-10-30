@@ -239,27 +239,28 @@ struct StopwatchProvider: ResultProvider {
 /// What's running, for the empty launcher: the pomodoro (or break), the timer and the stopwatch, each ticking. Enter
 /// stops one after asking, since it's the first key pressed on opening. They come after the first event and before
 /// the rest (events score 100, 99.99, …), so a meeting about to start keeps Enter.
-@MainActor func runningClocks(pomodoro: Pomodoro, timer: Countdown, stopwatch: Stopwatch) -> [LauncherResult] {
+@MainActor func runningClocks(pomodoro: Pomodoro, timer: Countdown, stopwatch: Stopwatch,
+                              isOn: (Feature) -> Bool = { $0.isOn }) -> [LauncherResult] {
     let at = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
     var rows: [LauncherResult] = []
-    if let running = pomodoro.running {
+    if isOn(.pomodoro), let running = pomodoro.running {
         rows.append(LauncherResult(
             id: "clock:pomodoro", title: running.title, subtitle: "\(running.minutes) minutes · ends \(at(running.deadline))",
             icon: .symbol(running.isBreak == true ? "cup.and.saucer" : "timer"), score: 99.997, actionTitle: "Stop",
             action: { pomodoro.stop() }, confirm: "Stop the \(running.title.lowercased())?", ticking: .down(to: running.deadline)))
     }
-    if let running = timer.running {
+    if isOn(.timers), let running = timer.running {
         rows.append(LauncherResult(
             id: "clock:timer", title: running.label.isEmpty ? "Timer" : running.label,
             subtitle: "\(timerLength(running.seconds)) · ends \(at(running.deadline))", icon: .symbol("hourglass"), score: 99.996,
             actionTitle: "Stop", action: { timer.stop() }, confirm: "Stop the timer?", ticking: .down(to: running.deadline)))
     }
-    if let started = stopwatch.started {
+    if isOn(.stopwatch), let started = stopwatch.started {
         rows.append(LauncherResult(
             id: "clock:stopwatch", title: "Stopwatch", subtitle: "Started \(at(started))", icon: .symbol("stopwatch"), score: 99.995,
             actionTitle: "Stop", action: { stopwatch.stopAndSay() }, confirm: "Stop the stopwatch?", ticking: .up(from: started)))
     }
-    if KeepAwake.isOn { // `:awake`: counting down when it's for a while
+    if isOn(.keepAwake), KeepAwake.isOn { // `:awake`: counting down when it's for a while
         let until = KeepAwake.shared.until
         rows.append(LauncherResult(
             id: "clock:awake", title: "Keeping Awake", subtitle: until.map { "Until \(at($0))" } ?? "Until you stop it", icon: .symbol("sun.max"),

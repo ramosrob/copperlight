@@ -14,6 +14,11 @@ struct Verb: Sendable {
     var repeats = false // Enter keeps the panel open, for the next press (`:nudge left`)
     var run: (@MainActor @Sendable () -> Void)? = nil
     var targets: (@Sendable (String) async -> [LauncherResult])? = nil
+    var feature: Feature? = nil // nil: always there
+}
+
+extension [Verb] {
+    func belonging(to feature: Feature) -> [Verb] { map { var verb = $0; verb.feature = feature; return verb } }
 }
 
 /// The `:` commands of one panel. It gets every query that starts with `:`, and only those.
@@ -22,9 +27,12 @@ struct VerbProvider: ResultProvider {
     let verbs: [Verb]
     /// More rows for what's typed after `:` (the menus of the app in front), after the commands' own.
     var more: @Sendable (String) async -> [LauncherResult] = { _ in [] }
+    var isOn: @Sendable (Feature) -> Bool = { $0.isOn }
+    /// The commands of the features that are on.
+    private var shown: [Verb] { verbs.filter { $0.feature.map(isOn) ?? true } }
     /// The commands that take a name (`:quit `); `:!` is the shell's.
     var modes: [Mode] {
-        verbs.filter { $0.targets != nil && $0.keyword != "!" }.map { Mode(prefix: ":\($0.keyword) ", title: $0.title, icon: $0.icon) }
+        shown.filter { $0.targets != nil && $0.keyword != "!" }.map { Mode(prefix: ":\($0.keyword) ", title: $0.title, icon: $0.icon) }
     }
 
     func results(for query: String) async -> [LauncherResult] {
@@ -32,6 +40,7 @@ struct VerbProvider: ResultProvider {
         let text = query.dropFirst().trimmingCharacters(in: .whitespaces)
         let lower = text.lowercased()
         // Another name takes targets too: `:kill slack` is `:force quit slack`.
+        let verbs = shown
         let named = verbs.lazy.compactMap { verb in
             verb.targets == nil ? nil : ([verb.keyword] + (otherNames[verb.title] ?? [])).first { lower == $0 || lower.hasPrefix($0 + " ") }.map { (verb, $0) }
         }.first
@@ -40,7 +49,7 @@ struct VerbProvider: ResultProvider {
             let extensions = verbs.filter { $0.keyword.hasPrefix(verb.keyword + " ") }
             return rows(extensions, matching: text) + (await targets(text.dropFirst(name.count).trimmingCharacters(in: .whitespaces)))
         }
-        return rows(verbs, matching: text) + (text.isEmpty ? [] : await more(text))
+        return rows(verbs, matching: text) + (text.isEmpty || !isOn(.menus) ? [] : await more(text))
     }
 
     private func rows(_ verbs: [Verb], matching text: String) -> [LauncherResult] {
@@ -69,7 +78,7 @@ extension Verb {
         let nudge = { (direction: NudgeDirection, title: String, symbol: String) in
             Verb(keyword: "nudge \(direction)", title: "Nudge \(title)", icon: .symbol(symbol), repeats: true, run: { nudgeFrontWindow(direction) })
         }
-        return [
+        return ([
             // The window in front
             Verb(keyword: "minimize", title: "Minimize Window", icon: .symbol("minus"), run: { minimizeFrontWindow() }),
             Verb(keyword: "fullscreen", title: "Toggle Fullscreen", icon: .symbol("arrow.up.left.and.arrow.down.right"),
@@ -97,7 +106,7 @@ extension Verb {
             Verb(keyword: "restore", title: "Restore Window", icon: .symbol("arrow.uturn.backward"), run: { restoreFrontWindow() }),
             Verb(keyword: "close", title: "Close Window", icon: .symbol("xmark.square"), run: { closeFrontWindow() }),
             Verb(keyword: "window", title: "Switch to Window", icon: .symbol("macwindow.on.rectangle"), targets: { windowRows($0) }),
-        ] + layouts() + [
+        ] + layouts()).belonging(to: .windows) + [
             // Running apps
             Verb(keyword: "quit", title: "Quit Application", icon: .symbol("xmark"),
                  targets: { runningAppRows($0, verb: "Quit") { $0.terminate() } }),
@@ -113,6 +122,7 @@ extension Verb {
                  confirm: "Quit every app but the one in front? Apps with unsaved changes ask first.", run: { quitApps(keepingFront: true) }),
             Verb(keyword: "relaunch", title: "Relaunch Application", icon: .symbol("arrow.clockwise.circle"),
                  targets: { runningAppRows($0, verb: "Relaunch") { relaunch($0) } }),
+        ].belonging(to: .runningApps) + [
             // Files
             fileVerb("reveal", "Reveal in Finder", icon: .symbol("folder"), files: files) {
                 NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: $0)])
@@ -123,6 +133,7 @@ extension Verb {
             fileVerb("terminal", "Open in Terminal", icon: .symbol("terminal"), files: files) { path in
                 Task { openInTerminal(path, app: await files.terminalApp()) }
             },
+        ].belonging(to: .files) + [
             // The Mac
             Verb(keyword: "lock", title: "Lock Screen", icon: .symbol("lock.fill"), run: { lockScreen() }),
             Verb(keyword: "log out", title: "Log Out", icon: .symbol("rectangle.portrait.and.arrow.right"),
@@ -155,10 +166,13 @@ extension Verb {
                  }),
             Verb(keyword: "wifi", title: "Toggle Wi-Fi", icon: .symbol("wifi"),
                  showing: { wifiIsOn() ? "Turn Wi-Fi Off" : "Turn Wi-Fi On" }, run: { toggleWiFi() }),
+        ].belonging(to: .mac) + [
             Verb(keyword: "awake", title: "Keep Awake", icon: .symbol("sun.max"),
                  showing: { KeepAwake.isOn ? "Stop Keeping Awake" : "Keep Awake" }, run: { KeepAwake.shared.toggle() },
                  targets: { text in await MainActor.run { awakeRows(text) } }),
+        ].belonging(to: .keepAwake) + [
             Verb(keyword: "eject", title: "Eject Disk", icon: .symbol("eject"), targets: { ejectRows($0) }),
+        ].belonging(to: .mac) + [
             // Sound
             Verb(keyword: "play", title: "Play or Pause", icon: .symbol("playpause.fill"), run: { pressMediaKey(NX_KEYTYPE_PLAY) }),
             Verb(keyword: "next track", title: "Next Track", icon: .symbol("forward.fill"), run: { pressMediaKey(NX_KEYTYPE_NEXT) }),
@@ -170,8 +184,10 @@ extension Verb {
             Verb(keyword: "mute mic", title: "Toggle Microphone", icon: .symbol("mic.slash.fill"),
                  showing: { micIsMuted() ? "Unmute Microphone" : "Mute Microphone" }, run: { toggleMicMute() }),
             Verb(keyword: "output", title: "Switch Sound Output", icon: .symbol("hifispeaker"), targets: { outputRows($0) }),
+        ].belonging(to: .sound) + [
             Verb(keyword: "connect", title: "Connect Bluetooth Device", icon: .symbol("antenna.radiowaves.left.and.right"),
                  targets: { connectRows($0) }),
+        ].belonging(to: .bluetooth) + [
             Verb(keyword: "hidden files", title: "Toggle Hidden Files", icon: .symbol("eye"), run: {
                 // Finder reads it at launch, so it restarts (its windows come back).
                 runDetached("/bin/sh", ["-c", """
@@ -179,10 +195,13 @@ extension Verb {
                     defaults write com.apple.finder AppleShowAllFiles -bool $show && killall Finder
                     """], label: "Hidden Files")
             }),
+        ].belonging(to: .mac) + [
             Verb(keyword: "shortcut", title: "Run Shortcut", icon: .file("/System/Applications/Shortcuts.app"),
                  targets: { shortcutRows($0) }),
+        ].belonging(to: .shortcuts) + [
             // Listed here to be found (":shell"); Enter types ":! ", and ShellProvider takes every ":!" query.
             Verb(keyword: "!", title: "Run Shell Command", icon: .symbol("terminal"), targets: { _ in [] }),
+        ].belonging(to: .shell) + [
             // Copperlight
             Verb(keyword: "config", title: "Open Config", icon: .symbol("gearshape"), run: { NSWorkspace.shared.open(Config.file) }),
         ]

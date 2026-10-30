@@ -3,7 +3,7 @@
 Everything is optional: Copperlight works with no config at all. **Settings…** in the menu bar edits the same file.
 
 `~/.config/copperlight/config.toml` is created with commented examples on first run. **Settings…** in the menu bar
-edits it for you: the hotkey, currency, pomodoro, clipboard, file search, browser, and your commands and
+edits it for you: the hotkey, which features are on, currency, pomodoro, clipboard, file search, browser, and your commands and
 snippets. It changes only the lines it needs and keeps your comments, and a change it can't make
 cleanly (dotted keys, inline tables) isn't saved. Or edit the file in any editor: saved changes apply
 immediately. If the file doesn't parse, the launcher pins an error row at the top saying where the problem is
@@ -13,6 +13,9 @@ Deleting the file means all defaults.
 ```toml
 [hotkeys]
 launcher = "option+space"      # default; the only hotkey
+
+[features]
+stocks = false                 # everything is on by default; a feature's name = false turns it off (list below)
 
 [currency]
 default_target = "EUR"         # default. Used by "25 usd" (no target). When the source is the default
@@ -113,6 +116,60 @@ text = "Dear {cursor},\n\nBest,\nAlex"   # pasted, the cursor waits after "Dear 
 macOS lets two apps register the same hotkey without any error, and only one of them gets it. If it
 does nothing, another app probably has it: check other launchers and keyboard tools, chat and speech-to-text apps
 (several default to ⌥Space), or pick a different one.
+
+**Features** are all on until `[features]` turns one off with its name and `false`. Off means off: no rows, no chip,
+no `:` commands, no background work, nothing sent, no permission asked for. Settings › Features has the same
+switches. Finding apps, the search row and Copperlight's own rows are always on.
+
+| Name | What it is |
+|---|---|
+| `calculator` | `150 + 20%`, `30 is what % of 150`, `255 in hex` |
+| `currency` | `25 usd to eur`, `0.1 btc in eur`, and the rates it fetches |
+| `units` | `5 km in miles` |
+| `time_zones` | `time in tokyo` |
+| `dates` | `days until dec 25`, `in 3 weeks` |
+| `colors` | `#c87533`, `pick color`, `colors` |
+| `qr` | `qr` codes |
+| `stocks` | `stock aapl` |
+| `weather` | `weather lisbon`, and its Location Services ask |
+| `define` | `define serendipity` |
+| `spelling` | `spell recieve` |
+| `translate` | `translate bom dia` |
+| `emoji` | `emoji heart` |
+| `text_tools` | `uuid`, `password`, `lowercase`, `paste plain`… |
+| `large_type` | `large` and any text |
+| `mac_info` | `ip`, `battery`, `disk` |
+| `speed_test` | `speed` |
+| `processes` | `cpu`, `memory`, `port 3000` |
+| `clipboard` | Clipboard history: nothing is recorded while it's off |
+| `notes` | `note`, `add note`, `:delete note` |
+| `snippets` | Your `[[snippet]]`s |
+| `scripts` | The scripts folder |
+| `commands` | Your `[[command]]`s |
+| `contacts` | `contact ana` |
+| `calendar` | The next meeting, `meetings`, `add event` |
+| `reminders` | Reminders that are due, `add todo` |
+| `files` | Files and folders, `f invoice`, `~/` and `/` paths, `:reveal`, `:copy path`, `:open with`, `:trash`, `:terminal` |
+| `browser_tabs` | Your open tabs |
+| `bookmarks` | Bookmarks and history from your browser |
+| `system_settings` | System Settings' pages as rows |
+| `menus` | The menus of the app in front, after `:` |
+| `timers` | `timer 10m`, `timer until 15:00` |
+| `pomodoro` | `pomo` |
+| `stopwatch` | `stopwatch` |
+| `screen_text` | `copy text` from the screen |
+| `windows` | `:left`, `:maximize`, `:nudge left`, `:window`, `:layout` |
+| `running_apps` | `:quit`, `:hide`, `:relaunch`, `:quit others` |
+| `mac` | `:lock`, `:sleep`, `:dark`, `:wifi`, `:eject`, `:empty trash`, `:hidden files`, `screenshot`, `record` |
+| `sound` | `:play`, `:next track`, `:volume 30`, `:mute`, `:mute mic`, `:output` |
+| `keep_awake` | `:awake`, `:awake 2h` |
+| `bluetooth` | `:connect airpods` |
+| `shortcuts` | `:shortcut` |
+| `shell` | `:!` shell lines |
+| `homebrew` | Installing an app you don't have, from its row |
+
+A name that isn't one of these is an error row, so a typo doesn't go unnoticed. A clock already running when its
+feature is turned off keeps going until it ends.
 
 **Clipboard:** a screenshot is 1–5 MB, so `max_images` keeps the database small; images over 25 MB aren't
 recorded. `ignore_apps` replaces the default list, so keep the password managers in it. To find an

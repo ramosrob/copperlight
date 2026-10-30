@@ -8,6 +8,7 @@ struct Config: Decodable, Equatable {
     static let file = configDir.appending(path: "config.toml")
 
     var hotkeys = Hotkeys()
+    var features = Features()
     var currency = Currency()
     var clipboard = Clipboard()
     var files = Files()
@@ -32,6 +33,30 @@ struct Config: Decodable, Equatable {
             launcher = try c.decodeIfPresent(Hotkey.self, forKey: .launcher) ?? launcher
         }
         private enum CodingKeys: String, CodingKey { case launcher }
+    }
+
+    /// What's off, by name (`currency = false`). Everything else is on.
+    struct Features: Decodable, Equatable, Sendable {
+        var off: Set<Feature> = []
+
+        func isOn(_ feature: Feature) -> Bool { !off.contains(feature) && !Feature.parked.contains(feature) }
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: Name.self)
+            for key in c.allKeys {
+                guard let feature = Feature(rawValue: key.stringValue), !Feature.parked.contains(feature) else {
+                    throw DecodingError.dataCorruptedError(forKey: key, in: c, debugDescription: "no feature by that name (Settings › Features lists them)")
+                }
+                if try !c.decode(Bool.self, forKey: key) { off.insert(feature) }
+            }
+        }
+        private struct Name: CodingKey {
+            let stringValue: String
+            init(stringValue: String) { self.stringValue = stringValue }
+            var intValue: Int? { nil }
+            init?(intValue: Int) { nil }
+        }
     }
 
     struct Currency: Decodable, Equatable {
@@ -223,6 +248,7 @@ struct Config: Decodable, Equatable {
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         hotkeys = try c.decodeIfPresent(Hotkeys.self, forKey: .hotkeys) ?? hotkeys
+        features = try c.decodeIfPresent(Features.self, forKey: .features) ?? features
         currency = try c.decodeIfPresent(Currency.self, forKey: .currency) ?? currency
         clipboard = try c.decodeIfPresent(Clipboard.self, forKey: .clipboard) ?? clipboard
         files = try c.decodeIfPresent(Files.self, forKey: .files) ?? files
@@ -236,7 +262,7 @@ struct Config: Decodable, Equatable {
         commands = try c.decodeIfPresent([Command].self, forKey: .commands) ?? []
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? []
     }
-    private enum CodingKeys: String, CodingKey { case hotkeys, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, weather, commands = "command", snippets = "snippet" }
+    private enum CodingKeys: String, CodingKey { case hotkeys, features, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, weather, commands = "command", snippets = "snippet" }
 
     static func parse(_ text: String) throws -> Config {
         try TOMLDecoder().decode(Config.self, from: text)
@@ -267,6 +293,10 @@ struct Config: Decodable, Equatable {
 
         [hotkeys]
         launcher = "option+space"      # the only hotkey: everything else is a search away
+
+        [features]
+        # Everything is on. To turn something off, add its name = false; Settings › Features lists them all.
+        # stocks = false
 
         [currency]
         default_target = "EUR"         # for "25 usd" with no target ("25 eur" converts to USD)

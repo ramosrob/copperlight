@@ -3396,3 +3396,100 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(await provider(.refused).results(for: "weather").first?.completion == "weather ")
     #expect(try Config.parse("[weather]\ncity = \"Lisbon\"").weather.city == "Lisbon" && Config().weather.city == nil)
 }
+
+// MARK: Turning features off
+
+@Test func featuresInConfig() throws {
+    #expect(Config().features.off.isEmpty && Config().features.isOn(.currency))
+    let config = try Config.parse("[features]\ncurrency = false\nweather = true\nkeep_awake = false\n")
+    #expect(config.features.off == [.currency, .keepAwake] && !config.features.isOn(.currency) && config.features.isOn(.weather))
+    // A name that isn't a feature says so, typos and features not offered yet alike.
+    for wrong in ["curency", "photo_text"] {
+        #expect(throws: (any Error).self) { try Config.parse("[features]\n\(wrong) = false\n") }
+        do { _ = try Config.parse("[features]\n\(wrong) = false\n") } catch { #expect(Config.describe(error).hasPrefix("features.\(wrong): ")) }
+    }
+}
+
+/// Every feature Settings lists has a name, a line saying what it is, and a key docs/configuration.md explains.
+@Test func featureList() throws {
+    let docs = try String(contentsOf: URL(filePath: #filePath).deletingLastPathComponent().appending(path: "../docs/configuration.md"), encoding: .utf8)
+    for feature in Feature.listed {
+        #expect(!feature.name.isEmpty && !feature.about.isEmpty)
+        #expect(docs.contains("`\(feature.rawValue)`"), "\(feature.rawValue) isn't in docs/configuration.md")
+    }
+    #expect(!Feature.listed.contains(.photoText) && !Feature.photoText.isOn && !Config().features.isOn(.fileContent)) // not offered yet
+    #expect(Feature.Group.allCases.allSatisfy { group in Feature.listed.contains { $0.group == group } })
+}
+
+@Test func offFeaturesAnswerNothing() async {
+    let off = Gated(.calculator, CalculatorProvider(), isOn: { _ in false })
+    #expect(await off.results(for: "2+2").isEmpty)
+    #expect(await off.modeResults(for: "2+2").isEmpty)
+    #expect(!(await Gated(.calculator, CalculatorProvider(), isOn: { _ in true }).results(for: "2+2")).isEmpty)
+    #expect(Gated(.emoji, EmojiProvider(), isOn: { $0 != .emoji }).modes.isEmpty) // no chip either
+    #expect(!Gated(.emoji, EmojiProvider(), isOn: { _ in true }).modes.isEmpty)
+}
+
+@MainActor @Test func offFeaturesLoseTheirCommands() async {
+    let launcher = Verb.launcher(files: FileSearchProvider())
+    let feature = { (keyword: String) in launcher.first { $0.keyword == keyword }?.feature }
+    #expect(feature("left") == .windows && feature("window") == .windows && feature("layout") == .windows)
+    #expect(feature("quit") == .runningApps && feature("reveal") == .files && feature("lock") == .mac && feature("hidden files") == .mac)
+    #expect(feature("play") == .sound && feature("awake") == .keepAwake && feature("connect") == .bluetooth)
+    #expect(feature("shortcut") == .shortcuts && feature("!") == .shell)
+    #expect(launcher.contains { $0.keyword == "config" } && feature("config") == nil) // Copperlight's own, always there
+    #expect(Verb.notes(release: { _ in }).allSatisfy { $0.feature == .notes })
+
+    let verbs = VerbProvider(verbs: launcher, isOn: { $0 != .windows })
+    #expect(!(await verbs.results(for: ":left")).contains { $0.id == "verb:left" })
+    #expect(await verbs.results(for: ":qui").contains { $0.id == "verb:quit" })
+    #expect(!verbs.modes.contains { $0.prefix == ":window " } && verbs.modes.contains { $0.prefix == ":quit " })
+
+    let menu = LauncherResult(id: "menu:export", title: "Export…", icon: .symbol("doc"), score: 1, action: {})
+    #expect(await VerbProvider(verbs: [], more: { _ in [menu] }, isOn: { $0 != .menus }).results(for: ":export").isEmpty)
+    #expect(await VerbProvider(verbs: [], more: { _ in [menu] }, isOn: { _ in true }).results(for: ":export").count == 1)
+}
+
+@Test func offLookupsAndCaptures() async {
+    let lookups = LookupProvider(battery: { BatteryStatus(percent: 87, charging: false, onPower: false) },
+                                 listeners: { [Listener(pid: 812, command: "node", ports: [3000])] },
+                                 isOn: { ![.speedTest, .processes].contains($0) })
+    #expect(await lookups.results(for: "speed").isEmpty)
+    #expect(await lookups.results(for: "port").isEmpty)
+    #expect(await lookups.results(for: "cpu").isEmpty && lookups.modes.isEmpty)
+    #expect(await lookups.results(for: "battery").count == 1)
+    #expect(await LookupProvider(battery: { BatteryStatus(percent: 87, charging: false, onPower: false) }, isOn: { $0 != .macInfo })
+        .results(for: "battery").isEmpty)
+
+    let capture = CaptureProvider(addToNote: { _ in }, isOn: { ![.reminders, .mac].contains($0) })
+    #expect(capture.modes.map(\.prefix) == ["add note ", "add event "])
+    #expect(capture.results(for: "add").map(\.title) == ["Add to Note", "Add Calendar Event"])
+    #expect(capture.results(for: "add todo milk").isEmpty && capture.results(for: "screenshot").isEmpty)
+}
+
+@MainActor @Test func offClocksLeaveTheEmptyLauncher() throws {
+    let store = StateStore(file: try tempStateFile())
+    let (pomodoro, timer, watch) = (Pomodoro(store: store), Countdown(store: store), Stopwatch(store: store))
+    let now = Date(timeIntervalSince1970: Date.now.timeIntervalSince1970.rounded(.down))
+    store.set("pomodoro", Pomodoro.Running(deadline: now + 600, minutes: 25))
+    store.set("stopwatch", now - 60)
+    for clock in [pomodoro.restore, watch.restore] { clock() }
+    #expect(runningClocks(pomodoro: pomodoro, timer: timer, stopwatch: watch, isOn: { $0 != .pomodoro }).map(\.title) == ["Stopwatch"])
+    pomodoro.stop()
+    _ = watch.stop()
+}
+
+/// Settings writes `name = false` under [features], and removes it when it's on again (on is the default).
+@MainActor @Test func settingsTurnFeaturesOff() throws {
+    let file = FileManager.default.temporaryDirectory.appending(path: "settings-\(UUID().uuidString).toml")
+    defer { try? FileManager.default.removeItem(at: file) }
+    try Config.example.write(to: file, atomically: true, encoding: .utf8)
+    let model = SettingsModel(file: file)
+    model.feature(.currency).wrappedValue = false
+    let off = try String(contentsOf: file, encoding: .utf8)
+    #expect(off.contains("[features]\n") && off.contains("\ncurrency = false"))
+    #expect(try Config.parse(off).features.off == [.currency] && !model.feature(.currency).wrappedValue)
+    model.feature(.currency).wrappedValue = true
+    let on = try String(contentsOf: file, encoding: .utf8)
+    #expect(try Config.parse(on).features.off.isEmpty && !on.contains("\ncurrency = false") && model.problem == nil)
+}

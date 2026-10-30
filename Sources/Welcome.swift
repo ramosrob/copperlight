@@ -11,8 +11,10 @@ import UserNotifications
 enum Permission: CaseIterable {
     case accessibility, calendars, reminders, notifications, photos
 
-    /// The ones the features that are on use (Features.swift).
-    static var shown: [Permission] { allCases.filter { $0 != .photos || Feature.photoText.isOn } }
+    /// The ones the features that are on use (Settings › Features).
+    static var shown: [Permission] {
+        allCases.filter { [.calendars: Feature.calendar, .reminders: .reminders, .photos: .photoText][$0]?.isOn ?? true }
+    }
 
     enum Access { case granted, notAsked, denied }
 

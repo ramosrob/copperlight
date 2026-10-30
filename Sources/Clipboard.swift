@@ -212,14 +212,24 @@ func clipboardSection(_ date: Date, now: Date = .now, calendar: Calendar = .curr
     /// nil until a config.toml has loaded: a file that's broken at launch must not prune with defaults.
     var settings: Config.Clipboard? { didSet { prune() } }
     private var lastChange = NSPasteboard.general.changeCount // what's on the pasteboard at launch isn't new
-
-    init(store: ClipboardStore) {
-        self.store = store
-        let timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.poll() }
+    private var timer: Timer?
+    /// Clipboard history on (Settings › Features): the pasteboard is looked at twice a second. Off, not at all, and
+    /// what's copied meanwhile is never seen.
+    var recording = false {
+        didSet {
+            guard recording != oldValue else { return }
+            timer?.invalidate()
+            timer = nil
+            guard recording else { return }
+            lastChange = NSPasteboard.general.changeCount
+            timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.poll() }
+            }
+            timer?.tolerance = 0.25 // lets macOS batch the wakeups
         }
-        timer.tolerance = 0.25 // lets macOS batch the wakeups
     }
+
+    init(store: ClipboardStore) { self.store = store }
 
     private func poll() {
         let pasteboard = NSPasteboard.general

@@ -37,20 +37,23 @@ private func eventLength(_ when: CaptureDate) -> TimeInterval { when.duration > 
 /// with the same name replaces it (SearchModel drops the built-in row).
 struct CaptureProvider: ResultProvider {
     let addToNote: @MainActor @Sendable (String) -> Void
+    var isOn: @Sendable (Feature) -> Bool = { $0.isOn }
 
-    private struct Target { let name, title, icon: String }
-    private static let targets = [
-        Target(name: "note", title: "Add to Note", icon: "note.text"),
-        Target(name: "todo", title: "Add Reminder", icon: "checklist"),
-        Target(name: "event", title: "Add Calendar Event", icon: "calendar"),
+    private struct Target { let name, title, icon: String; let feature: Feature }
+    private static let all = [
+        Target(name: "note", title: "Add to Note", icon: "note.text", feature: .notes),
+        Target(name: "todo", title: "Add Reminder", icon: "checklist", feature: .reminders),
+        Target(name: "event", title: "Add Calendar Event", icon: "calendar", feature: .calendar),
     ]
+    private var targets: [Target] { Self.all.filter { isOn($0.feature) } }
 
     var modes: [Mode] {
-        Self.targets.map { Mode(prefix: "add \($0.name) ", title: $0.title, icon: .symbol($0.icon), hint: example($0.name)) }
+        targets.map { Mode(prefix: "add \($0.name) ", title: $0.title, icon: .symbol($0.icon), hint: example($0.name)) }
     }
 
     func results(for query: String) -> [LauncherResult] {
         if let rest = words(after: "add", in: query) { return addRows(rest) }
+        guard isOn(.mac) else { return [] }
         let tools = [("screenshot", "Screenshot", "Screenshot toolbar (⌘⇧5)", "camera.viewfinder", false),
                      ("record", "Record Screen", "Screenshot toolbar, ready to record", "record.circle", true)]
         return tools.compactMap { name, title, subtitle, icon, video in
@@ -65,12 +68,12 @@ struct CaptureProvider: ResultProvider {
 
     /// `rest` is what follows "add": a target and its text, or the start of a target's name.
     private func addRows(_ rest: String) -> [LauncherResult] {
-        if let target = Self.targets.first(where: { words(after: $0.name, in: rest) != nil }), let text = words(after: target.name, in: rest),
+        if let target = targets.first(where: { words(after: $0.name, in: rest) != nil }), let text = words(after: target.name, in: rest),
            !text.isEmpty {
             return [row(target, text: text)]
         }
         // "add", "add t", "add todo": the targets, and Enter types the name ("add todo ").
-        return Self.targets.filter { $0.name.hasPrefix(rest.lowercased()) }.map { target in
+        return targets.filter { $0.name.hasPrefix(rest.lowercased()) }.map { target in
             LauncherResult(id: "builtin:add \(target.name)", title: target.title, subtitle: "add \(target.name) " + example(target.name),
                            icon: .symbol(target.icon), score: 50, actionTitle: "Choose",
                            action: {}, completion: "add \(target.name) ")

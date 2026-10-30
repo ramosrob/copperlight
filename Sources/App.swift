@@ -61,7 +61,7 @@ struct BuiltinProvider: ResultProvider {
         // "settings" alone is System Settings' too, so only a plain fuzzy match there; "copperlight" goes straight to it.
         if let score = score(query, prefixOf: "copperlight settings", minLength: 3, title: "Copperlight Settings") {
             rows.append(LauncherResult(id: "builtin:settings", title: "Copperlight Settings",
-                                       subtitle: "Hotkey, clipboard, files, browser, commands, snippets", icon: .symbol("gearshape"),
+                                       subtitle: "Hotkey, features, clipboard, files, browser, commands, snippets", icon: .symbol("gearshape"),
                                        score: score, action: showSettings))
         }
         return rows
@@ -186,25 +186,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                 newNote: { [unowned self] in newNote($0) })
     private lazy var capture = CaptureProvider(addToNote: { [unowned self] in addToNote($0) })
     private lazy var verbs = VerbProvider(
-        verbs: Verb.launcher(files: files)
-            + (Feature.notes.isOn ? Verb.notes(release: { [unowned self] in releaseNote($0) }) : []),
+        verbs: Verb.launcher(files: files) + Verb.notes(release: { [unowned self] in releaseNote($0) }),
         more: { frontMenuRows($0) })
-    // Each provider with the feature it belongs to (none: always on); Features.swift says which are on.
+    // Each provider with the feature it belongs to (none: always on, or it asks per row); Settings › Features turns
+    // them off.
     private lazy var model = SearchModel(
         providers: ([(commands, .commands), (ScriptProvider(), .scripts), (snippets, .snippets), (builtins, nil),
-                     (EmojiProvider(), .quickTools), (DefineProvider(), .quickTools), (SpellProvider(), .quickTools),
-                     (translate, .quickTools), (StockProvider(), .quickTools), (weather, .quickTools), (meetings, nil), (reminders, nil), (contacts, nil), (TextToolProvider(), .quickTools),
-                     (ColorProvider(show: { [unowned self] in panel.show(typing: $0) }, store: .shared), .quickTools), (QRCodeProvider(), .quickTools), (LargeTypeProvider(), .quickTools),
-                     (ScreenTextProvider(show: { [unowned self] in panel.show(typing: $0) }), .quickTools), (capture, .notes), (apps, nil),
-                     (SettingsProvider(), .systemSettings), (CalculatorProvider(), nil), (currency, .quickTools), (UnitProvider(), .quickTools),
-                     (TimeZoneProvider(), .quickTools), (DateMathProvider(), .quickTools), (PomodoroProvider(pomodoro: pomodoro), .quickTools),
-                     (TimerProvider(clock: countdown), .quickTools),
-                     (StopwatchProvider(watch: stopwatch), .quickTools), (LookupProvider(), .quickTools), (files, nil),
-                     (FileContentProvider(files: files), .fileContent), (tabs, nil), (pages, nil), (web, nil)] as [(any ResultProvider, Feature?)])
-            .compactMap { $0.1?.isOn == false ? nil : $0.0 } + (photoText.map { [PhotoTextProvider(store: $0)] } ?? []),
-        exclusive: [FileSearchProvider.prefix: files, VerbProvider.prefix: verbs,
-                    ShellProvider.prefix: ShellProvider(state: .shared),
-                    "~": PathProvider(terminal: Self.terminal(files)), "/": PathProvider(terminal: Self.terminal(files))],
+                     (EmojiProvider(), .emoji), (DefineProvider(), .define), (SpellProvider(), .spelling),
+                     (translate, .translate), (StockProvider(), .stocks), (weather, .weather), (meetings, .calendar), (reminders, .reminders),
+                     (contacts, .contacts), (TextToolProvider(), .textTools),
+                     (ColorProvider(show: { [unowned self] in panel.show(typing: $0) }, store: .shared), .colors), (QRCodeProvider(), .qr),
+                     (LargeTypeProvider(), .largeType), (ScreenTextProvider(show: { [unowned self] in panel.show(typing: $0) }), .screenText),
+                     (capture, nil), (apps, nil), (SettingsProvider(), .systemSettings), (CalculatorProvider(), .calculator),
+                     (currency, .currency), (UnitProvider(), .units), (TimeZoneProvider(), .timeZones), (DateMathProvider(), .dates),
+                     (PomodoroProvider(pomodoro: pomodoro), .pomodoro), (TimerProvider(clock: countdown), .timers),
+                     (StopwatchProvider(watch: stopwatch), .stopwatch), (LookupProvider(), nil), (files, .files),
+                     (FileContentProvider(files: files), .fileContent), (tabs, .browserTabs), (pages, .bookmarks), (web, nil)] as [(any ResultProvider, Feature?)])
+            .map { provider, feature in feature.map { Gated($0, provider) } ?? provider } + (photoText.map { [PhotoTextProvider(store: $0)] } ?? []),
+        exclusive: [FileSearchProvider.prefix: Gated(.files, files), VerbProvider.prefix: verbs,
+                    ShellProvider.prefix: Gated(.shell, ShellProvider(state: .shared)),
+                    "~": Gated(.files, PathProvider(terminal: Self.terminal(files))), "/": Gated(.files, PathProvider(terminal: Self.terminal(files)))],
         frecency: .shared, idle: Self.upNext(meetings, reminders, clocks: { [unowned self] in
             runningClocks(pomodoro: pomodoro, timer: countdown, stopwatch: stopwatch)
                 + (suggestsApps ? suggestionRows(StateStore.shared.get(AppOpen.stateSection, as: [AppOpen].self) ?? []) : [])
@@ -219,7 +220,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// that are due, and the apps you open around now.
     nonisolated private static func upNext(_ meetings: MeetingsProvider, _ reminders: RemindersProvider,
                                            clocks: @escaping @MainActor @Sendable () -> [LauncherResult]) -> @Sendable () async -> [LauncherResult] {
-        { (await meetings.upNext() + reminders.upNext() + MainActor.run { clocks() }).sorted { $0.score > $1.score } }
+        {
+            let events = Feature.calendar.isOn ? await meetings.upNext() : [], due = Feature.reminders.isOn ? await reminders.upNext() : []
+            return (events + due + (await MainActor.run { clocks() })).sorted { $0.score > $1.score }
+        }
     }
     private var history: ClipboardHistory? // nil if clipboard.sqlite can't be opened
     private var historyError: String?
@@ -245,22 +249,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try? Config.example.write(to: Config.file, atomically: true, encoding: .utf8)
         }
         apply(Config()) // the "last valid config" if the file is broken from the start
-        if Feature.clipboard.isOn {
-            do {
-                // After the defaults above, so retention only prunes with a config that actually loaded.
-                history = ClipboardHistory(store: try ClipboardStore(path: ClipboardStore.file.path))
-                try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: ClipboardStore.file.path)
-            } catch {
-                historyError = error.localizedDescription
-            }
+        do {
+            // After the defaults above, so retention only prunes with a config that actually loaded. It records only
+            // while clipboard history is on (apply).
+            history = ClipboardHistory(store: try ClipboardStore(path: ClipboardStore.file.path))
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: ClipboardStore.file.path)
+            history?.recording = Feature.clipboard.isOn
+        } catch {
+            historyError = error.localizedDescription
         }
         reloadConfig()
-        if Feature.quickTools.isOn {
-            pomodoro.restore()
-            countdown.restore()
-            stopwatch.restore()
-            Task { _ = await TranslateProvider.languages() } // its language chips
-        }
+        // ponytail: turned off later, a clock already running keeps going until it ends; it's what you started.
+        if Feature.pomodoro.isOn { pomodoro.restore() }
+        if Feature.timers.isOn { countdown.restore() }
+        if Feature.stopwatch.isOn { stopwatch.restore() }
+        if Feature.translate.isOn { Task { _ = await TranslateProvider.languages() } } // its language chips
         watcher = DirectoryWatcher(configDir) { [unowned self] in
             reloadConfig()
             notes[mainNoteFile.path]?.reloadIfChanged()
@@ -381,8 +384,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func apply(_ config: Config) {
+        Feature.use(config.features)
         KeyboardShortcuts.setShortcut(config.hotkeys.launcher.shortcut, for: .toggleLauncher)
         history?.settings = config.clipboard
+        history?.recording = Feature.clipboard.isOn
         NotePanel.stylesMarkdown = config.notes.markdown
         notes.values.forEach { $0.restyle() }
         pomodoro.defaultMinutes = config.pomodoro.defaultMinutes
@@ -398,7 +403,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await pages.setBrowser(config.browser)
             await meetings.setBrowser(config.browser)
             await meetings.setShowsOnOpen(config.meetings.showOnOpen)
-            await pages.refresh()
+            if Feature.bookmarks.isOn { await pages.refresh() }
             await currency.setDefaultTarget(config.currency.defaultTarget)
             translate.setDefaultTarget(config.translate.defaultTarget)
             await files.setSettings(config.files)
@@ -410,11 +415,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Hours the first time, for a big library: on its own, and only one at a time (it says when it's busy).
         Task.detached(priority: .utility) { [photoIndexer] in await photoIndexer?.update() }
         Task { [apps, currency, pages, contacts, tabs] in
-            await tabs.refresh()
+            if Feature.browserTabs.isOn { await tabs.refresh() }
             await apps.rescan()
-            if Feature.quickTools.isOn { await currency.refreshIfStale() }
-            await pages.refresh()
-            await contacts.refresh()
+            if Feature.currency.isOn { await currency.refreshIfStale() }
+            if Feature.bookmarks.isOn { await pages.refresh() }
+            if Feature.contacts.isOn { await contacts.refresh() }
         }
     }
 }

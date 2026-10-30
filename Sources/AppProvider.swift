@@ -125,7 +125,7 @@ actor AppProvider: ResultProvider {
     /// closest first, below everything you have.
     private func installRows(_ query: String) -> [LauncherResult] {
         let typed = query.lowercased().trimmingCharacters(in: .whitespaces)
-        guard let brew, typed.count >= 3, !apps.contains(where: { $0.name.lowercased().hasPrefix(typed) }) else { return [] }
+        guard Feature.homebrew.isOn, let brew, typed.count >= 3, !apps.contains(where: { $0.name.lowercased().hasPrefix(typed) }) else { return [] }
         return casks.filter { $0.key.hasPrefix(typed) }.sorted { ($0.key.count, $0.key) < ($1.key.count, $1.key) }.prefix(2)
             .enumerated().map { index, cask in installRow(cask.token, name: cask.name, desc: cask.desc, brew: brew, score: -0.5 - Double(index) / 100) }
     }

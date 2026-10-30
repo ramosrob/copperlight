@@ -261,9 +261,11 @@ struct LookupProvider: ResultProvider {
     var addresses: @Sendable () -> [(address: String, interface: String)] = localAddresses
     var listeners: @Sendable () -> [Listener] = listeningProcesses
     var processes: @Sendable () -> [ProcessUsage] = readProcesses
+    var isOn: @Sendable (Feature) -> Bool = { $0.isOn }
 
     var modes: [Mode] {
-        [Mode(prefix: "port ", title: "Port", icon: .symbol("network"), hint: "A port number, like 3000"),
+        guard isOn(.processes) else { return [] }
+        return [Mode(prefix: "port ", title: "Port", icon: .symbol("network"), hint: "A port number, like 3000"),
          Mode(prefix: "cpu ", title: "Processes by CPU", icon: .symbol("cpu"), hint: "A name, or nothing for all"),
          Mode(prefix: "memory ", title: "Processes by Memory", icon: .symbol("memorychip"), hint: "A name, or nothing for all")]
     }
@@ -275,6 +277,18 @@ struct LookupProvider: ResultProvider {
 
     private func results(for query: String, limit: Int) async -> [LauncherResult] {
         let lower = query.lowercased().trimmingCharacters(in: .whitespaces)
+        if isOn(.processes), let rows = processAndPortRows(query, lower: lower, limit: limit) { return rows }
+        if isOn(.macInfo) {
+            if let score = named(lower, keyword: "ip", title: "IP Address") { return ipRows(score) }
+            if let score = named(lower, keyword: "battery", title: "Battery", from: 4) { return [batteryRow(score)] }
+            if let score = named(lower, keyword: "disk", title: "Disk Space") { return diskRows(score) }
+        }
+        if isOn(.speedTest), let score = named(lower, keyword: "speed", title: "Test Internet Speed", from: 5) { return [speedRow(score)] }
+        return []
+    }
+
+    /// `cpu`, `memory` and `port`: what's running and listening; nil when it's none of them.
+    private func processAndPortRows(_ query: String, lower: String, limit: Int) -> [LauncherResult]? {
         for (keyword, byMemory) in [("cpu", false), ("memory", true)] where lower == keyword || lower.hasPrefix(keyword + " ") {
             return processRows(lower.dropFirst(keyword.count).trimmingCharacters(in: .whitespaces), byMemory: byMemory, limit: limit)
         }
@@ -286,11 +300,7 @@ struct LookupProvider: ResultProvider {
         if let start = startRow(query, keyword: "port", title: "Port", hint: "What’s listening on a port: port 3000", symbol: "network") {
             return [start]
         }
-        if let score = named(lower, keyword: "ip", title: "IP Address") { return ipRows(score) }
-        if let score = named(lower, keyword: "battery", title: "Battery", from: 4) { return [batteryRow(score)] }
-        if let score = named(lower, keyword: "disk", title: "Disk Space") { return diskRows(score) }
-        if let score = named(lower, keyword: "speed", title: "Test Internet Speed", from: 5) { return [speedRow(score)] }
-        return []
+        return nil
     }
 
     /// 50, above apps, for the keyword: whole, or from `from` letters ("dis" is Discord's). Else its other names.

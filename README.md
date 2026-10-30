@@ -332,7 +332,8 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 ## Make it yours
 
 Everything lives in `~/.config/copperlight/config.toml`, created with commented examples on first run. Edit it in
-**Settings…** or by hand: changes apply when you save.
+**Settings…** or by hand: changes apply when you save. Settings › Features turns off whatever you don't use: its rows,
+its commands and anything it does in the background go with it.
 
 ```toml
 [[command]]

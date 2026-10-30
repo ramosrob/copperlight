@@ -4,8 +4,10 @@ One page with every feature: what you type, what you get, and what it needs. The
 [docs/guide.md](docs/guide.md) (how to use each one), [docs/configuration.md](docs/configuration.md) (config) and the reasons in [SPEC.md](SPEC.md). When a feature ships, it gets a
 line here.
 
-**Switched off for now** in [Sources/Features.swift](Sources/Features.swift), with their code kept: the text inside
-files and the text in photos. Everything else on this page is on.
+**Not offered yet**, with their code kept: the text inside files and the text in photos. Everything else on this page
+is on, and each one can be turned off: Settings › Features, or `[features]` in config.toml
+([configuration.md](docs/configuration.md)). Off means off: no rows, no commands, nothing in the background, nothing
+sent, no permission asked for.
 
 ## At a glance
 

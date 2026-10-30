@@ -4,8 +4,8 @@ Everything you can type, in detail. [What you can type](../README.md#what-you-ca
 version; [FEATURES.md](../FEATURES.md) lists every feature on one page, and [configuration.md](configuration.md) covers
 config.toml.
 
-> **Switched off for now**, with their code kept: the text inside files and photos. They're described below but
-> don't appear in the app yet.
+> **Not offered yet**, with their code kept: the text inside files and photos. They're described below but don't
+> appear in the app yet.
 
 | Key | Action |
 |---|---|
@@ -18,6 +18,13 @@ config.toml.
 
 The launcher is the only global hotkey, and the panel has no modifier keys: anything besides Enter is a
 command you type after `:`. Everything else (note, clipboard history, pomodoro…) is found by typing.
+
+**Turning features off:** everything below is on. Settings › Features has a switch for each feature, by group:
+answers (calculator, currency, weather…), yours (clipboard history, notes, calendar, files…), and windows and the
+Mac (`:left`, `:quit`, `:lock`, `:play`…). Off means off: no rows, no chip, no `:` commands, nothing in the
+background, nothing sent, no permission asked for, and its section leaves Settings. It's saved in config.toml as
+`name = false` under `[features]` ([configuration.md](configuration.md) lists the names). Finding apps, the search
+row and Copperlight's own rows are always on.
 
 Things to type: `saf`, `vsc`, `2^10 / 3`, `sqrt(2) * pi`, `20% of 150`, `255 in hex`, `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`,
 `25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), `39*8 usd`, `20% off 80`,

@@ -74,7 +74,7 @@ extension Verb {
                                       icon: .symbol("trash"), score: score, actionTitle: "Delete",
                                       action: { release(url); moveToTrash(url.path) }, confirm: "Move the note “\(note.title)” to the Trash?")
             }
-        })]
+        })].belonging(to: .notes)
     }
 }
 

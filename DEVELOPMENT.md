@@ -117,11 +117,12 @@ signed with the same one, or everyone grants Accessibility again after updating.
 ## How the code is laid out
 
 Each feature is a type conforming to `ResultProvider` (`Sources/Launcher.swift`): it gets every query and
-returns rows. Add it to the list in `Sources/App.swift`. Providers run at the same time on every keystroke, and
+returns rows. Add it to the list in `Sources/App.swift`, with the `Feature` (`Sources/Features.swift`) that turns it
+off: a new feature gets a case there, a line in Settings › Features and in docs/configuration.md. Providers run at the same time on every keystroke, and
 their rows show together once all have answered or 50 ms have passed; a slower one's rows merge in later, so
 answer well within 50 ms or rank your rows at the bottom. The next keystroke cancels the round. A provider that takes
 text after a name (`translate `) lists it in `modes`: typed, the name becomes a chip in the field and the query goes to
-that provider alone. A `:` command is a `Verb` (`Sources/Actions.swift`). Every file is listed below.
+that provider alone. A `:` command is a `Verb` (`Sources/Actions.swift`), with its feature too. Every file is listed below.
 
 - Swift 6 with strict concurrency, no warnings. Match the code around you: its naming, its comment density,
   comments that say why rather than what.
@@ -139,6 +140,7 @@ that provider alone. A `:` command is a `Verb` (`Sources/Actions.swift`). Every 
 ```
 Sources/
   App.swift                 entry point, menu bar item, hotkey, config loading, built-in rows (Note, Clipboard…)
+  Features.swift            what can be turned off (Settings › Features, `[features]`), and the wrapper that does it
   Launcher.swift            ResultProvider protocol, SearchModel (concurrent query + merge, frecency, what was picked for what was typed, recent queries for ↑),
                             panel + SwiftUI view, opening with the selected text
   Actions.swift             `:` commands: windows (Accessibility), running apps, files, the Mac; the selected text
