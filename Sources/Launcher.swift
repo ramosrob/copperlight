@@ -72,7 +72,7 @@ struct LauncherResult: Identifiable, Sendable {
     var confirm: String? = nil
     /// Rows get a header where this changes (clipboard: Today, Yesterday, Earlier).
     var section: String? = nil
-    /// A copper pill beside the title, for what's coming up ("in 9 min", "Now").
+    /// A pill in the accent beside the title, for what's coming up ("in 9 min", "Now").
     var badge: String? = nil
     /// A clock in that pill instead, ticking while the row is shown: a timer's time left, a stopwatch's time so far.
     var ticking: Ticking? = nil
@@ -647,16 +647,79 @@ extension NSImage {
     }
 }
 
+/// `[look] accent`: the color of the field's edge, the selection, chips and answers' titles. Copper, the icon's, unless
+/// you'd rather your Mac's accent color (System Settings › Appearance) or one of your own.
+enum Accent: Equatable, Sendable {
+    case copper, system, color(RGBColor)
+
+    /// Three shades: a light one, the main one, and a deep one that holds white text.
+    struct Shades: Equatable, Sendable { var light, main, deep: RGBColor }
+
+    /// The icon's C, top to side to bottom.
+    static let copperShades = Shades(light: RGBColor(red: 254, green: 186, blue: 122), main: RGBColor(red: 222, green: 151, blue: 96),
+                                     deep: RGBColor(red: 179, green: 110, blue: 66))
+
+    /// `system`: the Mac's accent color; copper when there's none to follow.
+    func shades(system: RGBColor?) -> Shades {
+        switch self {
+        case .copper: Self.copperShades
+        case .system: system.map(Self.shades(around:)) ?? Self.copperShades
+        case .color(let color): Self.shades(around: color)
+        }
+    }
+
+    /// Lighter and more vivid, and deeper and quieter, as copper's are.
+    private static func shades(around main: RGBColor) -> Shades {
+        let (hue, saturation, lightness) = main.components
+        return Shades(light: RGBColor(hue: hue, saturation: min(1, saturation * 1.3), lightness: min(0.88, lightness + 0.12)), main: main,
+                      deep: RGBColor(hue: hue, saturation: saturation * 0.75, lightness: max(0.16, lightness - 0.14)))
+    }
+
+    /// As config.toml writes it; nil for copper, the default.
+    var toml: String? {
+        switch self {
+        case .copper: nil
+        case .system: "system"
+        case .color(let color): color.hex
+        }
+    }
+}
+
+/// The accent in use, which every view reads, so a change in config.toml shows at once; with `system`, it follows the
+/// Mac's accent color as it changes.
+@MainActor @Observable final class Palette {
+    static let shared = Palette()
+    private(set) var shades = Accent.copperShades
+    @ObservationIgnored private var accent = Accent.copper
+
+    private init() {
+        NotificationCenter.default.addObserver(forName: NSColor.systemColorsDidChangeNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { Palette.shared.update() }
+        }
+    }
+
+    func use(_ accent: Accent) {
+        self.accent = accent
+        update()
+    }
+
+    private func update() {
+        let shades = accent.shades(system: RGBColor(NSColor.controlAccentColor))
+        if shades != self.shades { self.shades = shades }
+    }
+}
+
 extension Color {
-    /// The icon's C, top to side to bottom: its light copper, the main accent, and the deep end under white text.
-    static let copperLight = Color(red: 254 / 255, green: 186 / 255, blue: 122 / 255)
-    static let copper = Color(red: 222 / 255, green: 151 / 255, blue: 96 / 255)
-    static let copperDeep = Color(red: 179 / 255, green: 110 / 255, blue: 66 / 255)
+    /// The accent's shades (Palette): light, main, and the deep end under white text.
+    @MainActor static var accentLight: Color { Color(Palette.shared.shades.light) }
+    @MainActor static var accent: Color { Color(Palette.shared.shades.main) }
+    @MainActor static var accentDeep: Color { Color(Palette.shared.shades.deep) }
 }
 
 extension LinearGradient {
-    /// The icon's copper, side to bottom: the search field's edge, the welcome screen's title and button.
-    static var brand: LinearGradient { LinearGradient(colors: [.copper, .copperDeep], startPoint: .leading, endPoint: .trailing) }
+    /// The accent, side to bottom (the icon's copper, unless you chose another): the search field's edge, the welcome
+    /// screen's title and button.
+    @MainActor static var brand: LinearGradient { LinearGradient(colors: [.accent, .accentDeep], startPoint: .leading, endPoint: .trailing) }
 }
 
 /// The blur behind one piece of the panel. Its mask rounds the glass and, through the window's alpha, the
@@ -981,13 +1044,14 @@ struct Card: ViewModifier {
     }
 }
 
-/// The icon's C, in its copper, in the note's title and on the welcome screen.
+/// The icon's C, in its copper whatever the accent (it's the icon), in the note's title and on the welcome screen.
 struct BrandMark: View {
     var height: CGFloat = 24
 
     var body: some View {
+        let copper = Accent.copperShades
         Image("Mark").renderingMode(.template).resizable().scaledToFit().frame(height: height)
-            .foregroundStyle(LinearGradient(colors: [.copperLight, .copper], startPoint: .topLeading, endPoint: .bottomTrailing))
+            .foregroundStyle(LinearGradient(colors: [Color(copper.light), Color(copper.main)], startPoint: .topLeading, endPoint: .bottomTrailing))
     }
 }
 
@@ -1001,7 +1065,7 @@ struct Keycap: View {
             .padding(.horizontal, 4)
             .frame(minWidth: 18, minHeight: 18)
             .background(Color.primary.opacity(0.06), in: .rect(cornerRadius: 5))
-            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.copper.opacity(0.25), lineWidth: 0.5))
+            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.accent.opacity(0.25), lineWidth: 0.5))
     }
 }
 
@@ -1011,6 +1075,7 @@ private struct ResultRow: View {
     let result: LauncherResult
     let selected: Bool
     var offersPreview = false // "Preview ⇥": Tab opens the pane beside the list
+    @Environment(\.colorScheme) private var scheme // the badge's shade: a deep one doesn't read on dark in every accent
 
     var body: some View {
         HStack(spacing: 13) {
@@ -1018,9 +1083,9 @@ private struct ResultRow: View {
             Text(result.title).font(.system(size: 14.5)).lineLimit(1).layoutPriority(1)
             if let pill {
                 ViewThatFits(in: .horizontal) { // the title comes first: with the preview open, the badge steps aside
-                    pill.font(.system(size: 11.5, weight: .semibold)).monospacedDigit().foregroundStyle(Color.copperDeep)
+                    pill.font(.system(size: 11.5, weight: .semibold)).monospacedDigit().foregroundStyle(scheme == .dark ? Color.accentLight : Color.accentDeep)
                         .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(Color.copper.opacity(0.18), in: Capsule())
+                        .background(Color.accent.opacity(0.18), in: Capsule())
                         .fixedSize()
                     Color.clear.frame(width: 0, height: 0)
                 }
@@ -1071,15 +1136,15 @@ private struct SelectionWash: View {
     var body: some View {
         let dark = scheme == .dark
         RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(LinearGradient(colors: [.copper.opacity(dark ? 0.24 : 0.13), .copperDeep.opacity(dark ? 0.15 : 0.10)],
+            .fill(LinearGradient(colors: [.accent.opacity(dark ? 0.24 : 0.13), .accentDeep.opacity(dark ? 0.15 : 0.10)],
                                  startPoint: .leading, endPoint: .trailing))
-            .strokeBorder(Color.copper.opacity(dark ? 0.35 : 0.22), lineWidth: 0.5)
+            .strokeBorder(Color.accent.opacity(dark ? 0.35 : 0.22), lineWidth: 0.5)
     }
 }
 
 enum Ticking: Equatable, Sendable { case down(to: Date), up(from: Date) }
 
-/// A mode's name at the start of the field (`translate ` → Translate), in the selected row's copper.
+/// A mode's name at the start of the field (`translate ` → Translate), in the selected row's accent.
 private struct ModeChip: View {
     static let height: CGFloat = 34
     let mode: Mode
@@ -1098,9 +1163,9 @@ private struct ModeChip: View {
         .frame(height: Self.height)
         .background {
             Capsule()
-                .fill(LinearGradient(colors: [.copper.opacity(dark ? 0.24 : 0.13), .copperDeep.opacity(dark ? 0.15 : 0.10)],
+                .fill(LinearGradient(colors: [.accent.opacity(dark ? 0.24 : 0.13), .accentDeep.opacity(dark ? 0.15 : 0.10)],
                                      startPoint: .leading, endPoint: .trailing))
-                .strokeBorder(Color.copper.opacity(dark ? 0.35 : 0.22), lineWidth: 0.5)
+                .strokeBorder(Color.accent.opacity(dark ? 0.35 : 0.22), lineWidth: 0.5)
         }
         .fixedSize()
         .accessibilityLabel(mode.title)

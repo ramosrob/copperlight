@@ -3856,3 +3856,42 @@ private struct Asking: ResultProvider {
     #expect(ClipboardHistory.pollInterval(idle: 0) == 0.5 && ClipboardHistory.pollInterval(idle: 59) == 0.5)
     #expect(ClipboardHistory.pollInterval(idle: 61) == 2)
 }
+
+// MARK: Your accent color
+
+@Test func accentInConfig() throws {
+    #expect(Config().look.accent == .copper)
+    #expect(try Config.parse("[look]\naccent = \"system\"").look.accent == .system)
+    #expect(try Config.parse("[look]\naccent = \"#3478F6\"").look.accent == .color(RGBColor(red: 52, green: 120, blue: 246)))
+    #expect(try Config.parse("[look]\naccent = \"copper\"").look.accent == .copper)
+    #expect(throws: (any Error).self) { try Config.parse("[look]\naccent = \"bluish\"") }
+}
+
+/// Copper is the icon's three shades exactly; any other color gets its own, a lighter one and a deeper one.
+@Test func accentShades() {
+    let copper = Accent.copper.shades(system: nil)
+    #expect(copper.main == RGBColor(red: 222, green: 151, blue: 96) && copper.light == RGBColor(red: 254, green: 186, blue: 122))
+    #expect(copper.deep == RGBColor(red: 179, green: 110, blue: 66))
+    let blue = RGBColor(red: 52, green: 120, blue: 246)
+    let shades = Accent.color(blue).shades(system: nil)
+    #expect(shades.main == blue && shades.light.lightness > blue.lightness && shades.deep.lightness < blue.lightness)
+    #expect(Accent.system.shades(system: blue).main == blue)
+    #expect(Accent.system.shades(system: nil) == copper) // nothing to follow: copper
+}
+
+/// The Look section writes `[look] accent`; copper, the default, removes it.
+@MainActor @Test func settingsAccent() throws {
+    let file = FileManager.default.temporaryDirectory.appending(path: "settings-\(UUID().uuidString).toml")
+    defer { try? FileManager.default.removeItem(at: file) }
+    try Config.example.write(to: file, atomically: true, encoding: .utf8)
+    let model = SettingsModel(file: file)
+    model.accent.wrappedValue = .color(RGBColor(red: 52, green: 120, blue: 246))
+    var text = try String(contentsOf: file, encoding: .utf8)
+    #expect(text.contains("[look]") && text.contains("\naccent = \"#3478f6\"") && model.problem == nil)
+    model.accent.wrappedValue = .system
+    text = try String(contentsOf: file, encoding: .utf8)
+    #expect(try Config.parse(text).look.accent == .system)
+    model.accent.wrappedValue = .copper
+    text = try String(contentsOf: file, encoding: .utf8)
+    #expect(!text.contains("\naccent = ") && model.config.look.accent == .copper)
+}

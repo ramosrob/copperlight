@@ -21,6 +21,9 @@ stocks = false                 # everything is on by default; a feature's name =
 translate = "t"                # your own words beside the built-in ones (list below): t bom dia, or t and Tab
 commands = [";", ">"]          # ;left and >left, as :left
 
+[look]
+accent = "system"              # copper (the default), system (your Mac's accent color), or a color: "#3478f6"
+
 [currency]
 default_target = "EUR"         # default. Used by "25 usd" (no target). When the source is the default
                                # itself ("25 eur"), it converts to USD (to EUR if the default is USD).
@@ -192,6 +195,12 @@ switches. Finding apps, the search row and Copperlight's own rows are always on.
 
 A name that isn't one of these is an error row, so a typo doesn't go unnoticed. A clock already running when its
 feature is turned off keeps going until it ends.
+
+**The accent**, `[look] accent`, colors the field's edge, the selected row, chips and the titles over answers:
+`"copper"`, the icon's (the default), `"system"` for the color chosen in System Settings › Appearance (it follows it
+when you change it), or any color, `"#3478f6"` (`rgb(…)` and `hsl(…)` too). Copperlight makes a lighter and a deeper
+shade from it, as copper has. Settings › General › Look has the same choice and a color picker. The icon and its C in
+the welcome screen stay copper.
 
 **Keywords**, the words that start something (`translate`, `:`), keep working, and `[keywords]` adds your own:
 `translate = "t"`, or several, `translate = ["t", "tr"]`. Your word counts alone, before a space (`t bom dia`), and

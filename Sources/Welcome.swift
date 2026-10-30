@@ -180,7 +180,7 @@ private struct WelcomeView: View {
     var body: some View {
         VStack(spacing: 0) {
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 96, height: 96)
-                .shadow(color: .copper.opacity(0.3), radius: 22, y: 10)
+                .shadow(color: .accent.opacity(0.3), radius: 22, y: 10)
                 .rise(shown, 0)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("Welcome to")
@@ -218,7 +218,7 @@ private struct WelcomeView: View {
             Row(symbol: "power", title: "Open at Login", detail: "Ready the moment your Mac starts") {
                 Toggle("Open at Login", isOn: Binding(get: { model.launchAtLogin },
                                                       set: { model.launchAtLogin = setLaunchAtLogin($0) }))
-                    .toggleStyle(.switch).labelsHidden().tint(.copper)
+                    .toggleStyle(.switch).labelsHidden().tint(.accent)
             }
             .modifier(Tray()).padding(.top, 10).rise(shown, 0.28)
 
@@ -237,12 +237,12 @@ private struct WelcomeView: View {
         .padding(.horizontal, 44).padding(.top, 14).padding(.bottom, 26)
         .frame(width: 600)
         .background(alignment: .top) {
-            // The icon's copper as a soft light behind it, lighter on the left and deeper on the right.
+            // The accent as a soft light behind it, lighter on the left and deeper on the right.
             let strength = scheme == .dark ? 0.3 : 0.17
             ZStack {
-                RadialGradient(colors: [.copper.opacity(strength), .clear], center: UnitPoint(x: 0.3, y: 0),
+                RadialGradient(colors: [.accent.opacity(strength), .clear], center: UnitPoint(x: 0.3, y: 0),
                                startRadius: 0, endRadius: 330)
-                RadialGradient(colors: [.copperDeep.opacity(strength), .clear], center: UnitPoint(x: 0.72, y: 0.04),
+                RadialGradient(colors: [.accentDeep.opacity(strength), .clear], center: UnitPoint(x: 0.72, y: 0.04),
                                startRadius: 0, endRadius: 300)
             }
             .frame(height: 440).ignoresSafeArea()
@@ -393,10 +393,10 @@ private struct PillButtonStyle: ButtonStyle {
                 .background {
                     if prominent {
                         Capsule().fill(LinearGradient.brand).brightness(hovering ? 0.06 : 0)
-                            .shadow(color: .copper.opacity(0.35), radius: 14, y: 6)
+                            .shadow(color: .accent.opacity(0.35), radius: 14, y: 6)
                     } else {
                         Capsule().fill(Color.primary.opacity(hovering ? 0.1 : 0.06))
-                            .overlay(Capsule().strokeBorder(Color.copper.opacity(0.3), lineWidth: 0.5))
+                            .overlay(Capsule().strokeBorder(Color.accent.opacity(0.3), lineWidth: 0.5))
                     }
                 }
                 .contentShape(Capsule())

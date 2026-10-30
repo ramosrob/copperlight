@@ -336,7 +336,8 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 Everything lives in `~/.config/copperlight/config.toml`, created with commented examples on first run. Edit it in
 **Settings…** or by hand: changes apply when you save. Settings › Features turns off whatever you don't use: its rows,
 its commands and anything it does in the background go with it. Settings › Keywords gives any keyword words of your
-own: `t` for `translate`, `;` for `:`.
+own: `t` for `translate`, `;` for `:`. Settings › General › Look trades copper for your Mac's accent color or any
+color you like.
 
 ```toml
 [[command]]

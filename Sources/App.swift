@@ -393,6 +393,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func apply(_ config: Config) {
         Feature.use(config.features)
+        Palette.shared.use(config.look.accent)
         KeyboardShortcuts.setShortcut(config.hotkeys.launcher.shortcut, for: .toggleLauncher)
         history?.settings = config.clipboard
         history?.recording = Feature.clipboard.isOn

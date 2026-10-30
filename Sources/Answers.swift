@@ -98,14 +98,14 @@ extension Color {
     }
 }
 
-/// The small copper capitals over an answer.
+/// The small capitals over an answer, in the accent.
 private struct Kicker: View {
     let text: String
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Text(text.uppercased()).font(.system(size: 11.5, weight: .semibold)).tracking(0.5)
-            .foregroundStyle(scheme == .dark ? Color.copper : Color.copperDeep)
+            .foregroundStyle(scheme == .dark ? Color.accent : Color.accentDeep)
     }
 }
 
@@ -132,12 +132,12 @@ struct PersonTile: View {
                 if let photo = card.photo {
                     Image(decorative: photo, scale: 1).resizable().scaledToFill()
                 } else {
-                    Text(card.initials).font(.system(size: 30, weight: .semibold)).foregroundStyle(scheme == .dark ? Color.copper : Color.copperDeep)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.copper.opacity(0.2))
+                    Text(card.initials).font(.system(size: 30, weight: .semibold)).foregroundStyle(scheme == .dark ? Color.accent : Color.accentDeep)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.accent.opacity(0.2))
                 }
             }
             .frame(width: 84, height: 84).clipShape(Circle())
-            .overlay(Circle().strokeBorder(Color.copper.opacity(0.35))).padding(.bottom, 10)
+            .overlay(Circle().strokeBorder(Color.accent.opacity(0.35))).padding(.bottom, 10)
             Text(card.name).font(.system(size: 20, weight: .semibold)).lineLimit(2).multilineTextAlignment(.center)
             // "Product Designer · Northwind" on a line, else each on its own: never a "·" starting the second line.
             let line = [card.job, card.company].filter { !$0.isEmpty }
@@ -253,8 +253,8 @@ struct DictionaryCardView: View {
             }
             ForEach(Array(entry.parts.enumerated()), id: \.offset) { _, part in
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(part.name).font(.system(size: 12.5, weight: .semibold)).italic().foregroundStyle(Color.copper)
-                        .padding(.horizontal, 10).frame(height: 22).background(Color.copper.opacity(0.15), in: Capsule())
+                    Text(part.name).font(.system(size: 12.5, weight: .semibold)).italic().foregroundStyle(Color.accent)
+                        .padding(.horizontal, 10).frame(height: 22).background(Color.accent.opacity(0.15), in: Capsule())
                     ForEach(Array(part.senses.enumerated()), id: \.offset) { index, sense in
                         HStack(alignment: .firstTextBaseline, spacing: 10) {
                             if part.senses.count > 1 { Text("\(index + 1)").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary) }
@@ -269,7 +269,7 @@ struct DictionaryCardView: View {
                 }
             }
             if let origin = entry.origin {
-                (Text("ORIGIN  ").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.copper) + Text(origin).font(.system(size: 12.5)))
+                (Text("ORIGIN  ").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.accent) + Text(origin).font(.system(size: 12.5)))
                     .foregroundStyle(.secondary).lineLimit(2)
             }
             Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
@@ -317,7 +317,7 @@ struct CalculationBand: View {
     private var expression: some View {
         HStack(alignment: .firstTextBaseline, spacing: 14) {
             Text(typed).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
-            Text("=").foregroundStyle(Color.copper)
+            Text("=").foregroundStyle(Color.accent)
         }
         .font(.system(size: 28)).monospacedDigit()
     }
@@ -343,7 +343,7 @@ struct CurrencyBand: View {
                     Text(card.fromName).font(.system(size: 12.5)).foregroundStyle(quiet)
                 }
                 .padding(.bottom, 4)
-                Image(systemName: "arrow.right").font(.system(size: 22, weight: .medium)).foregroundStyle(Color.copper).padding(.bottom, 16)
+                Image(systemName: "arrow.right").font(.system(size: 22, weight: .medium)).foregroundStyle(Color.accent).padding(.bottom, 16)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(card.to).font(.system(size: 56, weight: .semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
                     Text(card.toName).font(.system(size: 12.5)).foregroundStyle(quiet)
@@ -478,7 +478,7 @@ struct WeekCardView: View {
                                 }
                                 .padding(.horizontal, 7).padding(.vertical, 5)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.copper.opacity(event.past ? 0.10 : 0.22), in: .rect(cornerRadius: 7))
+                                .background(Color.accent.opacity(event.past ? 0.10 : 0.22), in: .rect(cornerRadius: 7))
                                 .opacity(event.past ? 0.5 : 1)
                             }
                             if day.more > 0 { Text("+\(day.more) more").font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 7) }
@@ -531,7 +531,7 @@ private struct DayRange: View {
             let span = max(highest - lowest, 1), width = geometry.size.width
             Capsule().fill(Color.primary.opacity(0.1))
                 .overlay(alignment: .leading) {
-                    Capsule().fill(LinearGradient(colors: [Color(red: 0.45, green: 0.72, blue: 0.85), .copper], startPoint: .leading, endPoint: .trailing))
+                    Capsule().fill(LinearGradient(colors: [Color(red: 0.45, green: 0.72, blue: 0.85), .accent], startPoint: .leading, endPoint: .trailing))
                         .frame(width: max(width * (high - low) / span, 6))
                         .offset(x: width * (low - lowest) / span)
                 }
@@ -549,8 +549,8 @@ struct MeetingBand: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Text(card.soon).font(.system(size: 12.5, weight: .semibold)).monospacedDigit()
-                    .foregroundStyle(scheme == .dark ? Color.copper : Color.copperDeep)
-                    .padding(.horizontal, 10).frame(height: 24).background(Color.copper.opacity(0.2), in: Capsule())
+                    .foregroundStyle(scheme == .dark ? Color.accent : Color.accentDeep)
+                    .padding(.horizontal, 10).frame(height: 24).background(Color.accent.opacity(0.2), in: Capsule())
                 Kicker(text: "Next meeting")
                 Spacer()
                 Text(card.calendar).font(.system(size: 12)).foregroundStyle(.secondary)
@@ -637,7 +637,7 @@ private struct SpeedTile: View {
         let (value, unit) = speedParts(bitsPerSecond)
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: symbol).font(.system(size: 12, weight: .bold)).foregroundStyle(Color.copper)
+                Image(systemName: symbol).font(.system(size: 12, weight: .bold)).foregroundStyle(Color.accent)
                 Text(label).font(.system(size: 13)).foregroundStyle(.secondary)
             }
             HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -675,12 +675,12 @@ private struct StockChart: View {
                 path.closeSubpath()
             }
             if closes.count > 1 {
-                area.fill(LinearGradient(colors: [.copper.opacity(0.28), .copper.opacity(0)], startPoint: .top, endPoint: .bottom))
+                area.fill(LinearGradient(colors: [.accent.opacity(0.28), .accent.opacity(0)], startPoint: .top, endPoint: .bottom))
                 if let previousClose {
                     Path { $0.addLines([CGPoint(x: 0, y: y(previousClose)), CGPoint(x: size.width, y: y(previousClose))]) }
                         .stroke(Color.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
                 }
-                line.stroke(Color.copper, style: StrokeStyle(lineWidth: 2, lineJoin: .round))
+                line.stroke(Color.accent, style: StrokeStyle(lineWidth: 2, lineJoin: .round))
             }
         }
     }

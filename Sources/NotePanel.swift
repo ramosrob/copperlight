@@ -127,9 +127,6 @@ final class NotePanel: NSPanel, NSTextViewDelegate, NSWindowDelegate {
         textView.drawsBackground = false
         textView.isRichText = false
         textView.typingAttributes = base
-        textView.linkTextAttributes = [.foregroundColor: NSColor(Color.copper), .cursor: NSCursor.pointingHand] // underlined below, checkboxes not
-        textView.insertionPointColor = NSColor(Color.copper)
-        textView.selectedTextAttributes = [.backgroundColor: NSColor(Color.copper).withAlphaComponent(0.22)]
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
@@ -187,6 +184,10 @@ final class NotePanel: NSPanel, NSTextViewDelegate, NSWindowDelegate {
     /// ponytail: the whole note, each keystroke; restyle only the edited paragraphs if long notes ever lag.
     func restyle() {
         header.title = noteTitle(text) ?? "New Note"
+        // The accent's, again each time: it may have changed (Settings › General › Look).
+        textView.linkTextAttributes = [.foregroundColor: NSColor(Color.accent), .cursor: NSCursor.pointingHand] // underlined below, checkboxes not
+        textView.insertionPointColor = NSColor(Color.accent)
+        textView.selectedTextAttributes = [.backgroundColor: NSColor(Color.accent).withAlphaComponent(0.22)]
         guard let storage = textView.textStorage else { return }
         storage.beginEditing()
         storage.setAttributes(base, range: NSRange(location: 0, length: storage.length))
@@ -202,7 +203,7 @@ final class NotePanel: NSPanel, NSTextViewDelegate, NSWindowDelegate {
     }
 
     private func attributes(_ style: MarkdownStyle, at range: NSRange) -> [NSAttributedString.Key: Any] {
-        let copper = NSColor(Color.copper)
+        let copper = NSColor(Color.accent)
         switch style {
         case .heading(let level): return [.font: NSFont.systemFont(ofSize: [20, 17, 15][min(max(level, 1), 3) - 1], weight: level < 3 ? .bold : .semibold)]
         case .bold: return [.font: NSFont.systemFont(ofSize: 14, weight: .bold)]

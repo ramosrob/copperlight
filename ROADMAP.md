@@ -55,7 +55,7 @@ Roughly in that order, then a few weeks of daily use with fixes only.
 - **Extending it:** script rows with live output and a choice of arguments; `copperlight choose`, lines from a
   pipe as rows; a URL scheme and Shortcuts actions; a
   starter library of commands, and importers for snippets and quicklinks from other apps.
-- **Look and feel:** themes and custom colors; text size, and which screen it opens on; switching the keyboard layout from the field; a double-tapped modifier as the hotkey (still one hotkey).
+- **Look and feel:** themes; text size, and which screen it opens on; switching the keyboard layout from the field; a double-tapped modifier as the hotkey (still one hotkey).
 - **Usage stats**, kept on your Mac.
 
 ## Done

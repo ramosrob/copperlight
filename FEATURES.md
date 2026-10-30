@@ -70,6 +70,8 @@ Keywords, or `[keywords]` (`translate = "t"`, `commands = ";"`).
 
 - **One hotkey** opens and hides it (`[hotkeys] launcher`, ⌥Space by default). It's the only global hotkey:
   everything else is found by typing.
+- **Your color:** the field's edge, the selected row, chips and the titles over answers are copper, the icon's, or
+  your Mac's accent color, or any color you pick (Settings › General › Look, `[look] accent`).
 - **Moves smoothly:** it springs open, the card comes out of the field and glides to its rows and answers, and the
   selection glides from row to row; the rows themselves change at once, so typing never waits. The weather and a
   stock show their card's shape at once, with the place or ticker, and fill it in when the answer comes. With Reduce Motion on (System Settings ›
@@ -465,8 +467,8 @@ The row shows the title and date Copperlight read before you press Enter; a noti
 
 ## Settings
 
-**Settings…** in the menu bar, or `copperlight settings` in the launcher. A pane per group: General (hotkey, Open at
-Login, currency, translate to, notes, weather, pomodoro), Launcher (what the empty launcher shows, what it learns and
+**Settings…** in the menu bar, or `copperlight settings` in the launcher. A pane per group: General (hotkey, Open at Login, the accent color,
+currency, translate to, notes, weather, pomodoro), Launcher (what the empty launcher shows, what it learns and
 Forget, answer cards), Features (a switch for each), Keywords (your own words for each keyword), Clipboard (how much to keep, apps not recorded), Files (folders
 searched, names hidden, app descriptions online or not),
 Browser (where links open, which profile), Commands and Snippets (add, edit, delete), and About (version, license,

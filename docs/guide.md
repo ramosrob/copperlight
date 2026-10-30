@@ -19,6 +19,10 @@ config.toml.
 The launcher is the only global hotkey, and the panel has no modifier keys: anything besides Enter is a
 command you type after `:`. Everything else (note, clipboard history, pomodoro…) is found by typing.
 
+**Your color:** Settings › General › Look sets the accent, the color of the field's edge, the selected row, chips
+and the titles over answers: Copper (the icon's), Your Mac's accent color (it follows System Settings › Appearance),
+or Your own color, from a color picker. It's `[look] accent` in config.toml.
+
 It springs open, its card comes out of the field and glides to the rows and answers, and the selection glides as you
 move. The weather and a stock show their card's shape at once, with the place or ticker, and fill it in when the
 answer comes; with Reduce Motion

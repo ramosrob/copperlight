@@ -83,7 +83,7 @@ private struct LargeTypeView: View {
             .multilineTextAlignment(.center).foregroundStyle(.white)
             .padding(.horizontal, 64).padding(.vertical, 40)
             .background(RoundedRectangle(cornerRadius: 44, style: .continuous).fill(.black.opacity(0.82)))
-            .overlay(RoundedRectangle(cornerRadius: 44, style: .continuous).strokeBorder(Color.copper.opacity(0.45), lineWidth: 1.5))
+            .overlay(RoundedRectangle(cornerRadius: 44, style: .continuous).strokeBorder(Color.accent.opacity(0.45), lineWidth: 1.5))
             .padding(80)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

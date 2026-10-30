@@ -7,6 +7,13 @@ struct RGBColor: Equatable, Sendable {
     var hex: String { "#" + [red, green, blue].map { String(format: "%02x", $0) }.joined() }
     var rgb: String { "rgb(\(red), \(green), \(blue))" }
     var hsl: String {
+        let (hue, saturation, lightness) = components
+        return "hsl(\(Int(hue.rounded()) % 360), \(Int((saturation * 100).rounded()))%, \(Int((lightness * 100).rounded()))%)"
+    }
+    var lightness: Double { components.lightness }
+
+    /// Hue in degrees (0–360), saturation and lightness 0–1.
+    var components: (hue: Double, saturation: Double, lightness: Double) {
         let (r, g, b) = (Double(red) / 255, Double(green) / 255, Double(blue) / 255)
         let high = max(r, g, b), low = min(r, g, b), spread = high - low
         let lightness = (high + low) / 2
@@ -17,8 +24,7 @@ struct RGBColor: Equatable, Sendable {
         case g: 60 * ((b - r) / spread + 2)
         default: 60 * ((r - g) / spread + 4)
         }
-        let degrees = Int(hue.rounded()) % 360
-        return "hsl(\(degrees < 0 ? degrees + 360 : degrees), \(Int((saturation * 100).rounded()))%, \(Int((lightness * 100).rounded()))%)"
+        return (hue < 0 ? hue + 360 : hue, saturation, lightness)
     }
 
     /// hue in degrees, saturation and lightness 0–1.

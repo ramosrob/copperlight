@@ -10,6 +10,7 @@ struct Config: Decodable, Equatable {
     var hotkeys = Hotkeys()
     var features = Features()
     var keywords = Keywords()
+    var look = Look()
     var currency = Currency()
     var clipboard = Clipboard()
     var files = Files()
@@ -95,6 +96,27 @@ struct Config: Decodable, Equatable {
             }
             return nil
         }
+    }
+
+    /// `accent`: "copper" (the default), "system" for your Mac's accent color, or a color: "#3478f6".
+    struct Look: Decodable, Equatable, Sendable {
+        var accent = Accent.copper
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            guard let text = try c.decodeIfPresent(String.self, forKey: .accent)?.trimmingCharacters(in: .whitespaces) else { return }
+            switch text.lowercased() {
+            case "copper": accent = .copper
+            case "system": accent = .system
+            default:
+                guard let color = parseColor(text)?.color else {
+                    throw DecodingError.dataCorruptedError(forKey: .accent, in: c, debugDescription: "a color like \"#3478f6\", or \"copper\" or \"system\"")
+                }
+                accent = .color(color)
+            }
+        }
+        private enum CodingKeys: String, CodingKey { case accent }
     }
 
     private struct Name: CodingKey {
@@ -350,6 +372,7 @@ struct Config: Decodable, Equatable {
         hotkeys = try c.decodeIfPresent(Hotkeys.self, forKey: .hotkeys) ?? hotkeys
         features = try c.decodeIfPresent(Features.self, forKey: .features) ?? features
         keywords = try c.decodeIfPresent(Keywords.self, forKey: .keywords) ?? keywords
+        look = try c.decodeIfPresent(Look.self, forKey: .look) ?? look
         currency = try c.decodeIfPresent(Currency.self, forKey: .currency) ?? currency
         clipboard = try c.decodeIfPresent(Clipboard.self, forKey: .clipboard) ?? clipboard
         files = try c.decodeIfPresent(Files.self, forKey: .files) ?? files
@@ -367,7 +390,7 @@ struct Config: Decodable, Equatable {
         commands = try c.decodeIfPresent([Command].self, forKey: .commands) ?? []
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? []
     }
-    private enum CodingKeys: String, CodingKey { case hotkeys, features, keywords, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, reminders, timers, learning, answers, weather, commands = "command", snippets = "snippet" }
+    private enum CodingKeys: String, CodingKey { case hotkeys, features, keywords, look, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, reminders, timers, learning, answers, weather, commands = "command", snippets = "snippet" }
 
     static func parse(_ text: String) throws -> Config {
         try TOMLDecoder().decode(Config.self, from: text)
@@ -407,6 +430,9 @@ struct Config: Decodable, Equatable {
         # Your own words for the built-in ones, which keep working; Settings › Keywords lists them all.
         # translate = "t"              # t bom dia, or t and Tab
         # commands = ";"               # ;left, ;quit, in place of :
+
+        [look]
+        # accent = "system"            # copper (the default), system (your Mac's accent color), or a color: "#3478f6"
 
         [currency]
         default_target = "EUR"         # for "25 usd" with no target ("25 eur" converts to USD)

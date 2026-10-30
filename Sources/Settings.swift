@@ -81,6 +81,11 @@ import SwiftUI
         })
     }
 
+    /// `[look] accent`: copper, the default, removes the key.
+    var accent: Binding<Accent> {
+        binding(\.look.accent, "look", "accent") { $0.toml.map { .string($0) } }
+    }
+
     /// What the empty launcher shows of your calendar, in `[meetings]`'s two keys.
     enum OnOpen: Hashable { case today, next, nothing }
 
@@ -223,8 +228,19 @@ private struct Tile: View {
     var body: some View {
         Image(systemName: symbol).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white)
             .frame(width: 22, height: 22)
-            .background(LinearGradient(colors: [.copper, .copperDeep], startPoint: .topLeading, endPoint: .bottomTrailing),
+            .background(LinearGradient(colors: [.accent, .accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing),
                         in: .rect(cornerRadius: 6, style: .continuous))
+    }
+}
+
+private extension Accent {
+    /// For the picker: copper, the Mac's, or your own.
+    var kind: Int {
+        switch self {
+        case .copper: 0
+        case .system: 1
+        case .color: 2
+        }
     }
 }
 
@@ -274,6 +290,7 @@ private struct GeneralPane: View {
                 Note("The only global shortcut. Everything else is typed in the launcher.")
             }
         }
+        look
         if model.config.features.isOn(.currency) { currency }
         if model.config.features.isOn(.translate), !TranslateProvider.languageChoices.isEmpty { translate }
         if model.config.features.isOn(.notes) { notes }
@@ -287,6 +304,30 @@ private struct GeneralPane: View {
             }
         } footer: {
             Note("Everything here is saved in ~/.config/copperlight/config.toml, with your comments kept. Edit it by hand any time: changes apply when you save.")
+        }
+    }
+
+    /// Copper, your Mac's accent color, or one of your own, and how it looks.
+    private var look: some View {
+        let accent = model.accent
+        return Section {
+            Picker("Accent", selection: Binding(get: { accent.wrappedValue.kind }, set: { kind in
+                switch kind {
+                case 0: accent.wrappedValue = .copper
+                case 1: accent.wrappedValue = .system
+                default: if accent.wrappedValue.kind != 2 { accent.wrappedValue = .color(Palette.shared.shades.main) } // from what shows now
+                }
+            })) {
+                Text("Copper").tag(0)
+                Text("Your Mac's accent color").tag(1)
+                Text("Your own color").tag(2)
+            }
+            if case .color(let color) = accent.wrappedValue {
+                ColorPicker("Color", selection: Binding(get: { Color(color) }, set: { accent.wrappedValue = .color(RGBColor(NSColor($0)) ?? color) }),
+                            supportsOpacity: false)
+            }
+        } header: { Text("Look") } footer: {
+            Note("The field's edge, the selected row, chips and the titles over answers. Your Mac's follows the color chosen in System Settings › Appearance.")
         }
     }
 
