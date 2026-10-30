@@ -27,20 +27,35 @@ struct AppInfo: Codable, Sendable, Equatable {
 /// under a match on the app's own name or other names: 0.8 for what it does, less for what it is or opens, 0.7 when
 /// the words are spread over several ("photo editor" → "photo, image editing"). Too-common words ("app") are left out.
 func appInfoMatch(_ query: String, _ info: AppInfo) -> (term: String, score: Double)? {
-    let fold = { (text: String) in text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil) }
-    let typed = fold(query).split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
-        .filter { $0.count >= 2 && !appStopWords.contains($0) }
-    guard query.count >= 3, !typed.isEmpty else { return nil }
-    let has = { (term: String, q: String) in
-        // ponytail: prefix both ways stands in for stemming ("drawing" → "draw"); NLTagger lemmas if it falls short.
-        fold(term).split(whereSeparator: { !$0.isLetter && !$0.isNumber }).contains { $0.hasPrefix(q) || ($0.count >= 4 && q.hasPrefix($0)) }
+    appInfoMatch(appQueryWords(query), AppTerms(info))
+}
+
+/// The words of `query` an app's terms are searched for: folded, from 3 letters typed, too-common ones left out.
+func appQueryWords(_ query: String) -> [String] {
+    query.count >= 3 ? foldedWords(query).filter { $0.count >= 2 && !appStopWords.contains($0) } : []
+}
+
+/// An app's terms with their words folded once, when the index loads: folding them on every keystroke, for every
+/// word typed, was most of a long query's time.
+struct AppTerms: Sendable {
+    let groups: [(terms: [(text: String, words: [String])], score: Double)]
+    init(_ info: AppInfo) { groups = info.terms.map { group in (group.terms.map { ($0, foldedWords($0)) }, group.score) } }
+}
+
+func appInfoMatch(_ typed: [String], _ info: AppTerms) -> (term: String, score: Double)? {
+    guard !typed.isEmpty else { return nil }
+    // ponytail: prefix both ways stands in for stemming ("drawing" → "draw"); NLTagger lemmas if it falls short.
+    let has = { (term: (text: String, words: [String]), q: String) in term.words.contains { $0.hasPrefix(q) || ($0.count >= 4 && q.hasPrefix($0)) } }
+    for group in info.groups {
+        if let term = group.terms.first(where: { term in typed.allSatisfy { has(term, $0) } }) { return (term.text, group.score) }
     }
-    for (terms, score) in info.terms {
-        if let term = terms.first(where: { term in typed.allSatisfy { has(term, $0) } }) { return (term, score) }
-    }
-    let all = info.terms.flatMap(\.terms)
-    let found = typed.compactMap { q in all.first { has($0, q) } }
+    let all = info.groups.flatMap(\.terms)
+    let found = typed.compactMap { q in all.first { has($0, q) }?.text }
     return found.count == typed.count ? (uniqued(found).joined(separator: ", "), 0.7) : nil
+}
+
+private func foldedWords(_ text: String) -> [String] {
+    text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil).split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
 }
 
 /// Words that would match half the apps.

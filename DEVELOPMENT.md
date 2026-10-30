@@ -121,7 +121,8 @@ returns rows. Add it to the list in `Sources/App.swift`, with the `Feature` (`So
 off: a new feature gets a case there, a line in Settings › Features and in docs/configuration.md, and its keywords in
 `Feature.keywords` (Settings › Keywords and `[keywords]` add your own words for them). Providers run at the same time on every keystroke, and
 their rows show together once all have answered or 50 ms have passed; a slower one's rows merge in later, so
-answer well within 50 ms or rank your rows at the bottom. The next keystroke cancels the round. A provider that takes
+answer within a few milliseconds (a keystroke's rows show within a frame) or rank your rows at the bottom. One that
+waits on purpose, as file search waits for a pause in typing, says so with `patient`: the rows show without it. The next keystroke cancels the round. A provider that takes
 text after a name (`translate `) lists it in `modes`: typed, the name becomes a chip in the field and the query goes to
 that provider alone. A `:` command is a `Verb` (`Sources/Actions.swift`), with its feature too. Every file is listed below.
 

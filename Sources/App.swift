@@ -263,6 +263,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             historyError = error.localizedDescription
         }
         reloadConfig()
+        // Built now, so the first ⌥ Space is as quick as the rest: building it then took about 50 ms.
+        panel.contentView?.layoutSubtreeIfNeeded()
         // ponytail: turned off later, a clock already running keeps going until it ends; it's what you started.
         if Feature.pomodoro.isOn { pomodoro.restore() }
         if Feature.timers.isOn { countdown.restore() }

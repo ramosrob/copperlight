@@ -5,6 +5,14 @@ import AppKit
 /// scattered matches. Shorter texts win ties. Picks the best alignment, not the first one, so
 /// "vsc" hits the word starts in "Visual Studio Code".
 func fuzzyScore(_ query: String, _ text: String) -> Double? {
+    // Most names can't match: when both are plain ASCII, a byte scan for the letters in order says so before the
+    // folding below, a string per character, does (that took 30 ms for 2,000 names).
+    if query.utf8.allSatisfy({ $0 < 128 }), text.utf8.allSatisfy({ $0 < 128 }) {
+        let wanted = Array(query.lowercased().utf8.filter { $0 != 32 })
+        var found = 0
+        for byte in text.lowercased().utf8 where found < wanted.count && byte == wanted[found] { found += 1 }
+        if found < wanted.count { return nil }
+    }
     let fold = { (c: Character) in String(c).folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil) }
     let q = query.filter { $0 != " " }.map(fold)
     let t = Array(text), folded = t.map(fold)
@@ -37,7 +45,8 @@ actor AppProvider: ResultProvider {
     private var apps: [App] = []
     private var names: [String: String] = [:] // path → Finder display name, cached across rescans
     /// What each app is for (AppIndex), by path: found by what it does when its name doesn't match.
-    private var infos: [String: AppInfo] = [:]
+    private var infos: [String: AppInfo] = [:] { didSet { terms = infos.mapValues(AppTerms.init) } }
+    private var terms: [String: AppTerms] = [:] // infos, ready to search
     private let index: AppIndex?
     private var online = true
     private let brew: String?
@@ -102,10 +111,11 @@ actor AppProvider: ResultProvider {
 
     /// Every match: the launcher adds frecency (the id is the path) and sorts, so cutting here could drop a favorite.
     func results(for query: String) -> [LauncherResult] {
+        let words = appQueryWords(query)
         let installed: [LauncherResult] = apps.compactMap { app in
             // By what it does, the matching word says why: "draw" → Illustrator, "draw".
             let named = fuzzyScore(query, app.name) ?? otherNameScore(query, app.name)
-            let described = named == nil ? infos[app.path].flatMap { appInfoMatch(query, $0) } : nil
+            let described = named == nil && !words.isEmpty ? terms[app.path].flatMap { appInfoMatch(words, $0) } : nil
             guard let match = named ?? described?.score else { return nil }
             let path = app.path
             return LauncherResult(

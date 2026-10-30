@@ -141,6 +141,7 @@ struct Gated: ResultProvider {
     }
 
     var modes: [Mode] { isOn(feature) ? provider.modes : [] }
+    var patient: Bool { provider.patient }
     func results(for query: String) async -> [LauncherResult] { isOn(feature) ? await provider.results(for: query) : [] }
     func modeResults(for query: String) async -> [LauncherResult] { isOn(feature) ? await provider.modeResults(for: query) : [] }
 }

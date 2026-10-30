@@ -3743,3 +3743,43 @@ private struct Carded: ResultProvider {
     #expect(Motion.at(.smooth(duration: 0.2), still: false) != nil)
     #expect(Motion.opening(still: true) == 1 && Motion.opening(still: false) < 1)
 }
+
+// MARK: Speed
+
+/// Answers late on purpose, like file search waiting for a pause in typing.
+private struct Patient: ResultProvider {
+    var patient: Bool { true }
+    func results(for query: String) async -> [LauncherResult] {
+        try? await Task.sleep(for: .milliseconds(300))
+        return [LauncherResult(id: "late", title: "late", icon: .symbol("doc"), score: 0, action: {})]
+    }
+}
+
+/// A keystroke's rows show within a frame once the quick providers have answered; one that answers late on purpose
+/// merges in when it does. On its own (a chip), the rows wait for it as before, so the list never empties.
+@MainActor @Test func rowsDontWaitForPatientProviders() async throws {
+    let model = SearchModel(providers: [Fixed(rows: [("a", 1)]), Patient()])
+    model.query = "x"
+    let start = ContinuousClock.now
+    while model.settling, start.duration(to: .now) < .milliseconds(200) { try await Task.sleep(for: .microseconds(200)) }
+    #expect(start.duration(to: .now) < .milliseconds(16), "\(start.duration(to: .now))")
+    #expect(model.results.map(\.id) == ["a"])
+    await eventually { model.results.count == 2 }
+    #expect(model.results.map(\.id) == ["a", "late"])
+    #expect(Gated(.files, FileSearchProvider()).patient && !Gated(.calculator, CalculatorProvider()).patient)
+
+    let alone = SearchModel(providers: [Patient()])
+    alone.query = "x"
+    try await Task.sleep(for: .milliseconds(20))
+    #expect(alone.settling && alone.results.isEmpty) // waits, rather than showing nothing
+}
+
+/// Matching a name is quick when it can't match (most can't): more names than a Mac has apps, against a long query,
+/// within a frame even in a debug build (folding a character at a time took 30 ms for 2,000 optimized).
+@Test func matchingIsQuick() {
+    let names = (0..<500).map { "Application Number \($0) Pro" }
+    let start = ContinuousClock.now
+    #expect(names.allSatisfy { fuzzyScore("time in tokyo", $0) == nil })
+    #expect(start.duration(to: .now) < .milliseconds(16), "\(start.duration(to: .now))")
+    #expect(fuzzyScore("vsc", "Visual Studio Code") != nil && fuzzyScore("SAF", "Safari") != nil && fuzzyScore("cafe", "Café Menu") != nil)
+}

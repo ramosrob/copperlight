@@ -8,11 +8,15 @@ protocol ResultProvider: Sendable {
     /// The rows for a query in one of this provider's modes, its chip showing: the same as `results` unless being
     /// asked on purpose changes what it may do (`stock` asks Yahoo Finance only then).
     func modeResults(for query: String) async -> [LauncherResult]
+    /// Answers late on purpose (file search waits for a pause in typing): a keystroke's rows show without waiting for
+    /// it, and its own merge in when they come.
+    var patient: Bool { get }
 }
 
 extension ResultProvider {
     var modes: [Mode] { [] }
     func modeResults(for query: String) async -> [LauncherResult] { await results(for: query) }
+    var patient: Bool { false }
 }
 
 /// A name that text after it goes to (`translate `, `add todo `, `:quit `). Tab (or Enter on a row that fills it in)
@@ -395,8 +399,9 @@ final class SearchModel {
         selection = max(0, min(rows.count - 1, selection))
     }
 
-    /// Every provider runs concurrently, and the rows are shown together once all have answered or `wait` has
-    /// passed with something to show; the previous query's rows stay until then. Showing each provider's rows as
+    /// Every provider runs concurrently, and the rows are shown together once all have answered (a patient one, file
+    /// search, aside: waiting for it held every keystroke 50 ms) or `wait` has passed with something to show; the
+    /// previous query's rows stay until then. Showing each provider's rows as
     /// it answered emptied the list on every keystroke (the quick ones with nothing to say came first) and regrew
     /// it over 300 ms. Whatever answers after the wait merges in when it does: files (after their own 150 ms) and
     /// the other slow ones rank at the bottom, so the rows above don't move. A new keystroke cancels the round.
@@ -420,19 +425,23 @@ final class SearchModel {
             : ([:], [:], Date.now, self.query.lowercased())
         let learnedKey = Self.learnedKey(self.query)
         settling = true
+        // The rows show once the quick providers have answered, without waiting for a patient one (files); with
+        // only patient ones (the files chip), once they have, or the wait is over.
+        let quick = providers.filter { !$0.patient }.count
         task = Task {
-            await withTaskGroup(of: [LauncherResult]?.self) { group in
+            await withTaskGroup(of: (rows: [LauncherResult], patient: Bool)?.self) { group in
                 for provider in providers {
-                    group.addTask { inMode ? await provider.modeResults(for: query) : await provider.results(for: query) }
+                    group.addTask { (inMode ? await provider.modeResults(for: query) : await provider.results(for: query), provider.patient) }
                 }
                 // ponytail: one fixed wait, under what reads as instant; per-provider deadlines if one ever needs more.
                 group.addTask { try? await Task.sleep(for: Self.wait); return nil } // nil: the wait is over
                 var merged: [LauncherResult] = []
-                var (pending, waiting) = (providers.count, true)
-                for await batch in group {
+                var (pending, quickPending, waiting) = (providers.count, quick, true)
+                for await answer in group {
                     guard !Task.isCancelled else { return }
-                    if let batch {
+                    if let (batch, patient) = answer {
                         pending -= 1
+                        if !patient { quickPending -= 1 }
                         let boosted = batch.map { row in
                             var row = row
                             row.score += Frecency.bonus(frecency, row.id, at: now) + Self.learnedBonus(learned, learnedKey, row.id, at: now)
@@ -443,7 +452,7 @@ final class SearchModel {
                         waiting = false
                     }
                     // Nothing yet when the wait is over: keep the previous rows rather than an empty list.
-                    guard pending == 0 || (!waiting && !merged.isEmpty) else { continue }
+                    guard pending == 0 || ((!waiting || quick > 0 && quickPending == 0) && !merged.isEmpty) else { continue }
                     // A [[command]] or script named like a built-in replaces it: "command:screenshot" hides "builtin:screenshot".
                     let replaced = Set(merged.compactMap { row in
                         ["command:", "script:"].first { row.id.hasPrefix($0) }.map { "builtin:" + row.id.dropFirst($0.count).lowercased() }

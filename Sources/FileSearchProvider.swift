@@ -62,6 +62,7 @@ actor FileSearchProvider: ResultProvider {
     /// Typed first, it searches files only, with more results.
     static let prefix = "f "
     private var settings = Config.Files()
+    nonisolated var patient: Bool { true } // it waits for a pause in typing, then asks Spotlight
     nonisolated var modes: [Mode] { [Mode(prefix: Self.prefix, title: "Files", icon: .symbol("doc.text.magnifyingglass"), hint: "A file's name")] }
 
     func setSettings(_ settings: Config.Files) { self.settings = settings }
@@ -142,6 +143,7 @@ struct FileHit: Sendable {
 /// Files with the typed words inside, as their own provider: Spotlight takes longer for content than for names.
 struct FileContentProvider: ResultProvider {
     let files: FileSearchProvider
+    var patient: Bool { true }
     func results(for query: String) async -> [LauncherResult] {
         await files.contentResults(for: query.trimmingCharacters(in: .whitespaces))
     }
