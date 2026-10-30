@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/hero.webp" width="740" alt="Typing into Copperlight: the weather in Lisbon, 25 usd to eur, a stock, a contact, 150 + 20%, a definition, the internet speed and a color, each answer taking the whole card in its own shape, then the next meeting in the empty launcher">
+  <img src="docs/media/hero.webp" width="740" alt="Copperlight springing open, again and again, for the weather in Lisbon, 25 usd to eur, a stock, a contact (the selection gliding down the ways to reach her), 150 + 20%, a definition, the internet speed and a color: the rows change as it types and the card glides to each answer, in its own shape; then the color is erased and the next meeting waits in the empty launcher">
 </p>
 
 Press <kbd>⌥ Space</kbd> anywhere, type, press <kbd>Enter</kbd>. Copperlight opens apps and files, does math and

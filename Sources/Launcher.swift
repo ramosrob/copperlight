@@ -736,7 +736,7 @@ private struct LauncherView: View {
             // A chip sits as far in as it is round, so its curve follows the field's.
             .padding(.leading, model.mode == nil ? 26 : Self.fieldHeight / 2 - ModeChip.height / 2)
             .padding(.trailing, 26)
-            .animation(.spring(duration: 0.3, bounce: 0.25), value: model.mode?.prefix)
+            .animation(Motion.at(.spring(duration: 0.3, bounce: 0.25)), value: model.mode?.prefix)
             .frame(height: Self.fieldHeight)
                 .modifier(GlassBackground(shape: Capsule(), radius: Self.fieldHeight / 2 - 0.5)) // a mask 2r + 1 tall: exactly the field
                 .overlay(Capsule().strokeBorder(LinearGradient.brand, lineWidth: 1.5))
@@ -806,13 +806,13 @@ private struct LauncherView: View {
         }
         .fixedSize(horizontal: false, vertical: true) // its natural height, at the top of the window
         // The card grows and shrinks to its rows instead of snapping; the rows themselves change at once (`list`).
-        .animation(.smooth(duration: 0.2), value: CardShape(height: listHeight, preview: model.showsPreview, answer: model.answer != nil))
+        .animation(Motion.at(.smooth(duration: 0.2)), value: CardShape(height: listHeight, preview: model.showsPreview, answer: model.answer != nil))
         .keyframeAnimator(initialValue: 1.0, trigger: model.opens) { content, scale in
             content.scaleEffect(scale, anchor: .top)
         } keyframes: { _ in
             KeyframeTrack {
                 MoveKeyframe(0.96)
-                SpringKeyframe(1, duration: 0.3, spring: Spring(duration: 0.3, bounce: 0.15))
+                SpringKeyframe(1, duration: 0.3 / Motion.pace, spring: Spring(duration: 0.3 / Motion.pace, bounce: 0.15))
             }
         }
         .padding(LauncherPanel.margin)
@@ -853,7 +853,7 @@ private struct LauncherView: View {
                 .background(alignment: .top) {
                     if model.selected != nil {
                         SelectionWash().frame(height: Self.rowHeight).offset(y: offset(of: model.selection))
-                            .animation(.snappy(duration: 0.16), value: model.selection)
+                            .animation(Motion.at(.snappy(duration: 0.16)), value: model.selection)
                     }
                 }
             }
@@ -862,7 +862,7 @@ private struct LauncherView: View {
                 ScrollEdges(top: geometry.contentOffset.y > 1,
                             bottom: geometry.contentOffset.y + geometry.containerSize.height < geometry.contentSize.height - 1)
             } action: { _, edges in
-                withAnimation(.easeOut(duration: 0.15)) { moreBeyond = edges }
+                withAnimation(Motion.at(.easeOut(duration: 0.15))) { moreBeyond = edges }
             }
             .mask {
                 VStack(spacing: 0) {
@@ -876,7 +876,7 @@ private struct LauncherView: View {
                 let rows = model.rows, ahead = index + (index > old ? 1 : index < old ? -1 : 0)
                 guard rows.indices.contains(index) else { return }
                 // A row at a time glides, with the wash; a jump (a new search, back to the top) doesn't.
-                withAnimation(abs(index - old) == 1 ? .snappy(duration: 0.16) : nil) { proxy.scrollTo(rows[min(max(ahead, 0), rows.count - 1)].id) }
+                withAnimation(abs(index - old) == 1 ? Motion.at(.snappy(duration: 0.16)) : nil) { proxy.scrollTo(rows[min(max(ahead, 0), rows.count - 1)].id) }
             }
         }
     }
@@ -898,6 +898,13 @@ private struct LauncherView: View {
         let headers = model.rows.indices.filter { sectionStarting(at: $0) != nil }.count
         return CGFloat(model.rows.count) * Self.rowHeight + CGFloat(headers) * Self.sectionHeight
     }
+}
+
+/// How fast the launcher moves: 1 in the app. Recording the README's animation slows it (0.05: twenty times slower), so
+/// offscreen captures, slow as they are, catch every frame of it.
+@MainActor enum Motion {
+    static var pace = 1.0
+    static func at(_ animation: Animation) -> Animation { animation.speed(pace) }
 }
 
 /// What the card's size follows: a change animates it.
