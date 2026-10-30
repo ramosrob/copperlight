@@ -190,6 +190,8 @@ final class SearchModel {
     @ObservationIgnored var keepsAppOpens = true
     /// `[answers] cards`: off, an answer is a plain row like the rest.
     var showsCards = true
+    /// `[keywords]`: your words for the built-in ones, "t" → "translate", ";" → ":".
+    @ObservationIgnored var keywords: [String: String] = [:]
 
     /// `searchesEmptyQuery`: ask providers about "" too (the clipboard lists everything), instead of showing nothing.
     /// `exclusive`: a query starting with one of these prefixes ("f ") goes to that provider alone.
@@ -274,6 +276,20 @@ final class SearchModel {
         return modes.filter { lower.hasPrefix($0.mode.prefix) }.max { $0.mode.prefix.count < $1.mode.prefix.count }
     }
 
+    /// `text` with your word for a keyword spelled the built-in way: "t bom dia" → "translate bom dia", ";left" →
+    /// ":left". A word with letters counts alone or before a space; one of symbols, stuck to what follows too.
+    func expanded(_ text: String) -> String {
+        guard modeMatch == nil else { return text }
+        let lower = text.lowercased()
+        for (word, keyword) in keywords.sorted(by: { $0.key.count > $1.key.count }) {
+            let symbols = !word.contains { $0.isLetter || $0.isNumber }
+            guard lower == word || lower.hasPrefix(word + " ") || (symbols && lower.hasPrefix(word)) else { continue }
+            let space = lower == word || !keyword.contains(where: \.isLetter) ? "" : " "
+            return keyword + space + text.dropFirst(word.count).drop { $0 == " " }
+        }
+        return text
+    }
+
     /// Puts `text` in the field as Tab or Enter fills it in: the name it starts with, if any, becomes its chip.
     func fill(_ text: String) {
         modeMatch = named(text)
@@ -291,6 +307,11 @@ final class SearchModel {
     /// Otherwise: what the selected row fills in (Translate → "translate "), or the name that starts with what's typed
     /// (`translate`, with a translation selected). Nothing to fill in: nothing happens.
     func complete() {
+        // Your word for a keyword becomes it first, a chip if the keyword has one: "t" → Translate, as "translate" would.
+        if case let full = expanded(query), full != query {
+            if named(full) == nil, named(full + " ") != nil { return fill(full + " ") }
+            query = full
+        }
         let entered = named(query).flatMap { $0.mode.prefix.count > (mode?.prefix.count ?? 0) ? $0 : nil }
         if let entered {
             modeMatch = entered
@@ -383,7 +404,7 @@ final class SearchModel {
         stepped = nil
         previewOpen = false
         selection = 0
-        let query = query.trimmingCharacters(in: .whitespaces)
+        let query = expanded(query).trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty || searchesEmptyQuery else {
             (results, settling) = ([], false)
             if let idle { task = Task { let rows = await idle(); if !Task.isCancelled { results = rows } } }

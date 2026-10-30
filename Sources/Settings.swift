@@ -66,6 +66,21 @@ import SwiftUI
         })
     }
 
+    /// Your words for a keyword, as one line ("t, tr"): one is a string under [keywords], several a list, none removes
+    /// the key. A word that's taken isn't saved; `problem` says why.
+    func keyword(_ keyword: String) -> Binding<String> {
+        let key = Keyword.key(keyword)
+        return Binding(get: { (self.config.keywords.words[key] ?? []).joined(separator: ", ") }, set: { text in
+            let words = text.lowercased().split { $0 == "," || $0.isWhitespace }.map(String.init)
+            guard words != self.config.keywords.words[key] ?? [] else { return }
+            var all = self.config.keywords.words
+            all[key] = words.isEmpty ? nil : words
+            if let problem = Config.Keywords.problem(all) { self.problem = "Not saved: \(problem)."; return }
+            self.save({ $0.keywords.words = all },
+                      { $0.set(key, in: "keywords", to: words.isEmpty ? nil : words.count == 1 ? .string(words[0]) : .strings(words)) })
+        })
+    }
+
     /// What the empty launcher shows of your calendar, in `[meetings]`'s two keys.
     enum OnOpen: Hashable { case today, next, nothing }
 
@@ -133,7 +148,7 @@ final class SettingsWindow: AppWindow {
 }
 
 private enum Pane: String, CaseIterable, Identifiable {
-    case general = "General", launcher = "Launcher", features = "Features", clipboard = "Clipboard", search = "Files", browser = "Browser",
+    case general = "General", launcher = "Launcher", features = "Features", keywords = "Keywords", clipboard = "Clipboard", search = "Files", browser = "Browser",
          commands = "Commands", snippets = "Snippets", about = "About"
 
     var id: Self { self }
@@ -148,6 +163,7 @@ private enum Pane: String, CaseIterable, Identifiable {
         case .general: "gearshape.fill"
         case .launcher: "magnifyingglass"
         case .features: "switch.2"
+        case .keywords: "character.cursor.ibeam"
         case .clipboard: "doc.on.clipboard.fill"
         case .search: "folder.fill"
         case .browser: "globe"
@@ -179,6 +195,7 @@ private struct SettingsView: View {
                     case .general: GeneralPane(model: model, showWelcome: showWelcome)
                     case .launcher: LauncherPane(model: model, forget: forget)
                     case .features: FeaturesPane(model: model)
+                    case .keywords: KeywordsPane(model: model)
                     case .clipboard: ClipboardPane(model: model)
                     case .search: FilesPane(model: model)
                     case .browser: BrowserPane(model: model)
@@ -404,6 +421,52 @@ private struct FeaturesPane: View {
                 }
             }
         }
+    }
+}
+
+/// Your own words beside each keyword, by group, for the features that are on.
+private struct KeywordsPane: View {
+    let model: SettingsModel
+
+    var body: some View {
+        Section {
+            KeywordRow(model: model, keyword: ":", what: "Commands: :left, :quit, :lock")
+        } header: { Text("Commands") }
+        ForEach(Feature.Group.allCases, id: \.self) { group in
+            let features = Feature.listed.filter { $0.group == group && !$0.keywords.isEmpty && model.config.features.isOn($0) }
+            if !features.isEmpty {
+                Section(group.rawValue) {
+                    ForEach(features, id: \.self) { feature in
+                        ForEach(feature.keywords, id: \.self) { KeywordRow(model: model, keyword: $0, what: feature.name) }
+                    }
+                }
+            }
+        }
+        Section {} footer: {
+            Note("Your words work beside the built-in ones: with t for translate, “t bom dia”, or t and Tab. A word of symbols works stuck to what follows: ; for : is ;left. Your word takes the place of what it would find: t alone no longer finds apps. Separate several with commas. Saved in config.toml under [keywords].")
+        }
+    }
+}
+
+/// One keyword and your words for it, saved on Return or leaving the field (not on each key: "t," would lose its comma).
+private struct KeywordRow: View {
+    let model: SettingsModel
+    let keyword: String
+    let what: String
+    @State private var text = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        LabeledContent {
+            TextField(keyword, text: $text, prompt: Text("your words"))
+                .labelsHidden().frame(width: 200).focused($focused)
+                .onSubmit { model.keyword(keyword).wrappedValue = text }
+                .onChange(of: focused) { if !focused { model.keyword(keyword).wrappedValue = text } }
+        } label: {
+            Text(keyword).monospaced()
+            Text(what)
+        }
+        .onAppear { text = model.keyword(keyword).wrappedValue }
     }
 }
 

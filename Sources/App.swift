@@ -402,6 +402,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.learning = config.learning
         model.keepsAppOpens = config.apps.suggestions
         model.showsCards = config.answers.cards
+        model.keywords = config.keywords.expansions
+        clipboardModel.keywords = model.keywords.filter { $0.value == VerbProvider.prefix } // its search is for what you copied
         // Chained so back-to-back reloads reach the providers in order.
         weather.setCity(config.weather.city ?? "")
         configUpdate = Task { [previous = configUpdate, commands, currency, translate, files, apps, web, snippets] in

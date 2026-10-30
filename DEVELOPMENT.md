@@ -118,7 +118,8 @@ signed with the same one, or everyone grants Accessibility again after updating.
 
 Each feature is a type conforming to `ResultProvider` (`Sources/Launcher.swift`): it gets every query and
 returns rows. Add it to the list in `Sources/App.swift`, with the `Feature` (`Sources/Features.swift`) that turns it
-off: a new feature gets a case there, a line in Settings › Features and in docs/configuration.md. Providers run at the same time on every keystroke, and
+off: a new feature gets a case there, a line in Settings › Features and in docs/configuration.md, and its keywords in
+`Feature.keywords` (Settings › Keywords and `[keywords]` add your own words for them). Providers run at the same time on every keystroke, and
 their rows show together once all have answered or 50 ms have passed; a slower one's rows merge in later, so
 answer well within 50 ms or rank your rows at the bottom. The next keystroke cancels the round. A provider that takes
 text after a name (`translate `) lists it in `modes`: typed, the name becomes a chip in the field and the query goes to
@@ -140,7 +141,8 @@ that provider alone. A `:` command is a `Verb` (`Sources/Actions.swift`), with i
 ```
 Sources/
   App.swift                 entry point, menu bar item, hotkey, config loading, built-in rows (Note, Clipboard…)
-  Features.swift            what can be turned off (Settings › Features, `[features]`), and the wrapper that does it
+  Features.swift            what can be turned off (Settings › Features, `[features]`), the wrapper that does it, and
+                            the keywords (`[keywords]`)
   Launcher.swift            ResultProvider protocol, SearchModel (concurrent query + merge, frecency, what was picked for what was typed, recent queries for ↑),
                             panel + SwiftUI view, opening with the selected text
   Actions.swift             `:` commands: windows (Accessibility), running apps, files, the Mac; the selected text

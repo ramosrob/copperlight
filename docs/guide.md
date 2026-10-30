@@ -26,6 +26,12 @@ background, nothing sent, no permission asked for, and its section leaves Settin
 `name = false` under `[features]` ([configuration.md](configuration.md) lists the names). Finding apps, the search
 row and Copperlight's own rows are always on.
 
+**Your own keywords:** Settings › Keywords has a field beside each keyword (`translate`, `weather`, `:`…) for words of
+your own. With `t` for translate, `t bom dia` translates, and `t` then Tab makes the Translate chip; `translate` still
+works. A word of symbols works stuck to what follows: with `;` for `:`, `;left` is `:left`. Your word takes the place of
+what it would find: with `t`, typing `t` alone no longer finds apps. It's saved as `translate = "t"` under
+`[keywords]`.
+
 Things to type: `saf`, `vsc`, `2^10 / 3`, `sqrt(2) * pi`, `20% of 150`, `255 in hex`, `25 usd to eur`, `12,50 gbp in brl`, `100jpy usd`,
 `25 usd` (converts to `default_target`), `25 eur` (the default itself converts to USD), `39*8 usd`, `20% off 80`,
 `30 is what % of 150`, `10k * 3`, `days until dec 25`, `in 3 weeks`, `#c87533`, `pick color`, `qr`, `copy text`,

@@ -9,6 +9,7 @@ struct Config: Decodable, Equatable {
 
     var hotkeys = Hotkeys()
     var features = Features()
+    var keywords = Keywords()
     var currency = Currency()
     var clipboard = Clipboard()
     var files = Files()
@@ -55,12 +56,52 @@ struct Config: Decodable, Equatable {
                 if try !c.decode(Bool.self, forKey: key) { off.insert(feature) }
             }
         }
-        private struct Name: CodingKey {
-            let stringValue: String
-            init(stringValue: String) { self.stringValue = stringValue }
-            var intValue: Int? { nil }
-            init?(intValue: Int) { nil }
+    }
+
+    /// Your own words for the built-in keywords, which keep working: `translate = "t"`, `commands = [";", ">"]`.
+    struct Keywords: Decodable, Equatable, Sendable {
+        /// By the keyword's key (`Keyword.key`): translate → ["t"].
+        var words: [String: [String]] = [:]
+
+        /// What you type → the keyword it stands for: "t" → "translate", ";" → ":".
+        var expansions: [String: String] {
+            Dictionary(Keyword.all.flatMap { keyword in (words[Keyword.key(keyword)] ?? []).map { ($0, keyword) } }) { first, _ in first }
         }
+
+        init() {}
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: Name.self)
+            for key in c.allKeys {
+                guard Keyword.all.contains(where: { Keyword.key($0) == key.stringValue }) else {
+                    throw DecodingError.dataCorruptedError(forKey: key, in: c, debugDescription: "no keyword by that name (Settings › Keywords lists them)")
+                }
+                let words = try (try? c.decode(String.self, forKey: key)).map { [$0] } ?? c.decode([String].self, forKey: key)
+                self.words[key.stringValue] = words.map { $0.lowercased().trimmingCharacters(in: .whitespaces) }
+            }
+            if let problem = Self.problem(words) { throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: problem)) }
+        }
+
+        /// Why these words can't be: one that's a keyword already, another keyword's, starts a path, has a space, or is empty.
+        static func problem(_ words: [String: [String]]) -> String? {
+            var taken = Dictionary(uniqueKeysWithValues: Keyword.all.map { ($0, "is already a keyword") })
+            (taken["~"], taken["/"]) = ("starts a path", "starts a path")
+            for keyword in Keyword.all {
+                for word in words[Keyword.key(keyword)] ?? [] {
+                    if word.isEmpty { return "a word for \(keyword) is empty" }
+                    if word.contains(where: \.isWhitespace) { return "\"\(word)\": one word, no spaces" }
+                    if let why = taken[word] { return "\"\(word)\" \(why)" }
+                    taken[word] = "is already yours for \(keyword)"
+                }
+            }
+            return nil
+        }
+    }
+
+    private struct Name: CodingKey {
+        let stringValue: String
+        init(stringValue: String) { self.stringValue = stringValue }
+        var intValue: Int? { nil }
+        init?(intValue: Int) { nil }
     }
 
     struct Currency: Decodable, Equatable {
@@ -308,6 +349,7 @@ struct Config: Decodable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         hotkeys = try c.decodeIfPresent(Hotkeys.self, forKey: .hotkeys) ?? hotkeys
         features = try c.decodeIfPresent(Features.self, forKey: .features) ?? features
+        keywords = try c.decodeIfPresent(Keywords.self, forKey: .keywords) ?? keywords
         currency = try c.decodeIfPresent(Currency.self, forKey: .currency) ?? currency
         clipboard = try c.decodeIfPresent(Clipboard.self, forKey: .clipboard) ?? clipboard
         files = try c.decodeIfPresent(Files.self, forKey: .files) ?? files
@@ -325,7 +367,7 @@ struct Config: Decodable, Equatable {
         commands = try c.decodeIfPresent([Command].self, forKey: .commands) ?? []
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? []
     }
-    private enum CodingKeys: String, CodingKey { case hotkeys, features, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, reminders, timers, learning, answers, weather, commands = "command", snippets = "snippet" }
+    private enum CodingKeys: String, CodingKey { case hotkeys, features, keywords, currency, clipboard, files, apps, pomodoro, translate, browser, notes, meetings, reminders, timers, learning, answers, weather, commands = "command", snippets = "snippet" }
 
     static func parse(_ text: String) throws -> Config {
         try TOMLDecoder().decode(Config.self, from: text)
@@ -360,6 +402,11 @@ struct Config: Decodable, Equatable {
         [features]
         # Everything is on. To turn something off, add its name = false; Settings › Features lists them all.
         # stocks = false
+
+        [keywords]
+        # Your own words for the built-in ones, which keep working; Settings › Keywords lists them all.
+        # translate = "t"              # t bom dia, or t and Tab
+        # commands = ";"               # ;left, ;quit, in place of :
 
         [currency]
         default_target = "EUR"         # for "25 usd" with no target ("25 eur" converts to USD)

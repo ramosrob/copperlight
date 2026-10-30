@@ -3594,3 +3594,77 @@ private struct Carded: ResultProvider {
         #expect(model.meetingsOnOpen.wrappedValue == choice && model.problem == nil)
     }
 }
+
+// MARK: Your keywords
+
+@Test func keywordsInConfig() throws {
+    #expect(Config().keywords.words.isEmpty && Config().keywords.expansions.isEmpty)
+    let config = try Config.parse("[keywords]\ntranslate = \"T\"\ncommands = [\";\", \">\"]\nadd_todo = \"todo\"\nshell = \"$\"\n")
+    #expect(config.keywords.words == ["translate": ["t"], "commands": [";", ">"], "add_todo": ["todo"], "shell": ["$"]])
+    #expect(config.keywords.expansions == ["t": "translate", ";": ":", ">": ":", "todo": "add todo", "$": ":!"])
+    // Not a keyword, a word that's taken (a keyword, another's, a path's start), one with a space, or nothing: it says so.
+    for wrong in ["transl = \"t\"", "translate = \"define\"", "translate = \"t\"\nstock = \"t\"", "translate = \"t r\"",
+                  "commands = \"/\"", "translate = \"\""] {
+        #expect(throws: (any Error).self, "\(wrong)") { try Config.parse("[keywords]\n\(wrong)\n") }
+    }
+    do { _ = try Config.parse("[keywords]\ntranslate = \"t\"\nstock = \"t\"\n") } catch { #expect(Config.describe(error).contains("\"t\"")) }
+}
+
+/// Every keyword is a chip's name or a word a feature answers to, and docs/configuration.md has its key.
+@MainActor @Test func keywordList() throws {
+    let store = StateStore(file: try tempStateFile())
+    let docs = try String(contentsOf: URL(filePath: #filePath).deletingLastPathComponent().appending(path: "../docs/configuration.md"), encoding: .utf8)
+    for word in Keyword.all { #expect(docs.contains("`\(Keyword.key(word))`"), "\(Keyword.key(word)) isn't in docs/configuration.md") }
+    #expect(Set(Keyword.all).count == Keyword.all.count)
+    let providers: [any ResultProvider] = [TranslateProvider(), DefineProvider(), SpellProvider(), EmojiProvider(), StockProvider(),
+                                           QRCodeProvider(), LargeTypeProvider(), TimerProvider(clock: Countdown(store: store)),
+                                           PomodoroProvider(pomodoro: Pomodoro()), LookupProvider(), CaptureProvider(addToNote: { _ in }),
+                                           ShellProvider(state: store), FileSearchProvider()]
+    let chips = providers.flatMap(\.modes).map { $0.prefix.trimmingCharacters(in: .whitespaces) }.filter { !$0.hasPrefix("translate to ") }
+    #expect(Set(chips).isSubset(of: Keyword.all), "\(Set(chips).subtracting(Keyword.all))")
+    #expect(Keyword.key(":") == "commands" && Keyword.key(":!") == "shell" && Keyword.key("add todo") == "add_todo")
+}
+
+/// Your word for a keyword means it: alone, before a space, or stuck to what follows for one of symbols (`;left`).
+/// Tab makes its chip, as the keyword would.
+@MainActor @Test func yourKeywords() async throws {
+    let commands = Typed()
+    let model = SearchModel(providers: [Say(), Typed()], exclusive: [":": commands])
+    model.keywords = ["s": "say", ";": ":"]
+    let titles = { (query: String) in
+        model.query = query
+        try await Task.sleep(for: .milliseconds(100))
+        return model.results.map(\.title)
+    }
+    #expect(try await titles("s hi").contains("said: say hi"))
+    #expect(try await titles("s").contains("said: say"))
+    #expect(try await titles("sx").contains("said: sx")) // only the word itself
+    #expect(try await titles(";left") == [":left"]) // the commands' provider alone, as for ":left"
+    model.query = "s hi"
+    model.complete() // Tab
+    #expect(model.mode?.title == "Say" && model.typed == "hi" && model.query == "say hi")
+    model.query = "s"
+    model.complete()
+    #expect(model.mode?.title == "Say" && model.typed.isEmpty)
+}
+
+/// Your words, as one line: one is a string, several a list, none removes the key. A word that's taken isn't saved.
+@MainActor @Test func settingsKeywords() throws {
+    let file = FileManager.default.temporaryDirectory.appending(path: "settings-\(UUID().uuidString).toml")
+    defer { try? FileManager.default.removeItem(at: file) }
+    try Config.example.write(to: file, atomically: true, encoding: .utf8)
+    let model = SettingsModel(file: file)
+    model.keyword("translate").wrappedValue = "t, TR"
+    var text = try String(contentsOf: file, encoding: .utf8)
+    #expect(text.contains("[keywords]") && text.contains("\ntranslate = [\"t\", \"tr\"]"))
+    #expect(try Config.parse(text).keywords.words == ["translate": ["t", "tr"]] && model.keyword("translate").wrappedValue == "t, tr")
+    model.keyword(":").wrappedValue = ";"
+    #expect(try String(contentsOf: file, encoding: .utf8).contains("\ncommands = \";\""))
+    text = try String(contentsOf: file, encoding: .utf8)
+    model.keyword("stock").wrappedValue = "t"
+    let unchanged = try String(contentsOf: file, encoding: .utf8)
+    #expect(model.problem?.contains("\"t\"") == true && unchanged == text)
+    model.keyword("translate").wrappedValue = ""
+    let removed = try String(contentsOf: file, encoding: .utf8)
+    #expect(!removed.contains("\ntranslate = "))
+}

@@ -7,7 +7,8 @@ line here.
 **Not offered yet**, with their code kept: the text inside files and the text in photos. Everything else on this page
 is on, and each one can be turned off: Settings › Features, or `[features]` in config.toml
 ([configuration.md](docs/configuration.md)). Off means off: no rows, no commands, nothing in the background, nothing
-sent, no permission asked for.
+sent, no permission asked for. The keywords below (`translate`, `:`…) can have your own words beside them: Settings ›
+Keywords, or `[keywords]` (`translate = "t"`, `commands = ";"`).
 
 ## At a glance
 
@@ -455,7 +456,7 @@ The row shows the title and date Copperlight read before you press Enter; a noti
 
 **Settings…** in the menu bar, or `copperlight settings` in the launcher. A pane per group: General (hotkey, Open at
 Login, currency, translate to, notes, weather, pomodoro), Launcher (what the empty launcher shows, what it learns and
-Forget, answer cards), Features (a switch for each), Clipboard (how much to keep, apps not recorded), Files (folders
+Forget, answer cards), Features (a switch for each), Keywords (your own words for each keyword), Clipboard (how much to keep, apps not recorded), Files (folders
 searched, names hidden, app descriptions online or not),
 Browser (where links open, which profile), Commands and Snippets (add, edit, delete), and About (version, license,
 and the open source it's built with). Every change goes straight into config.toml, editing only its own lines, comments kept;

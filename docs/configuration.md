@@ -3,7 +3,7 @@
 Everything is optional: Copperlight works with no config at all. **Settings…** in the menu bar edits the same file.
 
 `~/.config/copperlight/config.toml` is created with commented examples on first run. **Settings…** in the menu bar
-edits it for you: the hotkey, which features are on, what the empty launcher shows and learns, answer cards, currency, pomodoro, clipboard, file search, browser, and your commands and
+edits it for you: the hotkey, which features are on, your own keywords, what the empty launcher shows and learns, answer cards, currency, pomodoro, clipboard, file search, browser, and your commands and
 snippets. It changes only the lines it needs and keeps your comments, and a change it can't make
 cleanly (dotted keys, inline tables) isn't saved. Or edit the file in any editor: saved changes apply
 immediately. If the file doesn't parse, the launcher pins an error row at the top saying where the problem is
@@ -16,6 +16,10 @@ launcher = "option+space"      # default; the only hotkey
 
 [features]
 stocks = false                 # everything is on by default; a feature's name = false turns it off (list below)
+
+[keywords]
+translate = "t"                # your own words beside the built-in ones (list below): t bom dia, or t and Tab
+commands = [";", ">"]          # ;left and >left, as :left
 
 [currency]
 default_target = "EUR"         # default. Used by "25 usd" (no target). When the source is the default
@@ -188,6 +192,28 @@ switches. Finding apps, the search row and Copperlight's own rows are always on.
 
 A name that isn't one of these is an error row, so a typo doesn't go unnoticed. A clock already running when its
 feature is turned off keeps going until it ends.
+
+**Keywords**, the words that start something (`translate`, `:`), keep working, and `[keywords]` adds your own:
+`translate = "t"`, or several, `translate = ["t", "tr"]`. Your word counts alone, before a space (`t bom dia`), and
+with Tab for the chip, as the keyword would. A word of symbols works stuck to what follows too: with `commands = ";"`,
+`;left` is `:left`. Your word takes the place of what it would find: with `t`, typing `t` alone no longer finds apps.
+A word that's a keyword already, another keyword's, `~` or `/` (they start paths), or has a space is an error row.
+Settings › Keywords has a field for each.
+
+| Key | Keyword |
+|---|---|
+| `commands` | `:` for commands: `:left`, `:quit` |
+| `shell` | `:!` for shell lines |
+| `colors`, `pick_color` | `colors`, `pick color` |
+| `qr`, `stock`, `weather`, `define`, `spell`, `translate`, `emoji`, `large` | The same words |
+| `speed`, `cpu`, `memory`, `port` | The same words |
+| `clip` | Clipboard history |
+| `note`, `add_note` | `note`, `add note` |
+| `contact`, `tabs`, `timer`, `pomo`, `stopwatch` | The same words |
+| `meetings`, `add_event` | `meetings`, `add event` |
+| `due`, `add_todo` | `due`, `add todo` |
+| `f` | `f` for files |
+| `copy_text` | `copy text` from the screen |
 
 **Clipboard:** a screenshot is 1–5 MB, so `max_images` keeps the database small; images over 25 MB aren't
 recorded. `ignore_apps` replaces the default list, so keep the password managers in it. To find an

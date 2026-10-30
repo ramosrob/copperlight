@@ -17,9 +17,8 @@ you leaves your Mac. Ideas are welcome: [open an issue](https://github.com/ramos
 with VoiceOver.
 
 - **Updates:** tell you when a new version is out, and install it, checking that it's really Copperlight first.
-- **Settings for everything:** turn any feature on or off, rename its keyword (even the `:` prefix), and set its
-  options, in Settings and in config.toml. Off means off: no rows, no background work, no network, no permission
-  asks.
+- **Settings for everything:** set each feature's options, in Settings and in config.toml. Turning any feature off
+  and your own words for its keyword (even the `:` prefix) are done.
 - **Settings that last:** every config.toml key and the saved state settled before 1.0; after it, old keys keep
   working.
 - **Other languages:** the whole interface, rows, Settings and docs in other languages; what you type stays as it is.

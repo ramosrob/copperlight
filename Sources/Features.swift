@@ -41,6 +41,36 @@ enum Feature: String, CaseIterable, Sendable {
     /// One line for Settings: what you type, or what it does.
     var about: String { info.about }
 
+    /// The words that start it, which config.toml's `[keywords]` can add your own to (`translate = "t"`).
+    var keywords: [String] {
+        switch self {
+        case .colors: ["colors", "pick color"]
+        case .qr: ["qr"]
+        case .stocks: ["stock"]
+        case .weather: ["weather"]
+        case .define: ["define"]
+        case .spelling: ["spell"]
+        case .translate: ["translate"]
+        case .emoji: ["emoji"]
+        case .largeType: ["large"]
+        case .speedTest: ["speed"]
+        case .processes: ["cpu", "memory", "port"]
+        case .clipboard: ["clip"]
+        case .notes: ["note", "add note"]
+        case .contacts: ["contact"]
+        case .calendar: ["meetings", "add event"]
+        case .reminders: ["due", "add todo"]
+        case .files: ["f"]
+        case .browserTabs: ["tabs"]
+        case .timers: ["timer"]
+        case .pomodoro: ["pomo"]
+        case .stopwatch: ["stopwatch"]
+        case .screenText: ["copy text"]
+        case .shell: [":!"]
+        default: []
+        }
+    }
+
     private var info: (name: String, about: String) {
         switch self {
         case .calculator: ("Calculator", "150 + 20%, 30 is what % of 150, 255 in hex")
@@ -91,6 +121,13 @@ enum Feature: String, CaseIterable, Sendable {
         case .photoText: ("Text in photos", "")
         }
     }
+}
+
+/// The built-in keywords, which config.toml's `[keywords]` adds your own words to: `translate = "t"`, `commands = ";"`.
+/// They keep working. A keyword's key there is the word, `_` for its spaces; `:` is `commands`, `:!` is `shell`.
+enum Keyword {
+    static var all: [String] { [":"] + Feature.listed.flatMap(\.keywords) }
+    static func key(_ word: String) -> String { [":": "commands", ":!": "shell"][word] ?? word.replacingOccurrences(of: " ", with: "_") }
 }
 
 /// A provider that answers only while its feature is on: no rows and no chips while it's off.
