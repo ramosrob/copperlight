@@ -3734,3 +3734,12 @@ private struct Carded: ResultProvider {
     }
     #expect(tallest(content) <= content.frame.height, "a view inside is taller than the window")
 }
+
+// MARK: Reduce Motion
+
+/// With Reduce Motion on, the launcher changes in place: no spring, glide or scale. A fade stays.
+@MainActor @Test func reduceMotion() {
+    #expect(Motion.at(.smooth(duration: 0.2), still: true) == nil)
+    #expect(Motion.at(.smooth(duration: 0.2), still: false) != nil)
+    #expect(Motion.opening(still: true) == 1 && Motion.opening(still: false) < 1)
+}

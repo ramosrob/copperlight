@@ -709,6 +709,7 @@ private struct LauncherView: View {
 
     @Bindable var model: SearchModel
     let placeholder: String
+    @Environment(\.accessibilityReduceMotion) private var still
     @FocusState private var focused: Bool
     @State private var moreBeyond = ScrollEdges()
     /// The field's text, kept apart from `model.typed`: bound to it directly, the field ignored a change its own typing
@@ -720,7 +721,7 @@ private struct LauncherView: View {
         VStack(spacing: Self.gap) {
             HStack(spacing: 10) {
                 if let mode = model.mode {
-                    ModeChip(mode: mode).transition(.scale(scale: 0.8, anchor: .leading).combined(with: .opacity))
+                    ModeChip(mode: mode).transition(still ? .opacity : .scale(scale: 0.8, anchor: .leading).combined(with: .opacity))
                 }
                 TextField(model.mode?.hint ?? placeholder, text: $text)
                     .textFieldStyle(.plain)
@@ -736,7 +737,7 @@ private struct LauncherView: View {
             // A chip sits as far in as it is round, so its curve follows the field's.
             .padding(.leading, model.mode == nil ? 26 : Self.fieldHeight / 2 - ModeChip.height / 2)
             .padding(.trailing, 26)
-            .animation(Motion.at(.spring(duration: 0.3, bounce: 0.25)), value: model.mode?.prefix)
+            .animation(still ? Motion.at(.easeOut(duration: 0.15)) : Motion.at(.spring(duration: 0.3, bounce: 0.25)), value: model.mode?.prefix)
             .frame(height: Self.fieldHeight)
                 .modifier(GlassBackground(shape: Capsule(), radius: Self.fieldHeight / 2 - 0.5)) // a mask 2r + 1 tall: exactly the field
                 .overlay(Capsule().strokeBorder(LinearGradient.brand, lineWidth: 1.5))
@@ -806,12 +807,12 @@ private struct LauncherView: View {
         }
         .fixedSize(horizontal: false, vertical: true) // its natural height, at the top of the window
         // The card grows and shrinks to its rows instead of snapping; the rows themselves change at once (`list`).
-        .animation(Motion.at(.smooth(duration: 0.2)), value: CardShape(height: listHeight, preview: model.showsPreview, answer: model.answer != nil))
+        .animation(Motion.at(.smooth(duration: 0.2), still: still), value: CardShape(height: listHeight, preview: model.showsPreview, answer: model.answer != nil))
         .keyframeAnimator(initialValue: 1.0, trigger: model.opens) { content, scale in
             content.scaleEffect(scale, anchor: .top)
         } keyframes: { _ in
             KeyframeTrack {
-                MoveKeyframe(0.96)
+                MoveKeyframe(Motion.opening(still: still))
                 SpringKeyframe(1, duration: 0.3 / Motion.pace, spring: Spring(duration: 0.3 / Motion.pace, bounce: 0.15))
             }
         }
@@ -853,7 +854,7 @@ private struct LauncherView: View {
                 .background(alignment: .top) {
                     if model.selected != nil {
                         SelectionWash().frame(height: Self.rowHeight).offset(y: offset(of: model.selection))
-                            .animation(Motion.at(.snappy(duration: 0.16)), value: model.selection)
+                            .animation(Motion.at(.snappy(duration: 0.16), still: still), value: model.selection)
                     }
                 }
             }
@@ -876,7 +877,7 @@ private struct LauncherView: View {
                 let rows = model.rows, ahead = index + (index > old ? 1 : index < old ? -1 : 0)
                 guard rows.indices.contains(index) else { return }
                 // A row at a time glides, with the wash; a jump (a new search, back to the top) doesn't.
-                withAnimation(abs(index - old) == 1 ? Motion.at(.snappy(duration: 0.16)) : nil) { proxy.scrollTo(rows[min(max(ahead, 0), rows.count - 1)].id) }
+                withAnimation(abs(index - old) == 1 ? Motion.at(.snappy(duration: 0.16), still: still) : nil) { proxy.scrollTo(rows[min(max(ahead, 0), rows.count - 1)].id) }
             }
         }
     }
@@ -905,6 +906,10 @@ private struct LauncherView: View {
 @MainActor enum Motion {
     static var pace = 1.0
     static func at(_ animation: Animation) -> Animation { animation.speed(pace) }
+    /// With Reduce Motion on (`still`), things change in place: no glide, no spring.
+    static func at(_ animation: Animation, still: Bool) -> Animation? { still ? nil : at(animation) }
+    /// How big the launcher starts as it opens: a touch smaller, springing up; with Reduce Motion, its size (it fades).
+    static func opening(still: Bool) -> CGFloat { still ? 1 : 0.96 }
 }
 
 /// What the card's size follows: a change animates it.

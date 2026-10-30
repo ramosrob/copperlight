@@ -262,6 +262,7 @@ private struct WelcomeView: View {
 private struct HotkeyPill: View {
     let keycaps: [String]
     let tried: Bool
+    @Environment(\.accessibilityReduceMotion) private var still
 
     var body: some View {
         HStack(spacing: 12) {
@@ -283,7 +284,7 @@ private struct HotkeyPill: View {
         .frame(height: 56)
         .background(Color.primary.opacity(0.035), in: Capsule())
         .overlay(Capsule().strokeBorder(LinearGradient.brand, lineWidth: 1.5))
-        .animation(.spring(duration: 0.5, bounce: 0.3), value: tried)
+        .animation(still ? .easeOut(duration: 0.2) : .spring(duration: 0.5, bounce: 0.3), value: tried)
     }
 }
 
@@ -309,6 +310,7 @@ private struct PermissionRow: View {
     let permission: Permission
     let access: Permission.Access?
     let allow: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var still
 
     var body: some View {
         Row(symbol: permission.symbol, title: permission.title, detail: permission.why,
@@ -327,7 +329,7 @@ private struct PermissionRow: View {
                     .accessibilityLabel("Allow \(permission.title)")
             }
         }
-        .animation(.spring(duration: 0.45, bounce: 0.35), value: access)
+        .animation(still ? .easeOut(duration: 0.2) : .spring(duration: 0.45, bounce: 0.35), value: access)
     }
 }
 
@@ -380,6 +382,7 @@ private struct PillButtonStyle: ButtonStyle {
         let configuration: Configuration
         let prominent: Bool
         @State private var hovering = false
+        @Environment(\.accessibilityReduceMotion) private var still
 
         var body: some View {
             configuration.label
@@ -397,7 +400,7 @@ private struct PillButtonStyle: ButtonStyle {
                     }
                 }
                 .contentShape(Capsule())
-                .scaleEffect(configuration.isPressed ? 0.97 : 1)
+                .scaleEffect(configuration.isPressed && !still ? 0.97 : 1)
                 .animation(.spring(duration: 0.25), value: configuration.isPressed)
                 .onHover { hovering = $0 }
         }

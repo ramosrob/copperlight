@@ -70,6 +70,9 @@ Keywords, or `[keywords]` (`translate = "t"`, `commands = ";"`).
 
 - **One hotkey** opens and hides it (`[hotkeys] launcher`, ⌥Space by default). It's the only global hotkey:
   everything else is found by typing.
+- **Moves smoothly:** it springs open, the card glides to its rows and answers, and the selection glides from row to
+  row; the rows themselves change at once, so typing never waits. With Reduce Motion on (System Settings ›
+  Accessibility › Display), it changes in place and only fades in.
 - **Opens on what you selected:** with text selected in the app you're in, the hotkey opens with it typed and
   selected (on one line, up to 500 characters): `tra` ⇥ translates it, Enter searches it, typing replaces it. Read
   through Accessibility, never from a password field; apps that don't share their selection open empty.
