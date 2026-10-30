@@ -84,6 +84,12 @@ struct StockProvider: ResultProvider {
         guard !typed.isEmpty else { return [] }
         guard let symbol = stockSymbol(typed) else { return [note("Type a ticker, like AAPL", "Yahoo Finance's symbol: MGLU3.SA, ^BVSP")] }
         if let cached = Self.cache.withLock({ $0[symbol] }), Date.now.timeIntervalSince(cached.fetched) < 60 { return [row(cached.quote)] }
+        // The card's shape at once, with the ticker; the price fills it in.
+        return [LauncherResult(id: "stock", title: "Stock Price of \(symbol)", subtitle: "Asking Yahoo Finance…", icon: .symbol(Self.icon),
+                               score: 50, actionTitle: "", action: {}, answer: .stock(.loading(symbol)), later: { await quote(symbol) })]
+    }
+
+    private func quote(_ symbol: String) async -> [LauncherResult] {
         try? await Task.sleep(for: pause) // the next keystroke cancels this round, so only a pause asks Yahoo
         guard !Task.isCancelled else { return [] }
         guard let data = await fetch(symbol) else { return [note("Couldn't reach Yahoo Finance", "Check the connection and try again")] }

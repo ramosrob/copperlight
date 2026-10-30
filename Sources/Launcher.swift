@@ -91,6 +91,9 @@ struct LauncherResult: Identifiable, Sendable {
     /// Drawn big in place of the preview pane (a QR code, a stock, a color). Every row of one answer carries it, so it
     /// stays while you move between them.
     var answer: Answer? = nil
+    /// Fills itself in: rows that take this one's place when they come (the weather, once Open-Meteo answers). Until
+    /// then it shows as it is, its card loading; the next keystroke cancels them.
+    var later: (@Sendable () async -> [LauncherResult])? = nil
 }
 
 let configDir = URL.homeDirectory.appending(path: ".config/copperlight")
@@ -464,6 +467,14 @@ final class SearchModel {
                     if pending == 0 { return group.cancelAll() } // ends the wait early
                 }
             }
+            // Rows that fill themselves in take their places as they come, in this round: a keystroke cancels them.
+            await withTaskGroup(of: (id: String, rows: [LauncherResult]).self) { group in
+                for row in results { if let later = row.later { group.addTask { (row.id, await later()) } } }
+                for await (id, rows) in group where !Task.isCancelled {
+                    withAnimation(Motion.at(.easeOut(duration: 0.2))) { results = results.flatMap { $0.id == id ? rows : [$0] } }
+                    selection = min(selection, max(0, self.rows.count - 1))
+                }
+            }
         }
     }
 
@@ -812,6 +823,7 @@ private struct LauncherView: View {
                     }
                 }
                 .modifier(Card(radius: Self.cardRadius))
+                .transition(still ? .opacity : .reveal)
             }
         }
         .fixedSize(horizontal: false, vertical: true) // its natural height, at the top of the window
@@ -919,6 +931,27 @@ private struct LauncherView: View {
     static func at(_ animation: Animation, still: Bool) -> Animation? { still ? nil : at(animation) }
     /// How big the launcher starts as it opens: a touch smaller, springing up; with Reduce Motion, its size (it fades).
     static func opening(still: Bool) -> CGFloat { still ? 1 : 0.96 }
+}
+
+extension AnyTransition {
+    /// The card coming out of the field: shown from its top down as the panel grows, its shadow too, and folding back
+    /// up into the field as it goes.
+    static var reveal: AnyTransition { .modifier(active: Reveal(shown: 0), identity: Reveal(shown: 1)) }
+}
+
+private struct Reveal: ViewModifier {
+    var shown: CGFloat
+
+    func body(content: Content) -> some View {
+        content.mask(alignment: .top) {
+            // A soft lower edge, so it comes out of the field rather than being cut.
+            VStack(spacing: 0) {
+                Rectangle()
+                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: 28)
+            }
+            .padding(-LauncherPanel.margin).scaleEffect(x: 1, y: max(shown, 0.001), anchor: .top)
+        }
+    }
 }
 
 /// What the card's size follows: a change animates it.

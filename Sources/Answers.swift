@@ -24,6 +24,15 @@ struct WeatherCard: Sendable {
     var details: String // "H 23° · L 15° · Feels like 20° · Wind 14 km/h"
     var hours: [Hour], days: [Day]
     var updated: String // "Open-Meteo · updated 14:52"
+    var loading = false
+
+    /// The card's shape while the forecast comes: the place, the rest in gray bars.
+    static func loading(_ place: String) -> WeatherCard {
+        WeatherCard(place: place, temperature: "20°", symbol: "cloud.sun.fill", conditions: "Partly cloudy",
+                    details: "H 24° · L 14° · Feels like 20° · Wind 10 km/h",
+                    hours: (0..<8).map { _ in Hour(label: "12:00", symbol: "sun.max.fill", temperature: "20°") },
+                    days: (0..<5).map { _ in Day(label: "Mon", symbol: "sun.max.fill", low: 14, high: 24) }, updated: "Open-Meteo", loading: true)
+    }
 }
 
 /// The meeting to join, its text ready to show.
@@ -74,6 +83,13 @@ struct StockCard: Sendable {
     var previousClose: Double?
     var facts: [(String, String)]
     var action: String // what Enter does
+    var loading = false
+
+    /// The card's shape while the price comes: the ticker, the rest in gray bars.
+    static func loading(_ symbol: String) -> StockCard {
+        StockCard(kicker: symbol, price: "$100.00", change: "▲ 1.00% today", up: true, corner: "Today, 16:00 · Nasdaq", closes: (0..<32).map { 1 + sin(Double($0) / 4) / 20 + Double($0) / 300 }, // a soft wave
+                  previousClose: nil, facts: [("Previous close", "$100.00"), ("7 days", "+1.00%")], action: "Open in Yahoo Finance", loading: true)
+    }
 }
 
 extension Color {
@@ -176,7 +192,7 @@ struct StockCardView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Kicker(text: card.kicker)
+                    Kicker(text: card.kicker).unredacted()
                     HStack(spacing: 12) {
                         Text(card.price).font(.system(size: 36, weight: .semibold)).monospacedDigit()
                         if !card.change.isEmpty {
@@ -196,6 +212,7 @@ struct StockCardView: View {
                 EnterHint(action: card.action)
             }
         }
+        .modifier(Loading(active: card.loading))
     }
 }
 
@@ -385,7 +402,7 @@ struct WeatherCardView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 28) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Kicker(text: "\(card.place) · now")
+                    Kicker(text: "\(card.place) · now").unredacted()
                     HStack(spacing: 12) {
                         WeatherSymbol(name: card.symbol, size: 40)
                         Text(card.temperature).font(.system(size: 60, weight: .semibold)).monospacedDigit()
@@ -425,6 +442,7 @@ struct WeatherCardView: View {
                 EnterHint(action: "Open in Weather")
             }
         }
+        .modifier(Loading(active: card.loading))
     }
 }
 
@@ -473,6 +491,21 @@ struct WeekCardView: View {
                 }
             }
             .fixedSize(horizontal: false, vertical: true) // the columns as tall as the fullest day
+        }
+    }
+}
+
+/// An answer on its way: its card's shape, the words in gray bars, gently pulsing (still, with Reduce Motion).
+private struct Loading: ViewModifier {
+    let active: Bool
+    @Environment(\.accessibilityReduceMotion) private var still
+
+    func body(content: Content) -> some View {
+        if active {
+            content.redacted(reason: .placeholder).saturation(0)
+                .phaseAnimator(still ? [1.0] : [1.0, 0.5]) { $0.opacity($1) } animation: { _ in .easeInOut(duration: 0.9) }
+        } else {
+            content
         }
     }
 }

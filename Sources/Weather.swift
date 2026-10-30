@@ -240,6 +240,14 @@ final class WeatherProvider: ResultProvider {
         if let cached = Self.cache.withLock({ $0[key] }), Date.now.timeIntervalSince(cached.fetched) < 600 {
             return [row(cached.forecast, place: cached.place, updated: cached.fetched)]
         }
+        // The card's shape at once, with the place; the forecast fills it in.
+        let place = key.isEmpty ? "Here" : (typed.isEmpty ? city : typed).capitalized
+        return [LauncherResult(id: "weather", title: "Weather in \(place)", subtitle: "Asking Open-Meteo…", icon: .symbol(Self.icon),
+                               score: 50, actionTitle: "", action: {}, answer: .weather(.loading(place)),
+                               later: { await self.forecast(key: key, typed: typed, city: city) })]
+    }
+
+    private func forecast(key: String, typed: String, city: String) async -> [LauncherResult] {
         try? await Task.sleep(for: pause) // the next keystroke cancels this round, so only a pause asks Open-Meteo
         guard !Task.isCancelled else { return [] }
         let place: Place

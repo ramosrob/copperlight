@@ -70,8 +70,9 @@ Keywords, or `[keywords]` (`translate = "t"`, `commands = ";"`).
 
 - **One hotkey** opens and hides it (`[hotkeys] launcher`, ⌥Space by default). It's the only global hotkey:
   everything else is found by typing.
-- **Moves smoothly:** it springs open, the card glides to its rows and answers, and the selection glides from row to
-  row; the rows themselves change at once, so typing never waits. With Reduce Motion on (System Settings ›
+- **Moves smoothly:** it springs open, the card comes out of the field and glides to its rows and answers, and the
+  selection glides from row to row; the rows themselves change at once, so typing never waits. The weather and a
+  stock show their card's shape at once, with the place or ticker, and fill it in when the answer comes. With Reduce Motion on (System Settings ›
   Accessibility › Display), it changes in place and only fades in.
 - **Opens on what you selected:** with text selected in the app you're in, the hotkey opens with it typed and
   selected (on one line, up to 500 characters): `tra` ⇥ translates it, Enter searches it, typing replaces it. Read

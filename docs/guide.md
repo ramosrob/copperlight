@@ -19,7 +19,9 @@ config.toml.
 The launcher is the only global hotkey, and the panel has no modifier keys: anything besides Enter is a
 command you type after `:`. Everything else (note, clipboard history, pomodoro…) is found by typing.
 
-It springs open, its card glides to the rows and answers, and the selection glides as you move; with Reduce Motion
+It springs open, its card comes out of the field and glides to the rows and answers, and the selection glides as you
+move. The weather and a stock show their card's shape at once, with the place or ticker, and fill it in when the
+answer comes; with Reduce Motion
 on (System Settings › Accessibility › Display), it changes in place and only fades in.
 
 **Turning features off:** everything below is on. Settings › Features has a switch for each feature, by group:
