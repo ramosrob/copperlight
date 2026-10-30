@@ -500,5 +500,5 @@ trimmed: names, descriptions, homepages), `photos.sqlite` (the text in your phot
 
 ## Not here on purpose
 
-An AI service or chat (app words come from the Mac's own model), a plugin store, sync, accounts, hotkeys for anything but the launcher, and prefix symbols besides `:`.
+An AI service or chat (app words come from the Mac's own model), a plugin store, sync, accounts, and hotkeys for anything but the launcher.
 See SPEC.md.

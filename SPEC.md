@@ -35,8 +35,9 @@ tools built on them (git, gh, Claude Code, Jira) were taken out on 2026-10-27: t
   files (`:left`, `:quit saf`, `:lock`; `:!git status` runs a shell line, like vim). Everything else is typed by
   name, and text after a name goes to it (`pomo 50`, `add note buy milk`, `deploy staging`). Capture is one
   word, `add` (`add todo …`, `add event …`), and `add` alone lists what it can add. Math, currency, URLs
-  and paths are recognized by their shape. No other prefix symbols: they hide files whose names start with
-  them, and nobody can find them by searching (decided 2026-10-13).
+  and paths are recognized by their shape. No other built-in prefix symbols: they hide files whose names start
+  with them, and nobody can find them by searching (decided 2026-10-13). You can give `:` a symbol of your own
+  beside it in Settings › Keywords, `;` say (decided 2026-10-30).
 - **Commands grouped by what they act on.** Related commands share their first word (`:left`, `:left third`,
   `:left two thirds`), and typing that word lists the group. As commands grow, a person remembers a handful of
   words, not a long flat list (decided 2026-10-13).
