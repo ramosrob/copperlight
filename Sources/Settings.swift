@@ -98,8 +98,10 @@ import SwiftUI
         binding(path, table, key) { .strings($0) }
     }
 
+    /// A text field's key. Empty is no value, so the "" a field hands back as it appears, with nothing set, changes nothing.
     func text(_ path: WritableKeyPath<Config, String?>, _ table: String, _ key: String) -> Binding<String?> {
-        binding(path, table, key) { $0.flatMap { $0.isEmpty ? nil : .string($0) } }
+        let key = binding(path, table, key) { $0.map { .string($0) } }
+        return Binding(get: { key.wrappedValue }, set: { key.wrappedValue = $0?.isEmpty == true ? nil : $0 })
     }
 
     var hotkey: Binding<KeyboardShortcuts.Shortcut?> {
@@ -135,8 +137,8 @@ import SwiftUI
 final class SettingsWindow: AppWindow {
     let model: SettingsModel
 
-    init(showWelcome: @escaping @MainActor () -> Void, forget: @escaping @MainActor (SearchModel.Learned) -> Void) {
-        let model = SettingsModel()
+    init(showWelcome: @escaping @MainActor () -> Void, forget: @escaping @MainActor (SearchModel.Learned) -> Void, file: URL = Config.file) {
+        let model = SettingsModel(file: file)
         self.model = model
         super.init(title: "Copperlight Settings", style: .miniaturizable,
                    content: SettingsView(model: model, showWelcome: showWelcome, forget: forget))
@@ -233,7 +235,8 @@ private struct Problem: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-            Text(text).font(.callout).fixedSize(horizontal: false, vertical: true)
+            // Not fixedSize: measured at no width, that stood a character a line, and the window grew to fit it.
+            Text(text).font(.callout).lineLimit(3)
             Spacer(minLength: 8)
             Button("Open config.toml") { NSWorkspace.shared.open(Config.file) }
         }

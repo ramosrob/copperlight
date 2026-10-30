@@ -205,18 +205,19 @@ final class WeatherProvider: ResultProvider {
     private let status: @Sendable () -> LocationStatus
     private let locate: @Sendable () async -> Place?
     private let fetch: @Sendable (URL) async -> Data?
-    private let fahrenheit = Locale.current.measurementSystem == .us
+    private let fahrenheit: Bool
     var modes: [Mode] { [Mode(prefix: "weather ", title: "Weather", icon: .symbol(Self.icon), hint: "A city, or nothing for where you are")] }
 
     init(pause: Duration = .milliseconds(350), city: String = "", status: @escaping @Sendable () -> LocationStatus = { Locator.status },
          locate: @escaping @Sendable () async -> Place? = { await Locator.here() },
+         fahrenheit: Bool = Locale.current.measurementSystem == .us, // °F and mph where the Mac uses US units
          fetch: @escaping @Sendable (URL) async -> Data? = { url in
              guard let (data, response) = try? await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 6)),
                    (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
              return data
          }) {
         self.city = Mutex(city) // a Mutex can't go in a tuple
-        (self.pause, self.status, self.locate, self.fetch) = (pause, status, locate, fetch)
+        (self.pause, self.status, self.locate, self.fahrenheit, self.fetch) = (pause, status, locate, fahrenheit, fetch)
     }
 
     func setCity(_ name: String) { city.withLock { $0 = name.trimmingCharacters(in: .whitespaces) } }

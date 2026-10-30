@@ -3396,8 +3396,8 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
 
     // The chip, a city typed: asked once typing pauses; Enter opens Weather.
     let asked = Mutex<[String]>([])
-    func provider(_ status: LocationStatus, city: String = "", here: Place? = nil) -> WeatherProvider {
-        WeatherProvider(pause: .zero, city: city, status: { status }, locate: { here }, fetch: { url in
+    func provider(_ status: LocationStatus, city: String = "", here: Place? = nil, fahrenheit: Bool = false) -> WeatherProvider {
+        WeatherProvider(pause: .zero, city: city, status: { status }, locate: { here }, fahrenheit: fahrenheit, fetch: { url in
             asked.withLock { $0.append(url.absoluteString) }
             return url.host()?.hasPrefix("geocoding") == true ? placeData : forecastData
         })
@@ -3406,6 +3406,8 @@ private let unknownTicker = Data(#"{"chart":{"result":null,"error":{"code":"Not 
     #expect(typed.first?.title == "19° · Clear" && typed.first?.subtitle == "Lisbon · H 26° L 12°" && typed.first?.actionTitle == "Open")
     guard case .weather(let shown)? = typed.first?.answer else { Issue.record("no weather card"); return }
     #expect(shown.place == "Lisbon")
+    // °F where the Mac uses US units, whatever this machine uses (CI's does).
+    #expect(await provider(.refused, fahrenheit: true).modeResults(for: "weather lisbon").first?.title == "65° · Clear")
     // Only a rounded place goes to the forecast: about a kilometer.
     #expect(asked.withLock { $0.last }?.contains("latitude=38.73&longitude=-9.15") == true)
 
@@ -3697,4 +3699,38 @@ private struct Carded: ResultProvider {
     model.keyword("translate").wrappedValue = ""
     let removed = try String(contentsOf: file, encoding: .utf8)
     #expect(!removed.contains("\ntranslate = "))
+}
+
+// MARK: The settings window
+
+/// An empty field is no value: the City field's "" on opening Settings, with no city set, changes nothing.
+@MainActor @Test func settingsEmptyTextIsNoValue() throws {
+    let file = FileManager.default.temporaryDirectory.appending(path: "settings-\(UUID().uuidString).toml")
+    defer { try? FileManager.default.removeItem(at: file) }
+    try Config.example.write(to: file, atomically: true, encoding: .utf8)
+    let model = SettingsModel(file: file)
+    model.text(\.weather.city, "weather", "city").wrappedValue = ""
+    let after = try String(contentsOf: file, encoding: .utf8)
+    #expect(model.problem == nil && after == Config.example)
+    model.text(\.weather.city, "weather", "city").wrappedValue = "Lisbon"
+    model.text(\.weather.city, "weather", "city").wrappedValue = ""
+    #expect(model.problem == nil && model.config.weather.city == nil)
+}
+
+/// A problem's banner sits over the pane: the pane still fits the window and scrolls, nothing pushed out of sight.
+@MainActor @Test func settingsFitTheirWindow() async throws {
+    let file = FileManager.default.temporaryDirectory.appending(path: "settings-\(UUID().uuidString).toml")
+    defer { try? FileManager.default.removeItem(at: file) }
+    try Config.example.write(to: file, atomically: true, encoding: .utf8)
+    let window = SettingsWindow(showWelcome: {}, forget: { _ in }, file: file)
+    window.model.problem = "config.toml has a mistake (line 3). Fix it there and these settings come back."
+    window.setFrameOrigin(NSPoint(x: -6000, y: -6000)) // off every screen
+    window.orderFrontRegardless()
+    defer { window.orderOut(nil) }
+    try await Task.sleep(for: .milliseconds(400))
+    let content = try #require(window.contentView)
+    func tallest(_ view: NSView, depth: Int = 0) -> CGFloat {
+        depth > 4 ? 0 : view.subviews.map { max($0.frame.height, tallest($0, depth: depth + 1)) }.max() ?? 0
+    }
+    #expect(tallest(content) <= content.frame.height, "a view inside is taller than the window")
 }
