@@ -58,7 +58,7 @@ enum Feature: String, CaseIterable, Sendable {
         case .clipboard: ["clip"]
         case .notes: ["note", "add note"]
         case .contacts: ["contact"]
-        case .calendar: ["meetings", "add event"]
+        case .calendar: ["meetings", "week", "add event"]
         case .reminders: ["due", "add todo"]
         case .files: ["f"]
         case .browserTabs: ["tabs"]
@@ -97,7 +97,7 @@ enum Feature: String, CaseIterable, Sendable {
         case .scripts: ("Scripts", "The scripts folder, as rows")
         case .commands: ("Your commands", "The links, apps, files and shell lines in config.toml")
         case .contacts: ("Contacts", "contact ana")
-        case .calendar: ("Calendar", "The next meeting, meetings, add event")
+        case .calendar: ("Calendar", "The next meeting, meetings, week, add event")
         case .reminders: ("Reminders", "Reminders that are due, add todo")
         case .files: ("Files", "f invoice, ~/code, :reveal, :trash")
         case .browserTabs: ("Browser tabs", "Your open tabs, by title")

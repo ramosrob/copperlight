@@ -28,6 +28,7 @@ struct CalendarItem: Sendable {
     var notes: String?
     var people: [String] = []
     var organizer: String?
+    var allDay = false
     var id = ""
 }
 
@@ -36,8 +37,39 @@ extension CalendarItem {
         self.init(title: event.title ?? "Untitled", start: event.startDate, end: event.endDate,
                   link: joinLink(in: [event.url?.absoluteString, event.location, event.notes]), calendar: event.calendar?.title ?? "",
                   location: event.location, notes: event.notes, people: (event.attendees ?? []).compactMap(\.name),
-                  organizer: event.organizer?.name, id: event.eventIdentifier ?? "")
+                  organizer: event.organizer?.name, allDay: event.isAllDay, id: event.eventIdentifier ?? "")
     }
+}
+
+/// The week `now` is in (from the first weekday where you are), or the one after.
+func weekInterval(now: Date = .now, calendar: Calendar = .current, next: Bool = false) -> DateInterval {
+    let week = calendar.dateInterval(of: .weekOfYear, for: now)!
+    let start = next ? week.end : week.start
+    return DateInterval(start: start, end: calendar.date(byAdding: .day, value: 7, to: start)!)
+}
+
+/// `week`, at a glance: each day's events, all day first and then by time, at most 5 (and how many more); today and
+/// the days and events already over marked. An event over midnight shows on both days ("until 6:00").
+func weekCard(_ items: [CalendarItem], now: Date = .now, calendar: Calendar = .current, next: Bool = false) -> WeekCard {
+    let week = weekInterval(now: now, calendar: calendar, next: next)
+    let hours = Date.FormatStyle(date: .omitted, time: .shortened, timeZone: calendar.timeZone)
+    var range = Date.IntervalFormatStyle.interval.month(.abbreviated).day() // "Oct 26 – Nov 1", "Nov 2 – 8"
+    range.timeZone = calendar.timeZone
+    let days = (0..<7).map { offset in
+        let start = calendar.date(byAdding: .day, value: offset, to: week.start)!, end = calendar.date(byAdding: .day, value: 1, to: start)!
+        let mine = items.filter { $0.start < end && $0.end > start }.sorted { ($0.allDay ? 0 : 1, $0.start) < ($1.allDay ? 0 : 1, $1.start) }
+        let events = mine.prefix(5).map { item in
+            WeekCard.Event(time: item.allDay ? "All day" : item.start < start ? "until " + item.end.formatted(hours) : item.start.formatted(hours),
+                           title: item.title, past: item.end <= now)
+        }
+        return WeekCard.Day(name: calendar.shortWeekdaySymbols[calendar.component(.weekday, from: start) - 1],
+                            number: "\(calendar.component(.day, from: start))", today: start <= now && now < end, past: end <= now,
+                            events: events, more: mine.count - events.count)
+    }
+    let last = calendar.date(byAdding: .day, value: 6, to: week.start)!
+    // A repeating event's occurrences share an id: one event is an id and a start.
+    let count = Set(items.filter { $0.start < week.end && $0.end > week.start }.map { "\($0.id)@\($0.start.timeIntervalSince1970)" }).count
+    return WeekCard(kicker: next ? "Next week" : "This week", range: (week.start..<last).formatted(range), count: count, days: days)
 }
 
 /// The meeting the empty launcher offers: one with a call to join, starting in the next 10 minutes or started in the
@@ -136,6 +168,14 @@ actor MeetingsProvider: ResultProvider {
             .filter { !$0.isAllDay && $0.endDate > now }.sorted { $0.startDate < $1.startDate }.map(CalendarItem.init)
     }
 
+    /// Every event in `interval`, all-day ones too. Only with access.
+    private func events(in interval: DateInterval) -> [CalendarItem] {
+        guard EKEventStore.authorizationStatus(for: .event) == .fullAccess else { return [] }
+        let store = self.store ?? EKEventStore()
+        self.store = store
+        return store.events(matching: store.predicateForEvents(withStart: interval.start, end: interval.end, calendars: nil)).map(CalendarItem.init)
+    }
+
     private func row(_ item: CalendarItem, score: Double, now: Date) -> LauncherResult {
         let hours = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
         let badge = eventBadge(item, now: now)
@@ -168,13 +208,15 @@ actor MeetingsProvider: ResultProvider {
     func results(for query: String) async -> [LauncherResult] {
         let lower = query.lowercased()
         let base: Double
-        if lower.count >= 3, "meetings".hasPrefix(lower) || "agenda".hasPrefix(lower) { base = 50 }
+        let week: Bool? = lower == "next week" ? true : lower == "this week" || lower.count >= 3 && "week".hasPrefix(lower) ? false : nil
+        if week != nil { base = 50 }
+        else if lower.count >= 3, "meetings".hasPrefix(lower) || "agenda".hasPrefix(lower) { base = 50 }
         else if lower == "event" || lower == "events" { base = 50 }
         else if lower == "calendar" { base = 1 } // the app first: it's what "calendar" opens
         else { return [] }
         let message = { (title: String, subtitle: String, actionTitle: String, action: @escaping @MainActor @Sendable () -> Void) in
-            LauncherResult(id: "builtin:meetings", title: title, subtitle: subtitle, icon: .symbol("calendar"), score: base,
-                           actionTitle: actionTitle, action: action)
+            LauncherResult(id: week == nil ? "builtin:meetings" : "builtin:week", title: title, subtitle: subtitle, icon: .symbol("calendar"),
+                           score: base, actionTitle: actionTitle, action: action)
         }
         switch EKEventStore.authorizationStatus(for: .event) {
         case .fullAccess: break
@@ -183,14 +225,20 @@ actor MeetingsProvider: ResultProvider {
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!)
             })]
         default: // not asked yet, or add-only (for `add event`)
-            return [message("See Today's Meetings", "Asks to read your calendars, once", "Allow", {
+            return [message(week == nil ? "See Today's Meetings" : "See Your Week", "Asks to read your calendars, once", "Allow", {
                 Task {
                     guard (try? await EKEventStore().requestFullAccessToEvents()) == true else { return notify("Copperlight can't see your calendars") }
-                    notify("Type “meetings” again to see them")
+                    notify(week == nil ? "Type “meetings” again to see them" : "Type “week” again to see it")
                 }
             })]
         }
         let now = Date.now
+        if let next = week {
+            let card = weekCard(events(in: weekInterval(now: now, next: next)), now: now, next: next)
+            return [LauncherResult(id: "builtin:week", title: "\(card.kicker): \(card.count == 1 ? "1 event" : "\(card.count) events")",
+                                   subtitle: card.range, icon: .symbol("calendar"), score: base, actionTitle: "Open Calendar",
+                                   action: openCalendar, answer: .week(card))]
+        }
         let items = today(now: now) ?? []
         guard !items.isEmpty else { return [message("No more meetings today", "", "Open Calendar", openCalendar)] }
         return rows(items, base: base, now: now)

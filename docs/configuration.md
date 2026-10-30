@@ -169,7 +169,7 @@ switches. Finding apps, the search row and Copperlight's own rows are always on.
 | `scripts` | The scripts folder |
 | `commands` | Your `[[command]]`s |
 | `contacts` | `contact ana` |
-| `calendar` | The next meeting, `meetings`, `add event` |
+| `calendar` | The next meeting, `meetings`, `week`, `add event` |
 | `reminders` | Reminders that are due, `add todo` |
 | `files` | Files and folders, `f invoice`, `~/` and `/` paths, `:reveal`, `:copy path`, `:open with`, `:trash`, `:terminal` |
 | `browser_tabs` | Your open tabs |
@@ -210,7 +210,7 @@ Settings › Keywords has a field for each.
 | `clip` | Clipboard history |
 | `note`, `add_note` | `note`, `add note` |
 | `contact`, `tabs`, `timer`, `pomo`, `stopwatch` | The same words |
-| `meetings`, `add_event` | `meetings`, `add event` |
+| `meetings`, `week`, `add_event` | `meetings`, `week`, `add event` |
 | `due`, `add_todo` | `due`, `add todo` |
 | `f` | `f` for files |
 | `copy_text` | `copy text` from the screen |

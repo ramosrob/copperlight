@@ -31,6 +31,7 @@ Keywords, or `[keywords]` (`translate = "t"`, `commands = ";"`).
 | `ana` | People from Contacts; Tab: every way to reach them | Messages them |
 | `due` | Reminders due today and overdue (soon ones wait in the empty launcher) | Completes it |
 | `meetings`, `agenda`, `events` | The rest of today's events; a copper badge on what's soon; Tab: the details | Joins the video call |
+| `week`, `next week` | Your week at a glance, a column a day | Opens Calendar |
 | `bluetooth`, `dark mode` | System Settings pages | Opens that page |
 | `emoji party` | Emoji by name | Pastes it |
 | `define serendipity` | The dictionary entry, across the card | Opens it in Dictionary |
@@ -256,6 +257,9 @@ Keywords, or `[keywords]` (`translate = "t"`, `commands = ";"`).
   time and how soon, a copper badge on one within the hour or going; Tab shows its details. Enter joins a Meet,
   Zoom, Teams or Webex call found in the event (a Meet link opens in your `[browser]` profile), or opens Calendar.
   Calendars added to the Calendar app count (Google, Outlook).
+- **The week** (`week` from `wee`, `this week`, `next week`): the whole card, a column a day from your first
+  weekday, each day's events stacked with their times (all-day ones first, 5 a day and how many more). Today's date
+  is on copper; the days and events already over fade. Enter opens Calendar.
 
 ## People and reminders
 
@@ -482,7 +486,7 @@ Otherwise macOS asks when a feature first needs one:
 | Screen Recording | First `copy text` | Reading the part of the screen you drag over |
 | Bluetooth | `:connect`, from its Allow row | Listing, connecting and disconnecting paired devices |
 | Calendars, add only | First `add event` | Adding events |
-| Calendars, full access | `meetings`, from its Allow row | Reading today's events |
+| Calendars, full access | `meetings` or `week`, from its Allow row | Reading your events |
 | Full Disk Access (by hand) | Only for Safari | Reading Safari's bookmarks and history |
 | Notifications | First pomodoro, timer or notification | Pomodoro and timer ends, shell results, errors |
 | Photos | From the welcome window | Reading the text in your photos, on the Mac |

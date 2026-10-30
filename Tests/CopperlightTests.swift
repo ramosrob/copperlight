@@ -2636,6 +2636,36 @@ private struct Speak: ResultProvider {
     #expect(!(await meetings.results(for: "calendar")).isEmpty)
     #expect(await meetings.results(for: "cal").isEmpty) // the Calendar app's, and Evernote's
     #expect(await meetings.results(for: "eve").isEmpty)
+    for word in ["wee", "week", "this week", "next week"] { #expect(!(await meetings.results(for: word)).isEmpty, "\(word)") }
+    #expect(await meetings.results(for: "weekly").isEmpty)
+    #expect(await meetings.results(for: "we").isEmpty)
+}
+
+/// `week`: the week you're in, each day's events (all day first, then by time), 5 a day at most; today and the days
+/// before it marked. `next week`: the one after.
+@Test func weekCardDays() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "Europe/Lisbon")!
+    calendar.firstWeekday = 2 // Monday
+    let at = { (day: Int, hour: Double) in calendar.date(from: DateComponents(year: 2026, month: 10, day: day))! + hour * 3600 }
+    let now = at(30, 14.5) // Friday afternoon
+    var items = [CalendarItem(title: "Standup", start: at(26, 9.5), end: at(26, 10), link: nil, id: "s"),
+                 CalendarItem(title: "Review", start: at(30, 15.5), end: at(30, 16), link: nil, id: "r"),
+                 CalendarItem(title: "Demo", start: at(30, 11), end: at(30, 12), link: nil, id: "d"),
+                 CalendarItem(title: "Night flight", start: at(31, 22), end: at(31, 30), link: nil, id: "f"), // into Sunday
+                 CalendarItem(title: "Holiday", start: at(30, 0), end: at(31, 0), link: nil, allDay: true, id: "h")]
+    items += (0..<7).map { CalendarItem(title: "Slot \($0)", start: at(28, 9 + Double($0)), end: at(28, 9.5 + Double($0)), link: nil, id: "x") }
+    let card = weekCard(items, now: now, calendar: calendar)
+    #expect(card.days.count == 7 && card.days.map(\.today) == [false, false, false, false, true, false, false])
+    #expect(card.days.map(\.past) == [true, true, true, true, false, false, false])
+    #expect(card.days[4].events.map(\.title) == ["Holiday", "Demo", "Review"] && card.days[4].events[0].time == "All day")
+    #expect(card.days[4].events.map(\.past) == [false, true, false])
+    #expect(card.days[2].events.count == 5 && card.days[2].more == 2) // a repeating event's occurrences share an id
+    #expect(card.days[5].events.map(\.title) == ["Night flight"] && card.days[6].events.first?.time.hasPrefix("until ") == true)
+    #expect(card.count == 12 && card.kicker == "This week" && card.days.map(\.number).first == "26" && card.days.map(\.number).last == "1")
+    let next = weekCard([], now: now, calendar: calendar, next: true)
+    #expect(next.kicker == "Next week" && next.days.first?.number == "2")
+    #expect(next.days.allSatisfy { !$0.past && !$0.today && $0.events.isEmpty })
 }
 
 @MainActor @Test func theEmptyFieldShowsWhatsUpNext() async throws {

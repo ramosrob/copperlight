@@ -13,6 +13,7 @@ enum Answer: Sendable {
     case currency(CurrencyCard)
     case meeting(MeetingCard)
     case weather(WeatherCard)
+    case week(WeekCard)
 }
 
 /// A forecast, its text ready to show; the days' temperatures as numbers, for their bars.
@@ -33,6 +34,16 @@ struct MeetingCard: Sendable {
     var initials: [String] // the first 4 people coming
     var names: String // "Ana, Mario, Bia, Rui +1"
     var note: String?
+}
+
+/// A week of events, its text ready to show.
+struct WeekCard: Sendable {
+    struct Day: Sendable { var name: String, number: String, today: Bool, past: Bool, events: [Event], more: Int } // "Mon", "26"
+    struct Event: Sendable { var time: String, title: String, past: Bool } // "9:30", "All day", "until 6:00"
+    var kicker: String // "This week", "Next week"
+    var range: String // "Oct 26 – Nov 1"
+    var count: Int
+    var days: [Day]
 }
 
 /// A conversion, its text ready to show.
@@ -413,6 +424,55 @@ struct WeatherCardView: View {
                 Spacer()
                 EnterHint(action: "Open in Weather")
             }
+        }
+    }
+}
+
+/// `week`: a column a day, its events stacked under it with their times; today's date on copper, what's over faded.
+struct WeekCardView: View {
+    let card: WeekCard
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 0) {
+                Kicker(text: card.kicker)
+                Text("  ·  \(card.range)  ·  \(card.count == 1 ? "1 event" : "\(card.count) events")").font(.system(size: 12)).foregroundStyle(.secondary)
+                Spacer()
+                EnterHint(action: "Open in Calendar")
+            }
+            HStack(alignment: .top, spacing: 4) {
+                ForEach(Array(card.days.enumerated()), id: \.offset) { _, day in
+                    VStack(spacing: 8) {
+                        HStack(spacing: 5) {
+                            Text(day.name).font(.system(size: 12, weight: .medium)).foregroundStyle(day.today ? .primary : .secondary)
+                            Text(day.number).font(.system(size: 12, weight: .semibold)).monospacedDigit()
+                                .foregroundStyle(day.today ? Color.white : .primary)
+                                .frame(minWidth: 20, minHeight: 20)
+                                .background { if day.today { Circle().fill(LinearGradient.brand) } }
+                        }
+                        .opacity(day.past ? 0.45 : 1)
+                        VStack(alignment: .leading, spacing: 4) {
+                            if day.events.isEmpty { Text("Free").font(.system(size: 11)).foregroundStyle(.tertiary).padding(6) }
+                            ForEach(Array(day.events.enumerated()), id: \.offset) { _, event in
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(event.time).font(.system(size: 10)).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
+                                    Text(event.title).font(.system(size: 11.5, weight: .medium)).lineLimit(2)
+                                }
+                                .padding(.horizontal, 7).padding(.vertical, 5)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.copper.opacity(event.past ? 0.10 : 0.22), in: .rect(cornerRadius: 7))
+                                .opacity(event.past ? 0.5 : 1)
+                            }
+                            if day.more > 0 { Text("+\(day.more) more").font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 7) }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(4)
+                        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity, alignment: .top)
+                        .background(Color.primary.opacity(day.today ? 0.06 : 0.03), in: .rect(cornerRadius: 9))
+                    }
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true) // the columns as tall as the fullest day
         }
     }
 }

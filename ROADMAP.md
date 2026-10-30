@@ -48,7 +48,7 @@ Roughly in that order, then a few weeks of daily use with fixes only.
 - **Files and apps:** `:move to`, `:rename`, `:duplicate`, `:compress`, AirDrop and `:info` on a file; the files selected in
   Finder as what the hotkey acts on; `:uninstall` (asks first); `:upgrade`; volume per app.
 - **Sports and flights:** scores and the next games of your teams; a flight's status from its number.
-- **Your day:** meetings beyond today, free slots to copy, and the next meeting in the menu bar; lists, priorities and
+- **Your day:** free slots to copy, and the next meeting in the menu bar; lists, priorities and
   places in `add todo` and `add event`; what's playing in the empty launcher; screenshots and downloads by date, and
   pasting the latest.
 - **The Mac:** `:input` for the microphone; the Wi-Fi password, and a QR code for guests; Stage Manager on and off; dismiss notifications.

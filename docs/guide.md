@@ -461,6 +461,11 @@ Enter joins the video call it finds in the event's URL, location or notes (Googl
 web links where `[browser]` says, or opens Calendar. The first time, the row asks to read your calendars (full
 access; `add event` only asked to add).
 
+**The week:** `week` (from `wee`) shows the week you're in across the card, a column a day starting on your first
+weekday, each day's events stacked under it with their times: all-day ones first, up to five, then "+2 more".
+Today's date sits on copper, and the days and events already over fade. `next week` shows the one after. Enter
+opens Calendar.
+
 **The next meeting:** a few minutes before a meeting with a call, there's no need to type: from 10 minutes before it
 starts until 10 minutes after, the empty launcher shows that meeting on a band: how soon it starts, its title, times
 and call, who's coming and the first line of its notes. Enter joins; the row under it opens Calendar. `meetings` puts
