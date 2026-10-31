@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import Carbon.HIToolbox
 import CoreBluetooth
 import Foundation
@@ -3894,4 +3895,27 @@ private struct Asking: ResultProvider {
     model.accent.wrappedValue = .copper
     text = try String(contentsOf: file, encoding: .utf8)
     #expect(!text.contains("\naccent = ") && model.config.look.accent == .copper)
+}
+
+// MARK: Camera
+
+/// `camera`: you, mirrored, across the card. Enter joins the meeting about to start, if there is one, else opens
+/// Photo Booth. Without access it asks from a row, once; a Mac without a camera says so.
+@Test func camera() async throws {
+    let camera = CameraProvider(status: { .authorized }, device: { "FaceTime HD Camera" }, join: { nil })
+    let row = try #require(await camera.results(for: "camera").first)
+    guard case .camera(let card)? = row.answer else { Issue.record("no camera card"); return }
+    #expect(card.name == "FaceTime HD Camera" && card.enter == "Open Photo Booth" && card.meeting == nil && row.actionTitle == "Open Photo Booth")
+    #expect(await camera.results(for: "came").count == 1)
+    #expect(await camera.results(for: "cam").isEmpty) // Calendar's, Camtasia's
+    // Before a call, Enter joins it.
+    let call = CalendarItem(title: "Weekly sync", start: .now + 240, end: .now + 2040, link: URL(string: "https://meet.google.com/abc-defg-hij"))
+    let meeting = joinRows(call, browser: Config.Browser(), score: 100)[0]
+    let before = try #require(await CameraProvider(status: { .authorized }, device: { "FaceTime HD Camera" }, join: { meeting }).results(for: "camera").first)
+    guard case .camera(let joining)? = before.answer else { Issue.record("no camera card"); return }
+    #expect(joining.enter == "Join Google Meet" && joining.meeting == "Weekly sync · in 4 min" && before.actionTitle == "Join")
+    // No camera, not asked yet, refused.
+    #expect(await CameraProvider(status: { .authorized }, device: { nil }, join: { nil }).results(for: "camera").map(\.title) == ["This Mac has no camera"])
+    #expect(await CameraProvider(status: { .notDetermined }, device: { "FaceTime HD Camera" }, join: { nil }).results(for: "camera").map(\.actionTitle) == ["Allow"])
+    #expect(await CameraProvider(status: { .denied }, device: { "FaceTime HD Camera" }, join: { nil }).results(for: "camera").map(\.actionTitle) == ["Open System Settings"])
 }

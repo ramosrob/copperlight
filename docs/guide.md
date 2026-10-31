@@ -481,6 +481,10 @@ weekday, each day's events stacked under it with their times: all-day ones first
 Today's date sits on copper, and the days and events already over fade. `next week` shows the one after. Enter
 opens Calendar.
 
+**Before a call:** `camera` (from `came`) shows what your camera sees across the card, mirrored like a mirror. When
+a meeting with a call is about to start, the card says which one and Enter joins it; otherwise Enter opens Photo
+Booth. The first time, the row asks to use the camera. It's on only while the card shows, and nothing is recorded.
+
 **The next meeting:** a few minutes before a meeting with a call, there's no need to type: from 10 minutes before it
 starts until 10 minutes after, the empty launcher shows that meeting on a band: how soon it starts, its title, times
 and call, who's coming and the first line of its notes. Enter joins; the row under it opens Calendar. `meetings` puts

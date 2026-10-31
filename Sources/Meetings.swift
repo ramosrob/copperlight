@@ -205,6 +205,12 @@ actor MeetingsProvider: ResultProvider {
         return nextMeeting(items, now: now).map { joinRows($0, now: now, browser: browser, score: 100) } ?? []
     }
 
+    /// The meeting to join now, as its Join row (what Enter does after `camera`); nil without one. Never asks for access.
+    func joinable() -> LauncherResult? {
+        let now = Date.now
+        return today(now: now).flatMap { nextMeeting($0, now: now) }.map { joinRows($0, now: now, browser: browser, score: 100)[0] }
+    }
+
     func results(for query: String) async -> [LauncherResult] {
         let lower = query.lowercased()
         let base: Double

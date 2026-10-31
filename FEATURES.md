@@ -32,6 +32,7 @@ Keywords, or `[keywords]` (`translate = "t"`, `commands = ";"`).
 | `due` | Reminders due today and overdue (soon ones wait in the empty launcher) | Completes it |
 | `meetings`, `agenda`, `events` | The rest of today's events; a copper badge on what's soon; Tab: the details | Joins the video call |
 | `week`, `next week` | Your week at a glance, a column a day | Opens Calendar |
+| `camera` | You, mirrored, before a call | Joins the meeting about to start, or opens Photo Booth |
 | `bluetooth`, `dark mode` | System Settings pages | Opens that page |
 | `emoji party` | Emoji by name | Pastes it |
 | `define serendipity` | The dictionary entry, across the card | Opens it in Dictionary |
@@ -269,6 +270,9 @@ Keywords, or `[keywords]` (`translate = "t"`, `commands = ";"`).
 - **The week** (`week` from `wee`, `this week`, `next week`): the whole card, a column a day from your first
   weekday, each day's events stacked with their times (all-day ones first, 5 a day and how many more). Today's date
   is on copper; the days and events already over fade. Enter opens Calendar.
+- **The camera** (`camera` from `came`): what your camera sees, mirrored, across the card, to check yourself before
+  a call. With a meeting about to start (the one the empty launcher offers), the card names it and Enter joins it;
+  otherwise Enter opens Photo Booth. The camera is on only while the card shows, and nothing is recorded.
 
 ## People and reminders
 
@@ -496,6 +500,7 @@ Otherwise macOS asks when a feature first needs one:
 | Bluetooth | `:connect`, from its Allow row | Listing, connecting and disconnecting paired devices |
 | Calendars, add only | First `add event` | Adding events |
 | Calendars, full access | `meetings` or `week`, from its Allow row | Reading your events |
+| Camera | `camera`, from its Allow row | Showing you yourself before a call |
 | Full Disk Access (by hand) | Only for Safari | Reading Safari's bookmarks and history |
 | Notifications | First pomodoro, timer or notification | Pomodoro and timer ends, shell results, errors |
 | Photos | From the welcome window | Reading the text in your photos, on the Mac |

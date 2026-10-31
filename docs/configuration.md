@@ -189,6 +189,7 @@ switches. Finding apps, the search row and Copperlight's own rows are always on.
 | `sound` | `:play`, `:next track`, `:volume 30`, `:mute`, `:mute mic`, `:output` |
 | `keep_awake` | `:awake`, `:awake 2h` |
 | `bluetooth` | `:connect airpods` |
+| `camera` | `camera`, a look at yourself before a call |
 | `shortcuts` | `:shortcut` |
 | `shell` | `:!` shell lines |
 | `homebrew` | Installing an app you don't have, from its row |
@@ -218,7 +219,7 @@ Settings › Keywords has a field for each.
 | `speed`, `cpu`, `memory`, `port` | The same words |
 | `clip` | Clipboard history |
 | `note`, `add_note` | `note`, `add note` |
-| `contact`, `tabs`, `timer`, `pomo`, `stopwatch` | The same words |
+| `contact`, `tabs`, `timer`, `pomo`, `stopwatch`, `camera` | The same words |
 | `meetings`, `week`, `add_event` | `meetings`, `week`, `add event` |
 | `due`, `add_todo` | `due`, `add todo` |
 | `f` | `f` for files |

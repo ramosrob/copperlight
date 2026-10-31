@@ -195,6 +195,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                      (EmojiProvider(), .emoji), (DefineProvider(), .define), (SpellProvider(), .spelling),
                      (translate, .translate), (StockProvider(), .stocks), (weather, .weather), (meetings, .calendar), (reminders, .reminders),
                      (contacts, .contacts), (TextToolProvider(), .textTools),
+                     (CameraProvider(join: Self.joinable(meetings)), .camera),
                      (ColorProvider(show: { [unowned self] in panel.show(typing: $0) }, store: .shared), .colors), (QRCodeProvider(), .qr),
                      (LargeTypeProvider(), .largeType), (ScreenTextProvider(show: { [unowned self] in panel.show(typing: $0) }), .screenText),
                      (capture, nil), (apps, nil), (SettingsProvider(), .systemSettings), (CalculatorProvider(), .calculator),
@@ -213,6 +214,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // What the empty launcher shows besides the meeting (config.toml; the meeting is MeetingsProvider's).
     private var (suggestsApps, showsDue, showsRunning) = (true, true, true)
     private lazy var panel: LauncherPanel = LauncherPanel(model: model, placeholder: "Type anything")
+
+    /// The meeting to join now, for Enter after `camera`.
+    nonisolated private static func joinable(_ meetings: MeetingsProvider) -> @Sendable () async -> LauncherResult? {
+        { Feature.calendar.isOn ? await meetings.joinable() : nil }
+    }
 
     /// `[files] terminal`, asked when a file's Open in Terminal row is made.
     nonisolated private static func terminal(_ files: FileSearchProvider) -> @Sendable () async -> String? { { await files.terminalApp() } }

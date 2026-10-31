@@ -14,6 +14,7 @@ enum Answer: Sendable {
     case meeting(MeetingCard)
     case weather(WeatherCard)
     case week(WeekCard)
+    case camera(CameraCard)
 }
 
 /// A forecast, its text ready to show; the days' temperatures as numbers, for their bars.
@@ -496,6 +497,23 @@ struct WeekCardView: View {
                 }
             }
             .fixedSize(horizontal: false, vertical: true) // the columns as tall as the fullest day
+        }
+    }
+}
+
+/// `camera`: what the camera sees, mirrored, under the call about to start.
+struct CameraCardView: View {
+    let card: CameraCard
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 0) {
+                Kicker(text: "Camera")
+                Text("  ·  \(card.meeting ?? card.name)").font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
+                Spacer()
+                EnterHint(action: card.enter)
+            }
+            CameraPreview().frame(height: 300).clipShape(.rect(cornerRadius: 12, style: .continuous))
         }
     }
 }

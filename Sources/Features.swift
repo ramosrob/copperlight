@@ -12,7 +12,7 @@ enum Feature: String, CaseIterable, Sendable {
     case clipboard, notes, snippets, scripts, commands, contacts, calendar, reminders, files, browserTabs = "browser_tabs",
          bookmarks, systemSettings = "system_settings", menus, timers, pomodoro, stopwatch, screenText = "screen_text"
     // Windows and the Mac
-    case windows, runningApps = "running_apps", mac, sound, keepAwake = "keep_awake", bluetooth, shortcuts, shell, homebrew
+    case windows, runningApps = "running_apps", mac, sound, keepAwake = "keep_awake", bluetooth, camera, shortcuts, shell, homebrew
     // Not offered yet
     case fileContent = "file_content", photoText = "photo_text"
 
@@ -32,7 +32,7 @@ enum Feature: String, CaseIterable, Sendable {
         switch self {
         case .calculator, .currency, .units, .timeZones, .dates, .colors, .qr, .stocks, .weather, .define, .spelling,
              .translate, .emoji, .textTools, .largeType, .macInfo, .speedTest, .processes: .answers
-        case .windows, .runningApps, .mac, .sound, .keepAwake, .bluetooth, .shortcuts, .shell, .homebrew: .mac
+        case .windows, .runningApps, .mac, .sound, .keepAwake, .bluetooth, .camera, .shortcuts, .shell, .homebrew: .mac
         default: .yours
         }
     }
@@ -66,6 +66,7 @@ enum Feature: String, CaseIterable, Sendable {
         case .pomodoro: ["pomo"]
         case .stopwatch: ["stopwatch"]
         case .screenText: ["copy text"]
+        case .camera: ["camera"]
         case .shell: [":!"]
         default: []
         }
@@ -114,6 +115,7 @@ enum Feature: String, CaseIterable, Sendable {
         case .sound: ("Sound", ":play, :volume 30, :mute, :output")
         case .keepAwake: ("Keep awake", ":awake 2h")
         case .bluetooth: ("Bluetooth", ":connect airpods")
+        case .camera: ("Camera", "camera: see yourself before a call")
         case .shortcuts: ("Shortcuts", ":shortcut and a shortcut's name")
         case .shell: ("Shell", ":! and a command")
         case .homebrew: ("Install with Homebrew", "Apps you don't have, installed from their row")
