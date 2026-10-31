@@ -481,6 +481,10 @@ weekday, each day's events stacked under it with their times: all-day ones first
 Today's date sits on copper, and the days and events already over fade. `next week` shows the one after. Enter
 opens Calendar.
 
+**The month:** `month` (from `mont`) shows the month you're in as a grid, whole weeks from your first weekday, with
+a dot under each day for each of its events, up to three. Today's date sits on copper; the days already over and
+those of the months around it fade. `next month` shows the one after. Enter opens Calendar.
+
 **Before a call:** `camera` (from `came`) shows what your camera sees across the card, mirrored like a mirror. When
 a meeting with a call is about to start, the card says which one and Enter joins it; otherwise Enter opens Photo
 Booth. The first time, the row asks to use the camera. It's on only while the card shows, and nothing is recorded.

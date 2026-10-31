@@ -2669,6 +2669,39 @@ private struct Speak: ResultProvider {
     #expect(next.days.allSatisfy { !$0.past && !$0.today && $0.events.isEmpty })
 }
 
+/// `month`: the month you're in as a grid of whole weeks from your first weekday, each day with how many events it
+/// has (the view draws up to 3 dots); today, the days before it and the days of the months around it marked.
+/// `next month`: the one after.
+@Test func monthCardDays() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "Europe/Lisbon")!
+    calendar.firstWeekday = 2 // Monday
+    calendar.locale = Locale(identifier: "en_US")
+    let at = { (month: Int, day: Int, hour: Double) in calendar.date(from: DateComponents(year: 2026, month: month, day: day))! + hour * 3600 }
+    let now = at(10, 14, 10) // a Wednesday morning
+    var items: [CalendarItem] = [CalendarItem(title: "Standup", start: at(10, 14, 9), end: at(10, 14, 9.5), link: nil, id: "s"),
+                 CalendarItem(title: "Review", start: at(10, 14, 15), end: at(10, 14, 16), link: nil, id: "r"),
+                 CalendarItem(title: "Night flight", start: at(10, 22, 23), end: at(10, 23, 1), link: nil, id: "f"), // into the next day
+                 CalendarItem(title: "Holiday", start: at(10, 5, 0), end: at(10, 6, 0), link: nil, allDay: true, id: "h"),
+                 CalendarItem(title: "Gym", start: at(9, 29, 18), end: at(9, 29, 19), link: nil, id: "g")] // September's, in the first row
+    for hour in 9..<14 { items.append(CalendarItem(title: "Slot", start: at(10, 20, Double(hour)), end: at(10, 20, Double(hour) + 0.5), link: nil, id: "x")) }
+    let card = monthCard(items, now: now, calendar: calendar)
+    #expect(card.kicker == "This month" && card.range == "October 2026" && card.weekdays == ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
+    #expect(card.weeks.count == 5 && card.weeks.allSatisfy { $0.count == 7 })
+    let days = card.weeks.flatMap { $0 }
+    #expect(days[0].number == "28" && !days[0].inMonth && days[3].number == "1" && days[3].inMonth)
+    #expect(days.last?.number == "1" && days.last?.inMonth == false)
+    let day = { (number: String) in days.first { $0.inMonth && $0.number == number }! }
+    #expect(day("14").today && !day("14").past && day("13").past && days.filter(\.today).count == 1)
+    #expect(day("14").events == 2 && day("22").events == 1 && day("23").events == 1)
+    #expect(day("5").events == 1 && day("6").events == 0)
+    #expect(day("20").events == 5 && days[1].events == 1) // September's gym shows in its row, faded
+    #expect(card.count == 9) // October's: a repeating event's occurrences share an id, not a start
+    let next = monthCard([], now: now, calendar: calendar, next: true)
+    #expect(next.kicker == "Next month" && next.range == "November 2026" && next.weeks.count == 6)
+    #expect(next.weeks.flatMap { $0 }.allSatisfy { !$0.past && !$0.today && $0.events == 0 })
+}
+
 @MainActor @Test func theEmptyFieldShowsWhatsUpNext() async throws {
     let model = SearchModel(providers: [Fixed(rows: [("x", 1)])],
                             idle: { [LauncherResult(id: "meeting:next", title: "Design review", icon: .symbol("video"), score: 100, action: {})] })

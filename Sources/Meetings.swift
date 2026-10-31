@@ -72,6 +72,36 @@ func weekCard(_ items: [CalendarItem], now: Date = .now, calendar: Calendar = .c
     return WeekCard(kicker: next ? "Next week" : "This week", range: (week.start..<last).formatted(range), count: count, days: days)
 }
 
+/// The month `now` is in, or the one after.
+func monthInterval(now: Date = .now, calendar: Calendar = .current, next: Bool = false) -> DateInterval {
+    let month = calendar.dateInterval(of: .month, for: now)!
+    return next ? calendar.dateInterval(of: .month, for: month.end)! : month
+}
+
+/// The whole weeks a month's grid shows: from the week its 1st is in to the week its last day is in.
+func monthGrid(_ month: DateInterval, calendar: Calendar = .current) -> DateInterval {
+    DateInterval(start: calendar.dateInterval(of: .weekOfYear, for: month.start)!.start,
+                 end: calendar.dateInterval(of: .weekOfYear, for: month.end - 1)!.end)
+}
+
+/// `month`, at a glance: the grid's days with how many events each has, today and the days already over marked, and
+/// the days of the months around it apart. The count is the month's own events.
+func monthCard(_ items: [CalendarItem], now: Date = .now, calendar: Calendar = .current, next: Bool = false) -> MonthCard {
+    let month = monthInterval(now: now, calendar: calendar, next: next), grid = monthGrid(month, calendar: calendar)
+    let length = calendar.dateComponents([.day], from: grid.start, to: grid.end).day! // 28 to 42, whatever the clocks do
+    let days = (0..<length).map { offset in
+        let start = calendar.date(byAdding: .day, value: offset, to: grid.start)!, end = calendar.date(byAdding: .day, value: 1, to: start)!
+        return MonthCard.Day(number: "\(calendar.component(.day, from: start))", inMonth: month.start <= start && start < month.end,
+                             today: start <= now && now < end, past: end <= now, events: items.filter { $0.start < end && $0.end > start }.count)
+    }
+    let weekdays = (0..<7).map { calendar.shortWeekdaySymbols[(calendar.firstWeekday - 1 + $0) % 7] }
+    let name = Date.FormatStyle(locale: calendar.locale ?? .current, calendar: calendar, timeZone: calendar.timeZone).month(.wide).year()
+    // A repeating event's occurrences share an id: one event is an id and a start.
+    let count = Set(items.filter { $0.start < month.end && $0.end > month.start }.map { "\($0.id)@\($0.start.timeIntervalSince1970)" }).count
+    return MonthCard(kicker: next ? "Next month" : "This month", range: month.start.formatted(name), count: count, weekdays: weekdays,
+                     weeks: stride(from: 0, to: days.count, by: 7).map { Array(days[$0..<$0 + 7]) })
+}
+
 /// The meeting the empty launcher offers: one with a call to join, starting in the next 10 minutes or started in the
 /// last 10 and not over; the one about to start before one already going.
 func nextMeeting(_ items: [CalendarItem], now: Date = .now) -> CalendarItem? {
@@ -215,13 +245,15 @@ actor MeetingsProvider: ResultProvider {
         let lower = query.lowercased()
         let base: Double
         let week: Bool? = lower == "next week" ? true : lower == "this week" || lower.count >= 3 && "week".hasPrefix(lower) ? false : nil
-        if week != nil { base = 50 }
+        let month: Bool? = lower == "next month" ? true : lower == "this month" || lower.count >= 4 && "month".hasPrefix(lower) ? false : nil
+        let span = week != nil ? "week" : month != nil ? "month" : nil // the card asked for, if any
+        if span != nil { base = 50 }
         else if lower.count >= 3, "meetings".hasPrefix(lower) || "agenda".hasPrefix(lower) { base = 50 }
         else if lower == "event" || lower == "events" { base = 50 }
         else if lower == "calendar" { base = 1 } // the app first: it's what "calendar" opens
         else { return [] }
         let message = { (title: String, subtitle: String, actionTitle: String, action: @escaping @MainActor @Sendable () -> Void) in
-            LauncherResult(id: week == nil ? "builtin:meetings" : "builtin:week", title: title, subtitle: subtitle, icon: .symbol("calendar"),
+            LauncherResult(id: span.map { "builtin:\($0)" } ?? "builtin:meetings", title: title, subtitle: subtitle, icon: .symbol("calendar"),
                            score: base, actionTitle: actionTitle, action: action)
         }
         switch EKEventStore.authorizationStatus(for: .event) {
@@ -231,14 +263,20 @@ actor MeetingsProvider: ResultProvider {
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!)
             })]
         default: // not asked yet, or add-only (for `add event`)
-            return [message(week == nil ? "See Today's Meetings" : "See Your Week", "Asks to read your calendars, once", "Allow", {
+            return [message(span.map { "See Your \($0.capitalized)" } ?? "See Today's Meetings", "Asks to read your calendars, once", "Allow", {
                 Task {
                     guard (try? await EKEventStore().requestFullAccessToEvents()) == true else { return notify("Copperlight can't see your calendars") }
-                    notify(week == nil ? "Type “meetings” again to see them" : "Type “week” again to see it")
+                    notify(span.map { "Type “\($0)” again to see it" } ?? "Type “meetings” again to see them")
                 }
             })]
         }
         let now = Date.now
+        if let next = month {
+            let card = monthCard(events(in: monthGrid(monthInterval(now: now, next: next))), now: now, next: next)
+            return [LauncherResult(id: "builtin:month", title: "\(card.range): \(card.count == 1 ? "1 event" : "\(card.count) events")",
+                                   subtitle: card.kicker, icon: .symbol("calendar"), score: base, actionTitle: "Open Calendar",
+                                   action: openCalendar, answer: .month(card))]
+        }
         if let next = week {
             let card = weekCard(events(in: weekInterval(now: now, next: next)), now: now, next: next)
             return [LauncherResult(id: "builtin:week", title: "\(card.kicker): \(card.count == 1 ? "1 event" : "\(card.count) events")",

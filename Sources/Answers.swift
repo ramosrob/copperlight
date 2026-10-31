@@ -15,6 +15,7 @@ enum Answer: Sendable {
     case weather(WeatherCard)
     case week(WeekCard)
     case camera(CameraCard)
+    case month(MonthCard)
 }
 
 /// A forecast, its text ready to show; the days' temperatures as numbers, for their bars.
@@ -54,6 +55,16 @@ struct WeekCard: Sendable {
     var range: String // "Oct 26 – Nov 1"
     var count: Int
     var days: [Day]
+}
+
+/// A month as a grid of whole weeks, its text ready to show.
+struct MonthCard: Sendable {
+    struct Day: Sendable { var number: String, inMonth: Bool, today: Bool, past: Bool, events: Int } // "14"
+    var kicker: String // "This month", "Next month"
+    var range: String // "October 2026"
+    var count: Int
+    var weekdays: [String] // "Mon"…"Sun", from your first weekday
+    var weeks: [[Day]] // 4 to 6 rows of 7
 }
 
 /// A conversion, its text ready to show.
@@ -498,6 +509,55 @@ struct WeekCardView: View {
             }
             .fixedSize(horizontal: false, vertical: true) // the columns as tall as the fullest day
         }
+    }
+}
+
+/// `month`: the month as a grid, whole weeks from your first weekday; a dot for each of a day's events (3 at most),
+/// today's date on copper, the days already over and those of the months around it faded.
+struct MonthCardView: View {
+    let card: MonthCard
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 0) {
+                Kicker(text: card.kicker)
+                Text("  ·  \(card.range)  ·  \(card.count == 1 ? "1 event" : "\(card.count) events")").font(.system(size: 12)).foregroundStyle(.secondary)
+                Spacer()
+                EnterHint(action: "Open in Calendar")
+            }
+            Grid(horizontalSpacing: 4, verticalSpacing: 4) {
+                GridRow {
+                    ForEach(Array(card.weekdays.enumerated()), id: \.offset) { _, name in
+                        Text(name).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                    }
+                }
+                ForEach(Array(card.weeks.enumerated()), id: \.offset) { _, week in
+                    GridRow {
+                        ForEach(Array(week.enumerated()), id: \.offset) { _, day in MonthDayCell(day: day) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct MonthDayCell: View {
+    let day: MonthCard.Day
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(day.number).font(.system(size: 12, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(day.today ? Color.white : .primary)
+                .frame(minWidth: 22, minHeight: 22)
+                .background { if day.today { Circle().fill(LinearGradient.brand) } }
+            HStack(spacing: 3) {
+                ForEach(0..<min(day.events, 3), id: \.self) { _ in Circle().fill(Color.accent).frame(width: 4, height: 4) }
+            }
+            .frame(height: 4)
+        }
+        .frame(maxWidth: .infinity, minHeight: 40)
+        .background(Color.primary.opacity(day.today ? 0.06 : day.inMonth ? 0.03 : 0), in: .rect(cornerRadius: 8))
+        .opacity(!day.inMonth ? 0.3 : day.past ? 0.45 : 1)
     }
 }
 

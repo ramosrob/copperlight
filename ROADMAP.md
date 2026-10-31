@@ -58,8 +58,8 @@ Roughly in that order, then a few weeks of daily use with fixes only.
 - **Sports and flights:** scores and the next games of your teams; a flight's status from its number.
 - **Your day:** free slots to copy, and the next meeting in the menu bar; lists, priorities and
   places in `add todo` and `add event`; what's playing in the empty launcher; screenshots and downloads by date, and
-  pasting the latest; `month`, a grid with a dot on the days that have events; several timers at once; a line of
-  your own in the menu bar until you clear it; the latest verification code from Messages, to copy.
+  pasting the latest; several timers at once; a line of your own in the menu bar until you clear it; the latest
+  verification code from Messages, to copy.
 - **The Mac:** `:input` for the microphone; the Wi-Fi password, and a QR code for guests; Stage Manager on and off; dismiss notifications;
   `:vpn`; `:resolution` and `:mirror` for displays; the menu bar's icons by name, even the ones hidden behind the
   notch; what keeps a disk from ejecting, to quit it; `clean keyboard`, the keys locked for 30 seconds while you

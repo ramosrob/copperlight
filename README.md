@@ -65,6 +65,8 @@ The little tools you'd otherwise install one by one, a keystroke away. No extra 
 | **Snippets**<br>`sig`, `reply Ana` | The text you type over and over, with placeholders for the date, the clipboard or a name. |
 | **Meetings**<br>`meetings`, `agenda` | The rest of today's calendar, a copper badge on what starts within the hour, and Tab for the details. A few minutes before a call, it's already there when you open Copperlight: Enter joins. |
 | **Your week**<br>`week`, `next week` | The whole week at a glance, a column a day with its events and their times, today on copper. |
+| **Your month**<br>`month`, `next month` | The month as a grid, a dot under each day for each of its events, today on copper. |
+| **Before a call**<br>`camera` | See yourself, mirrored, before you join. With a call about to start, Enter joins it. |
 | **Contacts**<br>`ana` | People from your contacts as you type their name. Enter messages them; Tab lists every way to reach them: call, FaceTime, WhatsApp, email, or copy their number. |
 | **Due reminders**<br>`due` | What's overdue or due within the hour waits when you open Copperlight, with a copper badge. Enter completes it. |
 | **Browser tabs**<br>`tabs`, `inbox` | The tabs open in your browsers, found by their title or address. Enter switches to the tab instead of opening the page again. |
@@ -231,6 +233,8 @@ The answer appears big as you type, with what a percentage hid beside it; Enter 
 | Type | You get |
 |---|---|
 | `week`, `next week` | Your week across the card, a column a day, each day's events with their times; Enter opens Calendar |
+| `month`, `next month` | The month as a grid, a dot for each event; Enter opens Calendar |
+| `camera` | You, mirrored, before a call; Enter joins the call about to start, or opens Photo Booth |
 | `meetings`, `agenda`, `events` | The rest of today's events, a copper badge on what's soon; Tab shows the details (call link, people, notes), Enter joins the call. A few minutes before a call, it's already there when you open the launcher (or all of today, with Settings › Launcher › Calendar) |
 | `add todo call mom tomorrow 5pm` | A reminder, due and alerting then |
 | `due` | Reminders due today and overdue; Enter completes one. What's due soon waits when you open the launcher |
@@ -300,11 +304,12 @@ few features. The welcome window asks for them in one place; otherwise macOS ask
 | Permission | Turns on |
 |---|---|
 | Accessibility | Pasting into the app you were in (clipboard history, snippets, emoji, paste as Markdown); moving and switching windows; searching menus; `:play`, `:next track` |
-| Calendars | `meetings` and `week` (read your events) and `add event` (add-only access is enough for that) |
+| Calendars | `meetings`, `week` and `month` (read your events) and `add event` (add-only access is enough for that) |
 | Reminders | `add todo`, and reminders that are due |
 | Contacts | People as you type their name |
 | Screen Recording | `copy text` (only the part you drag over is read) |
 | Bluetooth | `:connect` (connecting and disconnecting your paired devices) |
+| Camera | `camera` (seeing yourself before a call; nothing is recorded) |
 | Notifications | The end of a pomodoro or a timer, shell lines that finish in the background, errors |
 | Automation | Your browser's open tabs (asked once per browser, from `tabs` ⇥); `:empty trash`, `:dark`, `:restart`, `:shut down`, `:log out` (asking Finder, System Events or loginwindow) |
 | Full Disk Access, by hand | Safari's bookmarks and history only |
