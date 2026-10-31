@@ -942,6 +942,9 @@ private struct LauncherView: View {
                     }
                 }
             }
+            // No scroll bar while the rows fit: the card grows to new rows a moment after they're there, and macOS
+            // showed one for that moment.
+            .scrollIndicators(listHeight > Self.maxListHeight ? .automatic : .never)
             // Rows fade out at an edge with more beyond it, instead of being cut.
             .onScrollGeometryChange(for: ScrollEdges.self) { geometry in
                 ScrollEdges(top: geometry.contentOffset.y > 1,
