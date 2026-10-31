@@ -37,21 +37,34 @@ Roughly in that order, then a few weeks of daily use with fixes only.
 - **Finding:** `:look` for a full-size preview; kinds, dates and tags in the files chip (`f pdf invoice`, `f last
   week`); folders listed newest first; symbols by name (→, ⌘, ™) and a default emoji skin tone; songs, albums and
   playlists from your Music library; Safari's Reading List and iCloud Tabs; recent files; the text inside files back, as its own
-  chip.
+  chip; `wiki`, an article's summary and picture, fetched only when you pause.
 - **Clipboard:** pin items; copied files; copied images found by their text, and QR codes read from them; `:plain` and
-  `:clear 15 min` in clipboard history; save an item as a snippet; paste in sequence, one older item each time.
+  `:clear 15 min` in clipboard history; save an item as a snippet; paste in sequence, one older item each time; an
+  item floating above every window while you work from it; typing an item out key by key, where pasting is blocked
+  (a virtual machine, a remote screen); pasting text or a picture as a file; the last two items compared, line by
+  line; links copied without their tracking (`utm_`, `fbclid`); history and previews kept hidden while you share
+  your screen.
 - **Text:** more placeholders (`{uuid}`, `{clipboard 1}`, a snippet inside another) with modifiers (`|upper`), and
   several named arguments; Markdown snippets pasted as rich text; title, kebab and sentence case, random numbers, and
-  the links pulled out of text.
+  the links pulled out of text; `synonyms happy`, from the Mac's thesaurus; made-up names, emails, addresses and
+  phone numbers for testing (`fake name`); the front browser tab as a Markdown link (`link`).
 - **Windows:** sixths, fourths, the full height or width, `:size 1280x800`, gaps between windows; layouts that open
   their apps too.
-- **Files and apps:** `:move to`, `:rename`, `:duplicate`, `:compress`, AirDrop and `:info` on a file; the files selected in
-  Finder as what the hotkey acts on; `:uninstall` (asks first); `:upgrade`; volume per app.
+- **Files and apps:** `:move to`, `:rename`, `:duplicate`, `:compress`, `:info` and sharing (AirDrop, Messages,
+  Mail) on a file; `:new file notes.md` in the folder you're in; over an Open or Save dialog, Enter on a folder takes
+  the dialog there; the files selected in Finder as what the hotkey acts on; several rows at once, opened, trashed or
+  zipped together; `:click send`, the buttons, links and tabs of the window you're in, by name; `:uninstall` (asks
+  first); `:upgrade`; volume per app.
 - **Sports and flights:** scores and the next games of your teams; a flight's status from its number.
 - **Your day:** free slots to copy, and the next meeting in the menu bar; lists, priorities and
   places in `add todo` and `add event`; what's playing in the empty launcher; screenshots and downloads by date, and
-  pasting the latest.
-- **The Mac:** `:input` for the microphone; the Wi-Fi password, and a QR code for guests; Stage Manager on and off; dismiss notifications.
+  pasting the latest; `month`, a grid with a dot on the days that have events; several timers at once; `camera`, a
+  look at yourself before a call, from the meeting band too; a line of your own in the menu bar until you clear it;
+  the latest verification code from Messages, to copy.
+- **The Mac:** `:input` for the microphone; the Wi-Fi password, and a QR code for guests; Stage Manager on and off; dismiss notifications;
+  `:vpn`; `:resolution` and `:mirror` for displays; the menu bar's icons by name, even the ones hidden behind the
+  notch; what keeps a disk from ejecting, to quit it; `clean keyboard`, the keys locked for 30 seconds while you
+  wipe them.
 - **Extending it:** script rows with live output and a choice of arguments; `copperlight choose`, lines from a
   pipe as rows; a URL scheme and Shortcuts actions; a
   starter library of commands, and importers for snippets and quicklinks from other apps.
